@@ -80,6 +80,15 @@ ThesisForge está diseñado bajo los siguientes principios arquitectónicos:
 - **`ProjectRepository`:** Proporciona operaciones CRUD transaccionales sobre la tabla `projects`.
 - **`SecureKeyStoreRepository`:** Almacena y recupera claves de API cifradas en la tabla `keystore`.
 
+### 3.6 Motor RAG y Literatura Académica (`src/thesisforge/rag/`)
+- **`SemanticScholarClient`, `ArxivClient`, `CrossRefClient`:** Clientes asíncronos con protección SSRF y reintentos exponenciales para consulta de catálogos académicos globales.
+- **`AcademicSearchAggregator`:** Orquesta búsquedas concurrentes multi-fuente y desduplica resultados por DOI canónico y firma autor-título-año.
+- **`LiteratureCache`:** Caché persistente en SQLite con TTL configurable (48h) y purga periódica para prevenir rate limits.
+- **`PDFDocumentParser`:** Extractor PyMuPDF con sanitización contra Prompt Injection y chunking estructurado por oraciones completas.
+- **`ChromaVectorStore`:** Motor de indexación vectorial local sobre ChromaDB con embeddings deterministas ligeros (`FastLocalEmbeddingFunction`).
+- **`APA7Formatter`:** Formateador estricto de citaciones parentéticas, narrativas y lista de referencias bajo normas APA 7ª edición.
+- **`CitationGuard`:** Validador de DOIs y verificador de respaldo de afirmaciones (*claim-evidence grounding*) con umbrales configurables.
+
 ---
 
 ## 4. Estrategia de Pruebas y Calidad

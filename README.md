@@ -158,7 +158,7 @@ Consulta [`ARCHITECTURE.md`](ARCHITECTURE.md) para un desglose exhaustivo de los
 
 - [x] **Sprint 0:** Fundaciones de seguridad, modelos Pydantic v2, configuración BYOK y repositorio base.
 - [x] **Sprint 1:** Router LLM multi-proveedor con reintentos Tenacity, máquina de estados del asesor metodológico y API REST.
-- [ ] **Sprint 2:** Motor RAG de literatura académica (Semantic Scholar, ArXiv, CrossRef), extracción de PDFs con PyMuPDF e indexación local con ChromaDB.
+- [x] **Sprint 2:** Motor RAG de literatura académica (Semantic Scholar, ArXiv, CrossRef), extracción de PDFs con PyMuPDF, compuerta anti-alucinaciones e indexación local con ChromaDB (v0.2.0).
 - [ ] **Sprint 3:** Generador modular por capítulos con memoria acumulativa jerárquica y aprobación *Human-in-the-Loop*.
 - [ ] **Sprint 4:** Compilador de documentos Word (`.docx`) bajo estándar APA 7ª edición y sanitización de tablas.
 - [ ] **Sprint 5:** Interfaz de usuario SPA con Tailwind CSS y lanzador de escritorio con PyWebView.
