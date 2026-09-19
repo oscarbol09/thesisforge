@@ -19,9 +19,9 @@ gantt
     section Core y Asesor
     v0.1.0 Fundaciones y Máquina de Estados       :done,    des1, 2026-08, 2026-09
     section Literatura RAG
-    v0.2.0 Semantic Scholar, ArXiv y Vectores    :active,  des2, 2026-09, 2026-10
+    v0.2.0 Semantic Scholar, ArXiv y Vectores    :done,    des2, 2026-09, 2026-10
     section Redacción y APA 7
-    v0.3.0 Redacción Modular y DOCX APA 7        :         des3, 2026-10, 2026-11
+    v0.3.0 Redacción Modular y DOCX APA 7        :active,  des3, 2026-10, 2026-11
     section Distribución y Escritorio
     v1.0.0 Binarios de Escritorio y LaTeX        :         des4, 2026-11, 2026-12
 ```
@@ -37,12 +37,12 @@ gantt
 
 ---
 
-### Fase 2: Motor RAG y Búsqueda de Literatura Real (v0.2.0) — [En Desarrollo]
-- [ ] Conectores asíncronos directos para **Semantic Scholar Graph API**, **ArXiv** y **CrossRef**.
-- [ ] Almacenamiento vectorial local (ChromaDB) para artículos PDF cargados por el usuario.
-- [ ] Chunking contextual léxico y semántico (1500 caracteres, 200 de solapamiento).
-- [ ] Compuerta anti-alucinaciones con verificación de DOI antes de sugerir citas.
-- [ ] Formateador estricto de citaciones en texto y referencias bajo normas APA 7ª edición.
+### Fase 2: Motor RAG y Búsqueda de Literatura Real (v0.2.0) — [Completada]
+- [x] Conectores asíncronos directos para **Semantic Scholar Graph API**, **ArXiv** y **CrossRef**.
+- [x] Almacenamiento vectorial local (ChromaDB) para artículos PDF cargados por el usuario.
+- [x] Chunking contextual léxico y semántico (1500 caracteres, 200 de solapamiento).
+- [x] Compuerta anti-alucinaciones con verificación de DOI antes de sugerir citas y evaluación de evidencia.
+- [x] Formateador estricto de citaciones en texto y referencias bajo normas APA 7ª edición.
 
 ---
 

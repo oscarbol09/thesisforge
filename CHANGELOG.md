@@ -9,9 +9,34 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/
 ## [Unreleased]
 
 ### Planned
-- Motor RAG con clientes asíncronos para Semantic Scholar, ArXiv y CrossRef (Sprint 2).
-- Indexación de documentos locales con ChromaDB y chunking léxico de 1500 caracteres con 200 de solapamiento.
 - Generador modular de capítulos con memoria jerárquica contextual (Sprint 3).
+- Compilador de documentos Word (`.docx`) formateados estrictamente según APA 7ª edición.
+- Sanitización de tablas exportadas contra inyección de fórmulas (CSV/Excel/Word).
+- Streaming de tokens en tiempo real vía WebSockets para redacción asistida.
+
+---
+
+## [0.2.0] - 2026-09-19
+
+### Added
+- **Clientes Académicos Asíncronos:**
+  - `SemanticScholarClient` para búsqueda en el catálogo de Semantic Scholar Graph API v1 con filtrado temporal, recuperación de resúmenes y enlaces a PDFs Open Access.
+  - `ArxivClient` para búsqueda de preprints en ArXiv API con parseo seguro de feeds Atom mediante `defusedxml.ElementTree`.
+  - `CrossRefClient` para resolución canónica de metadatos bibliográficos y verificación de DOIs oficiales.
+  - `AcademicSearchAggregator` para orquestar búsquedas concurrentes multi-fuente con desduplicación inteligente por DOI normalizado y firma autor-título-año.
+  - Capa de caché persistente `LiteratureCache` respaldada en SQLite con TTL configurable (48 horas por defecto) y purga periódica para prevenir rate limits.
+- **Indexación y Recuperación Vectorial (RAG):**
+  - Extractor y segmentador `PDFDocumentParser` basado en PyMuPDF (`fitz`) con chunking contextual estructurado por oraciones completas (1500 caracteres, 200 de solapamiento).
+  - Sanitización estricta contra Prompt Injection en texto extraído delimitado en prompts con etiquetas semánticas de aislamiento.
+  - Motor vectorial local `ChromaVectorStore` sobre ChromaDB con soporte para colecciones por proyecto y embeddings ligeros deterministas (`FastLocalEmbeddingFunction`).
+- **Formateo APA 7ª Edición y Compuerta de Citación:**
+  - Formateador estricto `APA7Formatter` que genera citaciones parentéticas, narrativas y entradas de lista de referencias bajo normas APA 7 (manejo exhaustivo de 1, 2, 3-20 y 21+ autores).
+  - Validador `CitationGuard` que asegura que los DOIs existan y verifica que los fragmentos recuperados realmente respalden las afirmaciones científicas (*claim-evidence grounding*) mediante análisis léxico y verificación asistida por LLM con umbrales configurables.
+- **Endpoints REST y Herramientas CLI:**
+  - Rutas FastAPI bajo `/api/literature`: `/search`, `/verify-doi`, `/projects/{id}/documents` y `/projects/{id}/context`.
+  - Comando CLI `thesisforge search-papers` con renderizado en tabla formateada y citas APA 7 automáticas.
+- **Suite de Pruebas y Aseguramiento de Calidad:**
+  - 93 pruebas unitarias, de integración y basadas en propiedades (`Hypothesis`, `respx`) con 83.32% de cobertura de código.
 
 ---
 
