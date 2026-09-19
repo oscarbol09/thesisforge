@@ -9,7 +9,7 @@ description = "Asistente y forjador de proyectos de investigación académica co
 readme = "README.md"
 license = { text = "Apache-2.0" }
 authors = [
-    { name = "Oscar Bolivar", email = "dario@example.com" }
+    { name = "Oscar Madera" }
 ]
 requires-python = ">=3.10"
 dependencies = [

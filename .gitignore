@@ -89,3 +89,14 @@ dmypy.json
 # Chroma DB local data
 chroma_data/
 *.chroma
+
+# AI & Internal Development Plans / Agent docs
+implementation_plan.md
+walkthrough.md
+agents/
+.agents/
+AGENTS.md
+agents.md
+*.agent.md
+.gemini/
+scratch/

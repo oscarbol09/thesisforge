@@ -97,4 +97,4 @@ bandit -r src/ -ll
 
 Este proyecto está bajo la Licencia **Apache 2.0**. Consulta el archivo [LICENSE](LICENSE) para más detalles.
 
-Copyright (c) 2026 Oscar Bolivar / ThesisForge Contributors.
+Copyright (c) 2026 Oscar Madera / ThesisForge Contributors.
