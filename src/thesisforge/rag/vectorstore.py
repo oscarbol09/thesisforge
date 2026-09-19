@@ -123,10 +123,12 @@ class ChromaVectorStore:
                 }
             )
 
+        embeddings = self.embedding_function(documents)
         try:
             collection.add(
                 ids=ids,
                 documents=documents,
+                embeddings=embeddings,
                 metadatas=metadatas,
             )
             logger.info(
@@ -151,9 +153,8 @@ class ChromaVectorStore:
         if not clean_query:
             return []
 
-        col_name = self._get_collection_name(project_id)
         try:
-            collection = self._client.get_collection(name=col_name)
+            collection = self._get_or_create_collection(project_id)
         except Exception:
             return []
 
@@ -161,9 +162,10 @@ class ChromaVectorStore:
         if section_filter:
             where_clause = {"section_name": section_filter}
 
+        query_embeddings = self.embedding_function([clean_query])
         try:
             results = collection.query(
-                query_texts=[clean_query],
+                query_embeddings=query_embeddings,
                 n_results=min(top_k, 20),
                 where=where_clause,
             )
