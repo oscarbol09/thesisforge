@@ -49,6 +49,12 @@ dev = [
     "bandit>=1.7.8",
     "types-PyYAML>=6.0.12",
 ]
+docs = [
+    "mkdocs>=1.6.0",
+    "mkdocs-material>=9.5.0",
+    "pymdown-extensions>=10.7.0",
+]
+
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/thesisforge"]
