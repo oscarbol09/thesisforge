@@ -1,9 +1,13 @@
 """Embedded vector store adapter using ChromaDB with multi-tenant project isolation."""
 
+import hashlib
+import math
+import re
 from pathlib import Path
 from typing import Any
 
 import chromadb
+from chromadb.api.types import Documents, EmbeddingFunction
 from chromadb.config import Settings as ChromaSettings
 
 from thesisforge.core.logging import get_logger
@@ -14,6 +18,42 @@ from thesisforge.models import DocumentChunkDTO
 logger = get_logger(__name__)
 
 
+class FastLocalEmbeddingFunction(EmbeddingFunction[Documents]):
+    """Deterministic, zero-network 384-dimensional feature hashing embedding function.
+
+    Runs 100% locally with zero external network downloads, eliminating CI/offline timeouts.
+    """
+
+    def __init__(self, dimensions: int = 384) -> None:
+        self.dimensions = dimensions
+
+    @classmethod
+    def name(cls) -> str:
+        return "default"
+
+    def __call__(self, input: Documents) -> Any:
+
+        embeddings: list[list[float]] = []
+        for doc in input:
+            tokens = re.findall(r"\w+", str(doc).lower())
+            vec = [0.0] * self.dimensions
+            if not tokens:
+                embeddings.append(vec)
+                continue
+
+            for token in tokens:
+                h = int(hashlib.md5(token.encode("utf-8"), usedforsecurity=False).hexdigest(), 16)
+                idx = h % self.dimensions
+                sign = 1.0 if (h >> 16) & 1 else -1.0
+                vec[idx] += sign
+
+            norm = math.sqrt(sum(x * x for x in vec))
+            if norm > 0:
+                vec = [x / norm for x in vec]
+            embeddings.append(vec)
+        return embeddings
+
+
 class ChromaVectorStore:
     """Vector database manager wrapping embedded ChromaDB for local scientific literature search."""
 
@@ -22,10 +62,12 @@ class ChromaVectorStore:
         persist_directory: str = "data/chroma",
         llm_router: LLMRouter | None = None,
         is_memory: bool = False,
+        embedding_function: Any | None = None,
     ) -> None:
         self.persist_directory = persist_directory
         self.llm = llm_router
         self.is_memory = is_memory
+        self.embedding_function = embedding_function or FastLocalEmbeddingFunction()
 
         if self.is_memory:
             self._client = chromadb.EphemeralClient(
@@ -48,6 +90,7 @@ class ChromaVectorStore:
         col_name = self._get_collection_name(project_id)
         return self._client.get_or_create_collection(
             name=col_name,
+            embedding_function=self.embedding_function,  # type: ignore[arg-type]
             metadata={"hnsw:space": "cosine"},
         )
 

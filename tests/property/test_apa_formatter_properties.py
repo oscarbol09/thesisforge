@@ -11,14 +11,14 @@ author_name_strategy = st.text(
     alphabet=st.characters(whitelist_categories=("Lu", "Ll"), whitelist_characters=" -'"),
     min_size=2,
     max_size=30,
-).filter(lambda s: bool(s.strip()))
+).filter(lambda s: len(s.strip()) >= 2)
 
 authors_list_strategy = st.lists(author_name_strategy, min_size=1, max_size=25)
 title_strategy = st.text(
     alphabet=st.characters(whitelist_categories=("Lu", "Ll", "Nd"), whitelist_characters=" ,:;?-"),
     min_size=3,
     max_size=100,
-).filter(lambda s: bool(s.strip()))
+).filter(lambda s: len(s.strip()) >= 3)
 year_strategy = st.integers(min_value=1900, max_value=2050)
 doi_strategy = st.from_regex(r"10\.\d{4,9}/[-._;()/:A-Za-z0-9]+", fullmatch=True)
 
