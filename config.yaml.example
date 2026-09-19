@@ -44,6 +44,8 @@ rag:
   chunk_overlap: 200
   top_k_citations: 5
   similarity_threshold: 0.72
+  evidence_candidate_threshold: 0.25
+  evidence_support_threshold: 0.40
   academic_apis:
     semantic_scholar: true
     arxiv: true

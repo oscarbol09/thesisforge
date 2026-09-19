@@ -23,9 +23,13 @@ class CitationGuard:
         self,
         crossref_client: CrossRefClient,
         llm_router: LLMRouter | None = None,
+        candidate_threshold: float = 0.25,
+        support_threshold: float = 0.40,
     ) -> None:
         self.crossref = crossref_client
         self.llm = llm_router
+        self.candidate_threshold = candidate_threshold
+        self.support_threshold = support_threshold
 
     async def verify_doi(self, doi: str) -> bool:
         """Query official CrossRef registry to verify DOI existence."""
@@ -78,7 +82,7 @@ class CitationGuard:
             if score > max_score:
                 max_score = score
 
-            if score >= 0.25:  # Overlap threshold for candidate relevance
+            if score >= self.candidate_threshold:  # Overlap threshold for candidate relevance
                 cit = CitationDTO(
                     doi=chunk.doi,
                     title=chunk.title or f"Documento {chunk.document_id}",
@@ -89,7 +93,7 @@ class CitationGuard:
                     section_name=chunk.section_name,
                     page_number=chunk.page_number,
                     relevance_score=round(score, 3),
-                    supports_claim=score >= 0.40,
+                    supports_claim=score >= self.support_threshold,
                     evidence_text=chunk.text[:1000],
                 )
                 cit.apa_formatted = APA7Formatter.format_reference_entry(cit)
@@ -127,7 +131,7 @@ class CitationGuard:
                     extra={"error": str(e)},
                 )
 
-        is_supported = max_score >= 0.40
+        is_supported = max_score >= self.support_threshold
         return EvidenceVerdictDTO(
             claim=clean_claim,
             is_supported=is_supported,

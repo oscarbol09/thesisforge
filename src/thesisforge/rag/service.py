@@ -37,6 +37,8 @@ class RAGService:
         llm_router: LLMRouter | None = None,
         persist_dir: str = "data/chroma",
         is_memory: bool = False,
+        candidate_threshold: float = 0.25,
+        support_threshold: float = 0.40,
     ) -> None:
         self.db = db_manager
         self.repo = project_repo
@@ -63,6 +65,8 @@ class RAGService:
         self.citation_guard = CitationGuard(
             crossref_client=self.crossref,
             llm_router=self.llm,
+            candidate_threshold=candidate_threshold,
+            support_threshold=support_threshold,
         )
 
     async def search_literature(

@@ -17,6 +17,8 @@ def test_default_app_settings(monkeypatch: pytest.MonkeyPatch):
     assert settings.port == 8000
     assert settings.default_provider == "openrouter"
     assert settings.rag.chunk_size == 1500
+    assert settings.rag.evidence_candidate_threshold == 0.25
+    assert settings.rag.evidence_support_threshold == 0.40
 
 
 def test_load_yaml_config_non_existent():
@@ -37,6 +39,8 @@ providers:
 rag:
   chunk_size: 1000
   chunk_overlap: 150
+  evidence_candidate_threshold: 0.30
+  evidence_support_threshold: 0.50
 """,
         encoding="utf-8",
     )
@@ -44,6 +48,8 @@ rag:
     data = load_yaml_config(yaml_file)
     assert data["providers"]["default_provider"] == "gemini"
     assert data["rag"]["chunk_size"] == 1000
+    assert data["rag"]["evidence_candidate_threshold"] == 0.30
+    assert data["rag"]["evidence_support_threshold"] == 0.50
 
 
 def test_load_yaml_config_malformed(tmp_path: Path):
@@ -63,3 +69,5 @@ def test_get_settings_integration():
     assert settings.app_name == "ThesisForge"
     assert "openrouter" in settings.providers
     assert settings.rag.chunk_size == 1500
+    assert settings.rag.evidence_candidate_threshold == 0.25
+    assert settings.rag.evidence_support_threshold == 0.40

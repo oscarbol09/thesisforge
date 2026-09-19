@@ -4,7 +4,6 @@ import re
 from typing import Any
 
 import defusedxml.ElementTree as ET
-import httpx
 from tenacity import (
     AsyncRetrying,
     retry_if_exception,
@@ -24,25 +23,22 @@ ATOM_NS = {"atom": "http://www.w3.org/2005/Atom", "arxiv": "http://arxiv.org/sch
 
 
 class ArxivClient(BaseAcademicClient):
-    """Client for ArXiv query API."""
+    """Client for ArXiv query API using defusedxml for safe Atom feed parsing."""
 
     def __init__(
         self,
         cache: LiteratureCache | None = None,
         timeout_seconds: float = 15.0,
         max_retries: int = 3,
+        user_agent: str = "ThesisForge/0.1.0 (https://github.com/oscarbol09/thesisforge; mailto:thesisforge@academic.org)",
     ) -> None:
-        self.base_url = "https://export.arxiv.org/api/query"
-        self.timeout = timeout_seconds
-        self.max_retries = max_retries
+        super().__init__(
+            base_url="https://export.arxiv.org/api/query",
+            timeout_seconds=timeout_seconds,
+            max_retries=max_retries,
+            user_agent=user_agent,
+        )
         self.cache = cache
-        self.user_agent = "ThesisForge/0.1.0 (https://github.com/oscarbol09/thesisforge; mailto:thesisforge@academic.org)"
-        self._client: httpx.AsyncClient | None = None
-
-    async def close(self) -> None:
-        if self._client and not self._client.is_closed:
-            await self._client.aclose()
-            self._client = None
 
     async def search(
         self,
@@ -83,20 +79,14 @@ class ArxivClient(BaseAcademicClient):
             reraise=True,
         )
 
-        if self._client is None or self._client.is_closed:
-            self._client = httpx.AsyncClient(
-                timeout=httpx.Timeout(self.timeout),
-                headers={"User-Agent": self.user_agent},
-                follow_redirects=True,
-            )
-
         xml_text = ""
         try:
-            async for attempt in retrier:
-                with attempt:
-                    resp = await self._client.get(self.base_url, params=params)
-                    resp.raise_for_status()
-                    xml_text = resp.text
+            async with self.get_client() as client:
+                async for attempt in retrier:
+                    with attempt:
+                        resp = await client.get(self.base_url, params=params)
+                        resp.raise_for_status()
+                        xml_text = resp.text
         except Exception as e:
             logger.warning(
                 "ArXiv search request failed.",

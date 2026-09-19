@@ -71,4 +71,6 @@ def get_rag_service(
         project_repo=project_repo,
         llm_router=llm_router,
         persist_dir=settings.rag.chroma_dir,
+        candidate_threshold=settings.rag.evidence_candidate_threshold,
+        support_threshold=settings.rag.evidence_support_threshold,
     )

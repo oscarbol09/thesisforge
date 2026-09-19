@@ -116,3 +116,43 @@ async def test_citation_guard_claim_evidence_evaluation():
     assert verdict.supporting_chunks[0].supports_claim is True
 
     await crossref.close()
+
+
+@pytest.mark.asyncio
+async def test_citation_guard_custom_thresholds():
+    """Verify CitationGuard respects custom candidate and support thresholds."""
+    crossref = CrossRefClient()
+    # Stricter thresholds: candidate >= 0.8, support >= 0.9
+    strict_guard = CitationGuard(
+        crossref_client=crossref,
+        candidate_threshold=0.80,
+        support_threshold=0.90,
+    )
+
+    chunks = [
+        DocumentChunkDTO(
+            id="c2",
+            document_id="d2",
+            project_id="p2",
+            title="Transformer Architecture",
+            doi="10.1000/trans",
+            authors=["Vaswani, Ashish"],
+            year=2017,
+            page_number=1,
+            chunk_index=0,
+            section_name="Abstract",
+            text="The dominant sequence transduction models are based on complex recurrent or convolutional neural networks.",
+            char_start=0,
+            char_end=110,
+        )
+    ]
+
+    # Moderate overlap (~0.5) will be rejected under strict candidate threshold (0.80)
+    verdict = await strict_guard.verify_claim_evidence(
+        claim="Transformer models replace recurrent and convolutional neural networks completely.",
+        retrieved_chunks=chunks,
+    )
+    assert verdict.is_supported is False
+    assert len(verdict.supporting_chunks) == 0
+
+    await crossref.close()

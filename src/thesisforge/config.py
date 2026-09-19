@@ -32,6 +32,8 @@ class RAGSettings(BaseModel):
     similarity_threshold: float = 0.72
     cache_ttl_hours: int = 48
     chroma_dir: str = "data/chroma"
+    evidence_candidate_threshold: float = 0.25
+    evidence_support_threshold: float = 0.40
     academic_apis: dict[str, bool] = Field(
         default_factory=lambda: {
             "semantic_scholar": True,
