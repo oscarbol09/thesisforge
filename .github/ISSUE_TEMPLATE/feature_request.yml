@@ -1,37 +1,38 @@
-name: ✨ Feature Request
-description: Suggest a new feature or improvement for ThesisForge
-title: "[FEAT]: "
+name: Solicitud de Funcionalidad
+description: Sugiere una nueva funcionalidad o mejora técnica para ThesisForge
+title: "[PROPUESTA]: "
 labels: ["enhancement"]
 body:
   - type: markdown
     attributes:
       value: |
-        Thank you for suggesting an enhancement for ThesisForge!
+        ¡Gracias por sugerir una mejora para ThesisForge!
   - type: textarea
     id: problem
     attributes:
-      label: Problem or Use Case
-      description: Is your feature request related to a problem or a research workflow friction?
-      placeholder: As a postgraduate researcher, I need to...
+      label: Problema o Caso de Uso
+      description: ¿Tu solicitud está relacionada con una necesidad en el flujo de investigación académica?
+      placeholder: Como estudiante o investigador, necesito...
     validations:
       required: true
   - type: textarea
     id: solution
     attributes:
-      label: Proposed Solution
-      description: Describe the solution you'd like to see implemented.
-      placeholder: Add support for exporting directly to Overleaf / LaTeX...
+      label: Solución Propuesta
+      description: Describe la solución o comportamiento que te gustaría ver implementado.
+      placeholder: Añadir soporte para exportar directamente a formato LaTeX / Overleaf...
     validations:
       required: true
   - type: textarea
     id: alternatives
     attributes:
-      label: Alternatives Considered
-      description: Any alternative solutions or features you've considered.
+      label: Alternativas Consideradas
+      description: Cualquier solución o enfoque alternativo que hayas evaluado.
   - type: checkboxes
     id: contribution
     attributes:
-      label: Would you be willing to submit a Pull Request?
+      label: ¿Te gustaría colaborar con un Pull Request?
       options:
-        - label: Yes, I can implement this feature!
-        - label: I can help test and provide feedback.
+        - label: Sí, puedo implementar esta funcionalidad.
+        - label: Puedo ayudar probando y dando retroalimentación.
+

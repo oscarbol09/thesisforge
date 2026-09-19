@@ -1,129 +1,110 @@
-# Contributing to ThesisForge 🔨
+# Guía de Contribución a ThesisForge
 
-First off, thank you for considering contributing to **ThesisForge**! It's people like you that make ThesisForge a great, ethical, and rigorous tool for students and researchers around the world.
-
-Please take a moment to review this document to ensure a smooth and productive collaboration.
+Gracias por tu interés en contribuir a **ThesisForge**. El objetivo de este proyecto es ofrecer a estudiantes e investigadores hispanohablantes una herramienta rigurosa, ética y transparente para estructurar trabajos de grado e investigaciones académicas.
 
 ---
 
-## Code of Conduct
+## Código de Conducta
 
-By participating in this project, you agree to abide by our [Code of Conduct](CODE_OF_CONDUCT.md). Please report any unacceptable behavior to the project maintainers.
-
----
-
-## How Can I Contribute?
-
-### 1. Open Contribution Areas (High Priority 🌟)
-
-We actively welcome contributions in the following areas:
-- **Academic Source Connectors:** Adding new literature search drivers (e.g., PubMed, IEEE Xplore, DOAJ, OpenAlex, Scopus).
-- **Export Formats:** Implementing LaTeX / Overleaf (`.tex` + `.bib`) or Markdown exports alongside our APA 7 `.docx` pipeline.
-- **Citation Styles:** Adding support for IEEE, Vancouver, Chicago, or Harvard citation styles.
-- **Reference Managers:** Local integrations with Zotero or Mendeley APIs.
-- **Internationalization (i18n):** Translating the UI strings into additional languages (Portuguese, French, German, etc.).
-- **Methodological Advisors:** Expanding guided question trees for qualitative, quantitative, mixed, and experimental research designs.
-
-Check out our issues labeled [`good first issue`](https://github.com/oscarbol09/thesisforge/labels/good%20first%20issue) or [`help wanted`](https://github.com/oscarbol09/thesisforge/labels/help%20wanted).
+Al participar en este proyecto, te comprometes a respetar nuestro [Código de Conducta](CODE_OF_CONDUCT.md). Cualquier comportamiento que vulnere un ambiente de respeto debe reportarse al mantenedor del repositorio.
 
 ---
 
-## Development Setup
+## Áreas Abiertas de Contribución
 
-### Prerequisites
+Aceptamos activamente contribuciones en las siguientes áreas técnicas:
+
+1. **Conectores de literatura académica:** Integración de nuevos motores de búsqueda abierta (por ejemplo, PubMed Central, Europe PMC, IEEE Xplore, DOAJ, OpenAlex, Scielo o Redalyc).
+2. **Motores de exportación:** Generación de formatos adicionales como LaTeX / Overleaf (`.tex` y `.bib`) o Markdown estructurado junto con el pipeline actual de Word APA 7 (`.docx`).
+3. **Estilos de citación:** Soporte para normas adicionales como IEEE, Vancouver, Chicago o Harvard.
+4. **Gestores bibliográficos:** Sincronización local con bibliotecas de Zotero o Mendeley.
+5. **Asesor metodológico:** Ampliación del árbol de validación y preguntas para diseños experimentales, cualitativos puros o estudios etnográficos.
+
+Revisa los problemas marcados con las etiquetas [`good first issue`](https://github.com/oscarbol09/thesisforge/labels/good%20first%20issue) o [`help wanted`](https://github.com/oscarbol09/thesisforge/labels/help%20wanted).
+
+---
+
+## Configuración del Entorno de Desarrollo
+
+### Requisitos previos
 - **Python:** `>= 3.10`
-- **Package Manager:** [`uv`](https://github.com/astral-sh/uv) (strongly recommended) or `pip`
+- **Gestor de paquetes:** [`uv`](https://github.com/astral-sh/uv) (recomendado) o `pip`
 - **Git**
 
-### Step-by-Step Setup
+### Pasos de instalación
 
 ```bash
-# 1. Fork the repository on GitHub and clone your fork:
-git clone https://github.com/<your-username>/thesisforge.git
+# 1. Clona tu bifurcación (fork) del repositorio:
+git clone https://github.com/<tu-usuario>/thesisforge.git
 cd thesisforge
 
-# 2. Create and activate a virtual environment with uv:
+# 2. Crea y activa el entorno virtual con uv:
 uv venv .venv
 
-# On Linux / macOS:
+# En Linux / macOS:
 source .venv/bin/activate
-# On Windows (PowerShell):
+# En Windows (PowerShell):
 .venv\Scripts\activate
 
-# 3. Install dependencies with dev tools in editable mode:
-uv pip install -e ".[dev]"
+# 3. Instala las dependencias y herramientas de desarrollo en modo editable:
+uv pip install -e ".[dev,docs]"
 
-# 4. Copy environment configuration:
+# 4. Configura los archivos de entorno iniciales:
 cp .env.example .env
 cp config.yaml.example config.yaml
 ```
 
 ---
 
-## Development & Engineering Principles
+## Principios de Ingeniería y Calidad
 
-To maintain staff-level software quality and eliminate AI-generated code smells, all contributions must strictly adhere to these principles:
+Para mantener un estándar de código profesional y evitar patrones de código autogenerado de baja calidad, toda contribución debe cumplir con:
 
-### 1. Strict Async Non-Blocking I/O
-- **NEVER** block the event loop in `async def` with `requests.get()`, `time.sleep()`, or synchronous file I/O.
-- Always use `httpx.AsyncClient`, `asyncio.sleep()`, and `aiofiles`.
+### 1. I/O Asíncrono No Bloqueante
+- **Prohibido** bloquear el bucle de eventos (`Event Loop`) en funciones `async def` mediante `requests.get()`, `time.sleep()` o llamadas a disco síncronas.
+- Utiliza siempre `httpx.AsyncClient`, `asyncio.sleep()` y `aiofiles`.
 
-### 2. Strict UTC Timestamps
-- **NEVER** use naive `datetime.now()`. Always use timezone-aware `datetime.now(timezone.utc)`.
+### 2. Manejo Estricto de Marcas de Tiempo UTC
+- **Prohibido** el uso de `datetime.now()` sin zona horaria. Emplea exclusivamente `datetime.now(timezone.utc)` o las utilidades de `thesisforge.core.time`.
 
-### 3. Application Security & AppSec
-- **SSRF Defense:** All external URLs fetched for papers or PDFs must resolve DNS and be verified against private IP ranges (`127.0.0.0/8`, `10.0.0.0/8`, `192.168.0.0/16`, `169.254.0.0/16`, etc.) using our `SSRFGuard`.
-- **Log Injection (CWE-117):** Sanitize carriage returns (`\r`, `\n`) and never log raw API keys or tokens.
-- **Formula Injection Defense:** Prefix spreadsheet/table cells starting with `=`, `+`, `-`, `@` with an apostrophe (`'`).
+### 3. Seguridad de Aplicaciones (AppSec)
+- **Defensa SSRF:** Toda URL externa procesada para descargar literatura o PDFs debe validar su resolución DNS contra rangos privados (`127.0.0.0/8`, `10.0.0.0/8`, `192.168.0.0/16`, `169.254.0.0/16`, etc.) mediante `assert_safe_academic_url`.
+- **Inyección de Logs (CWE-117):** Sanitiza retornos de carro (`\r`, `\n`) antes de registrar entradas de usuario y nunca imprimas claves de API o tokens en texto plano.
+- **Inyección de Fórmulas:** Prefija con un apóstrofe (`'`) cualquier celda de tabla exportada que inicie con `=`, `+`, `-`, `@` o tabulaciones.
 
-### 4. Layered Architecture
-Maintain strict one-way dependency flow:
-$$\text{API Routers (DTOs)} \longrightarrow \text{Services (Domain Logic)} \longrightarrow \text{Repositories (Persistence)}$$
-
----
-
-## Running Tests & Quality Gates
-
-Before submitting any Pull Request, ensure all quality gates pass:
-
-```bash
-# 1. Run the hermetic test suite with coverage:
-pytest tests/ -v --cov=thesisforge
-
-# 2. Check formatting and linting:
-ruff check src/ tests/
-ruff format --check src/ tests/
-
-# 3. Strict static type analysis:
-mypy --strict src/
-
-# 4. Security SAST audit:
-bandit -r src/ -ll
-```
+### 4. Arquitectura en Capas
+Respeta el flujo de dependencias unidireccional:
+$$\text{Routers (DTOs)} \longrightarrow \text{Servicios (Lógica de Dominio)} \longrightarrow \text{Repositorios (Persistencia / SQLite)}$$
 
 ---
 
-## Pull Request Guidelines
+## Pasos para Enviar un Pull Request
 
-1. **Create a descriptive feature branch:**
+1. **Crea una rama descriptiva para tu cambio:**
    ```bash
-   git checkout -b feat/pubmed-connector
-   # or
-   git checkout -b fix/ssrf-dns-resolution
+   git checkout -b feat/conector-pubmed
+   # o
+   git checkout -b fix/resolucion-dns-ssrf
    ```
-2. **Follow Conventional Commits:**
-   - `feat: add PubMed literature fetcher with async httpx client`
+2. **Usa la convención de Conventional Commits (en inglés):**
+   - `feat: add PubMed literature client with async httpx transport`
    - `fix: prevent duplicate DOI insertion in project bibliography`
    - `docs: update BYOK configuration guide for local Ollama`
    - `test: add hypothesis property tests for APA 7 reference formatter`
-3. **Include tests:** Every new feature or bug fix must be covered by hermetic tests.
-4. **Open a PR:** Fill out our [PR Template](.github/PULL_REQUEST_TEMPLATE.md) and link the relevant issue.
+3. **Ejecuta las compuertas de calidad locales antes de enviar el PR:**
+   ```bash
+   # Suite de pruebas con cobertura de ramas
+   uv run pytest tests/ -v --cov=thesisforge --cov-report=term-missing
 
----
+   # Análisis estático de tipos
+   uv run mypy
 
-## Community & Questions
+   # Linter y formato de código
+   uv run ruff check src/ tests/
+   uv run ruff format --check src/ tests/
 
-- **Discussions:** Use [GitHub Discussions](https://github.com/oscarbol09/thesisforge/discussions) for general questions, feature brainstorming, or methodology design discussions.
-- **Issues:** Use [GitHub Issues](https://github.com/oscarbol09/thesisforge/issues) for reproducible bug reports or structured RFCs.
+   # Auditoría de seguridad SAST
+   uv run bandit -r src/ -ll
+   ```
+4. **Abre el Pull Request en GitHub:** Completa la plantilla de PR detallando el contexto y la motivación del cambio.
 
-Thank you for building ThesisForge with us! 🚀

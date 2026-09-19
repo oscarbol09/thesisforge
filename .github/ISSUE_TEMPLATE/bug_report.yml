@@ -1,61 +1,62 @@
-name: 🐛 Bug Report
-description: Report a reproducible bug or unexpected behavior in ThesisForge
+name: Reporte de Error
+description: Reporta un error reproducible o comportamiento inesperado en ThesisForge
 title: "[BUG]: "
 labels: ["bug", "triage"]
 body:
   - type: markdown
     attributes:
       value: |
-        Thanks for taking the time to report a bug in ThesisForge! Please fill out the form below to help us reproduce and resolve the issue quickly.
+        Gracias por tomarte el tiempo de reportar un problema en ThesisForge. Por favor completa los campos a continuación para ayudarnos a reproducir y resolver el fallo rápidamente.
   - type: textarea
     id: description
     attributes:
-      label: Bug Description
-      description: A clear and concise description of what the bug is.
-      placeholder: When I try to run the advisor service...
+      label: Descripción del Error
+      description: Una explicación clara y concisa de lo que ocurrió.
+      placeholder: Al intentar ejecutar el asesor metodológico...
     validations:
       required: true
   - type: dropdown
     id: component
     attributes:
-      label: Affected Component
+      label: Componente Afectado
       options:
-        - "Advisor Engine (State Machine / Validators)"
-        - "RAG Service & Literature Search"
-        - "LLM Router & BYOK Providers"
-        - "FastAPI Backend & API Endpoints"
-        - "Desktop GUI / PyWebView"
-        - "Document Export (DOCX APA 7)"
-        - "Security & Key Vault"
-        - "Other"
+        - "Asesor Metodológico (Máquina de estados / Validadores)"
+        - "Servicio RAG y Búsqueda de Literatura"
+        - "Router LLM y Proveedores BYOK"
+        - "Backend FastAPI y Endpoints REST"
+        - "Interfaz de Escritorio (PyWebView)"
+        - "Exportación de Documentos (DOCX APA 7)"
+        - "Seguridad y Bóveda de Claves"
+        - "Otro"
     validations:
       required: true
   - type: textarea
     id: reproduction
     attributes:
-      label: Steps to Reproduce
-      description: Step-by-step instructions to reproduce the problem.
+      label: Pasos para Reproducir
+      description: Instrucciones paso a paso para reproducir el problema.
       placeholder: |
-        1. Start the API with 'thesisforge run'
-        2. Send POST to /api/advisor/respond with payload...
-        3. See error...
+        1. Iniciar la API con 'thesisforge run'
+        2. Enviar POST a /api/advisor/respond con payload...
+        3. Se observa el siguiente error...
     validations:
       required: true
   - type: textarea
     id: environment
     attributes:
-      label: Environment Info
-      description: OS, Python version, ThesisForge version, LLM Provider (if applicable).
+      label: Información del Entorno
+      description: Sistema operativo, versión de Python, versión de ThesisForge y proveedor LLM (si aplica).
       value: |
-        - OS: [e.g. Windows 11, macOS Sequoia, Ubuntu 22.04]
-        - Python Version: [e.g. 3.10.12, 3.12.2]
-        - ThesisForge Version: [e.g. 0.1.0]
-        - LLM Provider: [e.g. OpenRouter, Gemini, Ollama (Llama-3)]
+        - Sistema Operativo: [ej. Windows 11, macOS Sequoia, Ubuntu 22.04]
+        - Versión de Python: [ej. 3.10.12, 3.12.2]
+        - Versión de ThesisForge: [ej. 0.1.0]
+        - Proveedor LLM: [ej. OpenRouter, Gemini, Ollama (Llama-3)]
     validations:
       required: true
   - type: textarea
     id: logs
     attributes:
-      label: Relevant Logs / Stack Trace
-      description: Please paste any relevant error output or stack trace.
+      label: Logs o Trazas de Error
+      description: Pega aquí cualquier salida de consola o traza de error relevante.
       render: shell
+

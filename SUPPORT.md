@@ -1,41 +1,44 @@
-# Support & Community Resources 💬
+# Recursos de Soporte y Comunidad
 
-Welcome to the **ThesisForge** community! We are committed to providing helpful support for researchers, students, and open-source contributors.
-
----
-
-## ❓ Where to Get Help
-
-### 1. GitHub Discussions (Recommended for General Questions)
-If you have questions about how to use ThesisForge, configuring specific local models (Ollama/VLLM), methodology workflows, or ideas for research projects, please start a discussion:
-👉 [Join GitHub Discussions](https://github.com/oscarbol09/thesisforge/discussions)
-
-Categories:
-- **Q&A:** Ask questions about installation, BYOK setup, or features.
-- **Methodology & Research Ideas:** Share feedback on research trees and thesis formulation.
-- **Show and Tell:** Share papers or research structures forged with ThesisForge.
+¡Te damos la bienvenida a la comunidad de **ThesisForge**! Estamos comprometidos con brindar soporte a investigadores, estudiantes y desarrolladores de código abierto.
 
 ---
 
-### 2. GitHub Issues (For Bugs & Actionable Feature Requests)
-If you encountered a reproducible bug or want to submit an RFC for a new academic driver:
-👉 [Open an Issue](https://github.com/oscarbol09/thesisforge/issues)
+## Canales de Ayuda
 
-Please use the appropriate issue template:
-- [Bug Report](.github/ISSUE_TEMPLATE/bug_report.yml)
-- [Feature Request](.github/ISSUE_TEMPLATE/feature_request.yml)
-- [Academic Source RFC](.github/ISSUE_TEMPLATE/academic_source_rfc.yml)
+### 1. GitHub Discussions (Preguntas Generales y Metodología)
+Si tienes dudas sobre el uso de ThesisForge, configuración de modelos locales (Ollama/vLLM), flujos metodológicos o ideas para proyectos de investigación:
+👉 [Participa en GitHub Discussions](https://github.com/oscarbol09/thesisforge/discussions)
 
----
-
-### 3. Security Vulnerabilities
-To report a security vulnerability, please follow our [Security Policy](SECURITY.md) and report it privately via GitHub Security Advisories.
+Categorías disponibles:
+- **Preguntas y Respuestas (Q&A):** Dudas sobre instalación, configuración BYOK o funciones.
+- **Metodología e Ideas de Investigación:** Retroalimentación sobre árboles de decisión y formulación de tesis.
+- **Proyectos Forjados:** Comparte estructuras de tesis o investigaciones elaboradas con ThesisForge.
 
 ---
 
-## 📚 Documentation
+## Reporte de Errores y Solicitudes de Funcionalidades
 
-Detailed documentation and guides are available at:
-- [ThesisForge Documentation](https://oscarbol09.github.io/thesisforge/) *(Coming soon)*
-- [Architecture Deep Dive](ARCHITECTURE.md)
-- [Contributing Guide](CONTRIBUTING.md)
+Si encontraste un fallo reproducible o deseas proponer un conector para un repositorio científico:
+👉 [Abrir una Incidencia en GitHub Issues](https://github.com/oscarbol09/thesisforge/issues)
+
+Por favor utiliza la plantilla correspondiente:
+- [Reporte de Error (.github/ISSUE_TEMPLATE/bug_report.yml)](.github/ISSUE_TEMPLATE/bug_report.yml)
+- [Solicitud de Funcionalidad (.github/ISSUE_TEMPLATE/feature_request.yml)](.github/ISSUE_TEMPLATE/feature_request.yml)
+- [RFC para Fuente Académica (.github/ISSUE_TEMPLATE/academic_source_rfc.yml)](.github/ISSUE_TEMPLATE/academic_source_rfc.yml)
+
+---
+
+## Vulnerabilidades de Seguridad
+
+Para reportar una vulnerabilidad de seguridad, por favor revisa nuestra [Política de Seguridad](SECURITY.md) y repórtala de forma privada mediante GitHub Security Advisories.
+
+---
+
+## Documentación Oficial
+
+Puedes consultar guías detalladas en:
+- [Documentación de ThesisForge](https://oscarbol09.github.io/thesisforge/)
+- [Arquitectura del Sistema](ARCHITECTURE.md)
+- [Guía de Contribución](CONTRIBUTING.md)
+

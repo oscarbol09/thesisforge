@@ -1,71 +1,71 @@
-# ThesisForge Roadmap 🗺️
+# Roadmap del Proyecto
 
-This document outlines the strategic product and engineering roadmap for **ThesisForge**. 
-
----
-
-## 🎯 Vision Statement
-
-Empower researchers and university students to forge scientifically rigorous, hallucination-free, and ethically sound research projects with structured AI guidance, verified academic literature (RAG), and complete data ownership (BYOK / Local-first).
+Este documento describe el plan estratégico de desarrollo técnico y evolución de **ThesisForge**.
 
 ---
 
-## 📍 Release Roadmap
+## Declaración de Visión
+
+Permitir a estudiantes de pregrado, posgrado e investigadores estructurar proyectos de grado rigurosos, libres de alucinaciones y con coherencia metodológica estricta mediante IA explicable, búsqueda indexada de literatura científica real (RAG) y control total de sus datos (BYOK y local-first).
+
+---
+
+## Fases de Lanzamiento
 
 ```mermaid
 gantt
-    title ThesisForge Release Roadmap
+    title Roadmap de Lanzamientos de ThesisForge
     dateFormat  YYYY-MM
-    section Core & Advisor
-    v0.1.0 Foundation & State Machine      :done,    des1, 2026-08, 2026-09
-    section Literature RAG
-    v0.2.0 Semantic Scholar, ArXiv & Vectors :active,  des2, 2026-09, 2026-10
-    section Drafting & APA 7
-    v0.3.0 Modular Chapter Generation & DOCX :         des3, 2026-10, 2026-11
-    section Ecosystem & Desktop
-    v1.0.0 Standalone Binaries & LaTeX Export :         des4, 2026-11, 2026-12
+    section Core y Asesor
+    v0.1.0 Fundaciones y Máquina de Estados       :done,    des1, 2026-08, 2026-09
+    section Literatura RAG
+    v0.2.0 Semantic Scholar, ArXiv y Vectores    :active,  des2, 2026-09, 2026-10
+    section Redacción y APA 7
+    v0.3.0 Redacción Modular y DOCX APA 7        :         des3, 2026-10, 2026-11
+    section Distribución y Escritorio
+    v1.0.0 Binarios de Escritorio y LaTeX        :         des4, 2026-11, 2026-12
 ```
 
 ---
 
-### 🟢 Phase 1: Foundation & Methodological Advisor (v0.1.0) — [Current]
-- [x] Modern async architecture with FastAPI, Pydantic v2, and SQLAlchemy 2.0 / aiosqlite.
-- [x] State-machine driven Methodological Advisor for problem statement, objectives, and hypotheses.
-- [x] Multi-provider BYOK LLM Router (LiteLLM, OpenRouter, Gemini, Groq, Ollama, OpenAI) with retry policies.
-- [x] Enterprise AppSec core: SSRF Guard, Fernet local key encryption, and structured logging.
-- [x] Hermetic CI/CD test matrix across Python 3.10–3.12 (Ubuntu, Windows).
+### Fase 1: Fundaciones y Asesor Metodológico (v0.1.0) — [Completada]
+- [x] Arquitectura asíncrona moderna con FastAPI, Pydantic v2 y SQLAlchemy 2.0 / aiosqlite.
+- [x] Asesor Metodológico guiado por máquina de estados determinista para planteamiento del problema, objetivos y consistencia de hipótesis.
+- [x] Router LLM multi-proveedor BYOK (LiteLLM, OpenRouter, Gemini, Groq, Ollama, OpenAI, Anthropic) con políticas de reintento.
+- [x] Core de seguridad AppSec: SSRF Guard, cifrado local de claves con Fernet y logging estructurado JSON con prevención CWE-117.
+- [x] Matriz de pruebas CI/CD hermética en Python 3.10–3.12 (Ubuntu, Windows).
 
 ---
 
-### 🟡 Phase 2: Academic Literature RAG Engine (v0.2.0)
-- [ ] Direct async connectors for **Semantic Scholar Graph API**, **ArXiv**, and **CrossRef**.
-- [ ] Local vector store integration (ChromaDB / SQLite-vec) for user-uploaded research PDFs.
-- [ ] Lexical and semantic contextual chunking (1500 chars, 200 overlap with token rankers).
-- [ ] Anti-Hallucination verification gate: automatic DOI/cross-referencing check before citation generation.
-- [ ] PubMed and Europe PMC open connector integration.
+### Fase 2: Motor RAG y Búsqueda de Literatura Real (v0.2.0) — [En Desarrollo]
+- [ ] Conectores asíncronos directos para **Semantic Scholar Graph API**, **ArXiv** y **CrossRef**.
+- [ ] Almacenamiento vectorial local (ChromaDB) para artículos PDF cargados por el usuario.
+- [ ] Chunking contextual léxico y semántico (1500 caracteres, 200 de solapamiento).
+- [ ] Compuerta anti-alucinaciones con verificación de DOI antes de sugerir citas.
+- [ ] Formateador estricto de citaciones en texto y referencias bajo normas APA 7ª edición.
 
 ---
 
-### 🟡 Phase 3: Modular Drafting & APA 7 Formatting (v0.3.0)
-- [ ] Hierarchical chapter drafting memory (ensuring Chapter 3 Methodology inherits Chapter 1 Objectives).
-- [ ] APA 7th edition DOCX export engine with automatic running head, title page, and table formatting.
-- [ ] Formula injection sanitization on all exported tabular data.
-- [ ] Real-time token streaming via WebSockets with `aria-live` accessible UI components.
-- [ ] Interactive Web UI with Tailwind CSS and Alpine.js.
+### Fase 3: Redacción Modular y Compilación APA 7 (v0.3.0)
+- [ ] Memoria jerárquica contextual por capítulos (garantiza que el Capítulo 3 de Metodología herede los Objetivos del Capítulo 1).
+- [ ] Compilador de documentos Word (`.docx`) formateados estrictamente según APA 7 (portada, márgenes de 2.54 cm, sangría francesa y tablas).
+- [ ] Sanitización contra inyección de fórmulas en todas las tablas exportadas.
+- [ ] Streaming de tokens en tiempo real vía WebSockets.
+- [ ] Interfaz web interactiva con Tailwind CSS y Alpine.js.
 
 ---
 
-### 🔵 Phase 4: Desktop Distribution & Ecosystem (v1.0.0)
-- [ ] PyWebView standalone desktop application packaging (`.exe` for Windows, `.dmg` for macOS, AppImage for Linux).
-- [ ] Automated PyPI release (`pip install thesisforge`).
-- [ ] LaTeX & Overleaf export engine (`.tex` + `.bib` files).
-- [ ] Native Zotero and Mendeley local library sync via SQLite / local APIs.
-- [ ] Multilingual methodological interview templates (English, Spanish, Portuguese).
+### Fase 4: Distribución de Escritorio y Ecosistema (v1.0.0)
+- [ ] Empaquetado ejecutable de escritorio standalone con PyWebView (`.exe` para Windows, `.dmg` para macOS, AppImage para Linux).
+- [ ] Publicación del paquete en PyPI (`pip install thesisforge`).
+- [ ] Motor de exportación a LaTeX / Overleaf (archivos `.tex` y `.bib`).
+- [ ] Sincronización local con bibliotecas de Zotero y Mendeley.
 
 ---
 
-## 💡 How to Propose a Roadmap Item
+## Cómo Proponer una Funcionalidad
 
-Have an idea for ThesisForge?
-- Open a discussion on [GitHub Discussions](https://github.com/oscarbol09/thesisforge/discussions).
-- Submit a structured [Feature Request](.github/ISSUE_TEMPLATE/feature_request.yml) or [Academic Source RFC](.github/ISSUE_TEMPLATE/academic_source_rfc.yml).
+¿Tienes una propuesta o mejora para ThesisForge?
+- Inicia una discusión en [GitHub Discussions](https://github.com/oscarbol09/thesisforge/discussions).
+- Envía una solicitud estructurada usando las plantillas de incidencias del repositorio.
+

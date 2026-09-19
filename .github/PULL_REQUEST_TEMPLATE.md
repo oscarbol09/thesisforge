@@ -1,44 +1,45 @@
-## 📌 Description
+## Descripción del Cambio
 
-Please include a summary of the change and which issue it fixes. Also include relevant context, motivation, and design decisions.
+Por favor incluye un resumen claro del cambio, su motivación y qué problema resuelve. Menciona las decisiones de diseño relevantes.
 
-Fixes # (issue)
-
----
-
-## 🛠️ Type of Change
-
-- [ ] 🐛 Bug fix (non-breaking change which fixes an issue)
-- [ ] ✨ New feature (non-breaking change which adds functionality)
-- [ ] 📚 Documentation update (docs, tutorials, guidelines)
-- [ ] ⚡ Performance optimization
-- [ ] 🛡️ Security enhancement (SSRF, sanitization, encryption)
-- [ ] 🧪 Testing improvement (new unit, integration, or property tests)
-- [ ] 💥 Breaking change (fix or feature that would cause existing functionality to not work as expected)
+Corrige o se relaciona con # (número de issue)
 
 ---
 
-## ✅ Quality Checklist
+## Tipo de Cambio
 
-Please ensure the following checks pass before requesting a review:
+- [ ] Corrección de error (bug fix no disruptivo)
+- [ ] Nueva funcionalidad (feature)
+- [ ] Actualización de documentación (guías, referencias, tutoriales)
+- [ ] Optimización de rendimiento
+- [ ] Mejora de seguridad (SSRF, sanitización, cifrado)
+- [ ] Mejora en suite de pruebas (nuevas pruebas unitarias, de integración o de propiedades)
+- [ ] Cambio con impacto disruptivo (breaking change)
 
-- [ ] **Tests:** My changes include unit, integration, or property tests, and the full suite passes:
+---
+
+## Lista de Verificación de Calidad
+
+Por favor asegúrate de que se cumplan los siguientes puntos antes de solicitar una revisión:
+
+- [ ] **Pruebas Automatizadas:** Los cambios incluyen pruebas y la suite completa pasa con cobertura:
   ```bash
-  pytest tests/ -v --cov=thesisforge
+  uv run pytest tests/ -v --cov=thesisforge
   ```
-- [ ] **Type Checking:** Strict type analysis passes with zero errors:
+- [ ] **Chequeo Estricto de Tipos:** Mypy pasa sin errores:
   ```bash
-  mypy --strict src/
+  uv run mypy
   ```
-- [ ] **Linting & Formatting:** Code adheres to style guides with Ruff:
+- [ ] **Linter y Formato:** El código cumple con las reglas de Ruff:
   ```bash
-  ruff check src/ tests/
-  ruff format --check src/ tests/
+  uv run ruff check src/ tests/
+  uv run ruff format --check src/ tests/
   ```
-- [ ] **Security:** Bandit SAST audit reports zero medium/high severity issues:
+- [ ] **Auditoría de Seguridad:** Bandit no reporta incidentes de severidad media o alta:
   ```bash
-  bandit -r src/ -ll
+  uv run bandit -r src/ -ll
   ```
-- [ ] **Async Non-blocking:** No blocking calls (`requests.get`, `time.sleep`, sync I/O) in `async def`.
-- [ ] **UTC Timestamps:** All datetime instantiations use `timezone.utc`.
-- [ ] **Documentation:** I have updated relevant docstrings and documentation files (if applicable).
+- [ ] **I/O Asíncrono No Bloqueante:** No existen llamadas bloqueantes (`requests.get`, `time.sleep`, llamadas síncronas a disco) en funciones `async def`.
+- [ ] **Marcas de Tiempo UTC:** Todas las instancias de fecha y hora utilizan `timezone.utc`.
+- [ ] **Documentación:** Se actualizaron los docstrings y archivos de documentación relevantes (si aplica).
+
