@@ -1,12 +1,24 @@
-# ThesisForge
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/logo_dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="assets/logo_light.png">
+    <img src="assets/logo.png" alt="ThesisForge Logo" width="220">
+  </picture>
+</p>
 
-Asistente y forjador de proyectos de investigación académica con inteligencia artificial, búsqueda de literatura real indexada (RAG) y redacción modular por capítulos bajo normas APA 7ª edición. 100% compatible con tus propias claves de API (BYOK) y modelos locales.
+<h1 align="center">ThesisForge</h1>
 
-[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Python Version](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-blue)](https://www.python.org/downloads/)
-[![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg)](https://github.com/astral-sh/ruff)
-[![Type Checked: mypy](https://img.shields.io/badge/type_checked-mypy_strict-brightgreen.svg)](https://mypy.readthedocs.io/)
-[![Security: Bandit](https://img.shields.io/badge/security-bandit-yellow.svg)](https://github.com/PyCQA/bandit)
+<p align="center">
+  <em>Asistente y forjador de proyectos de investigación académica con inteligencia artificial, búsqueda de literatura real indexada (RAG) y redacción modular por capítulos bajo normas APA 7ª edición. 100% compatible con tus propias claves de API (BYOK) y modelos locales.</em>
+</p>
+
+<p align="center">
+  <a href="https://opensource.org/licenses/Apache-2.0"><img src="https://img.shields.io/badge/License-Apache_2.0-blue.svg" alt="License"></a>
+  <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-blue" alt="Python Version"></a>
+  <a href="https://github.com/astral-sh/ruff"><img src="https://img.shields.io/badge/code%20style-ruff-000000.svg" alt="Code style: ruff"></a>
+  <a href="https://mypy.readthedocs.io/"><img src="https://img.shields.io/badge/type_checked-mypy_strict-brightgreen.svg" alt="Type Checked: mypy"></a>
+  <a href="https://github.com/PyCQA/bandit"><img src="https://img.shields.io/badge/security-bandit-yellow.svg" alt="Security: Bandit"></a>
+</p>
 
 ---
 
