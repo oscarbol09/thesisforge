@@ -1,6 +1,6 @@
-# Guía de Instalación 📦
+# Guía de Instalación
 
-ThesisForge ofrece múltiples opciones de instalación según tu perfil:
+ThesisForge ofrece múltiples opciones de instalación según tu entorno y flujo de trabajo:
 
 ---
 

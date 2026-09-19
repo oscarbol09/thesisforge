@@ -1,4 +1,4 @@
-# RAG y Búsqueda de Literatura Real 📚
+# RAG y Búsqueda de Literatura Real
 
 Una de las principales debilidades de los modelos de lenguaje comercial (ChatGPT, Claude) es la invención de citas bibliográficas, autores y DOIs falsos (*alucinaciones*).
 
@@ -6,7 +6,7 @@ ThesisForge implementa un motor RAG (**Retrieval-Augmented Generation**) diseña
 
 ---
 
-## 🔍 Fuentes Indexadas en Tiempo Real
+## Fuentes Indexadas en Tiempo Real
 
 ThesisForge se conecta de manera asíncrona a las siguientes bases de datos científicas abiertas:
 
@@ -16,7 +16,7 @@ ThesisForge se conecta de manera asíncrona a las siguientes bases de datos cien
 
 ---
 
-## 📑 Búsqueda Vectorial Local (Tus Propios PDFs)
+## Búsqueda Vectorial Local (Tus Propios PDFs)
 
 Puedes subir tus propios archivos PDF (artículos, libros, tesis previas):
 - **Chunking Contextual:** División en fragmentos de 1500 caracteres con solapamiento de 200 caracteres para preservar la semántica del párrafo.
@@ -25,7 +25,7 @@ Puedes subir tus propios archivos PDF (artículos, libros, tesis previas):
 
 ---
 
-## 🛡️ Filtro Anti-Alucinaciones
+## Filtro Anti-Alucinaciones
 
 Antes de redactar cualquier sección bibliográfica:
 1. Toda cita debe tener un identificador verificado (DOI, ArXiv ID o fuente local cargada).

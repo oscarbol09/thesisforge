@@ -1,23 +1,23 @@
-# Guía del Asesor Metodológico 🧭
+# Guía del Asesor Metodológico
 
 El **Asesor Metodológico** de ThesisForge actúa como un tutor de tesis virtual basado en una máquina de estados determinista. Su objetivo es garantizar la coherencia interna de tu investigación antes de escribir una sola línea de borrador.
 
 ---
 
-## 📐 Matriz de Consistencia Metodológica
+## Matriz de Consistencia Metodológica
 
 ThesisForge evalúa de manera continua la alineación entre:
 
 ```mermaid
 graph LR
-    P["❓ Problema General\n¿Cuál es el efecto de X en Y?"] <--> O["🎯 Objetivo General\nDeterminar el efecto de X en Y"]
-    O <--> H["💡 Hipótesis General\nExiste un efecto significativo de X en Y"]
-    H <--> V["📊 Variables / Indicadores\nX (Independiente), Y (Dependiente)"]
+    P["Problema General\n¿Cuál es el efecto de X en Y?"] <--> O["Objetivo General\nDeterminar el efecto de X en Y"]
+    O <--> H["Hipótesis General\nExiste un efecto significativo de X en Y"]
+    H <--> V["Variables / Indicadores\nX (Independiente), Y (Dependiente)"]
 ```
 
 ---
 
-## 🏛️ Taxonomía de Objetivos (Bloom)
+## Taxonomía de Objetivos (Bloom)
 
 El validador léxico (`AdvisorValidators`) analiza que los objetivos de investigación utilicen verbos en infinitivo clasificados según el nivel de profundidad de la investigación:
 
@@ -30,7 +30,7 @@ El validador léxico (`AdvisorValidators`) analiza que los objetivos de investig
 
 ---
 
-## 🔄 Fases de la Entrevista
+## Fases de la Entrevista
 
 1. **Delimitación Temática y Línea de Investigación:** Delimita el campo de estudio y la población objetivo.
 2. **Planteamiento del Problema:** Formula la pregunta general y específicas según el método sintomático-causal.

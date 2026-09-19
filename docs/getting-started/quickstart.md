@@ -1,4 +1,4 @@
-# Inicio Rápido 🚀
+# Inicio Rápido
 
 Aprende a configurar tu primer proyecto de investigación en menos de 5 minutos.
 

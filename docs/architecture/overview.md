@@ -1,10 +1,10 @@
-# Arquitectura del Sistema 🏗️
+# Arquitectura del Sistema
 
 ThesisForge está diseñado bajo principios de software para ingeniería de producción, con separación estricta de responsabilidades, tipado estático riguroso y concurrencia asíncrona no bloqueante.
 
 ---
 
-## 🏛️ Patrón Arquitectónico en 3 Capas
+## Patrón Arquitectónico en 3 Capas
 
 ```mermaid
 flowchart TD
@@ -49,7 +49,7 @@ flowchart TD
 
 ---
 
-## 🛡️ Principios de Diseño
+## Principios de Diseño
 
 1. **Cero Bloqueo de Event Loop:** Todas las operaciones de red (`httpx.AsyncClient`), bases de datos (`aiosqlite`) y archivos (`aiofiles`) son estrictamente no bloqueantes.
 2. **Tipado Estático Riguroso:** Verificación con `mypy --strict` en todo el paquete `src/thesisforge`.

@@ -1,4 +1,4 @@
-# Guía de Contribución 🤝
+# Guía de Contribución
 
 Para consultar la guía completa de contribución, visita el archivo [CONTRIBUTING.md](https://github.com/oscarbol09/thesisforge/blob/main/CONTRIBUTING.md) en el repositorio oficial.
 

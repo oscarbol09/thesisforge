@@ -1,43 +1,42 @@
-<p align="center">
-  <img src="assets/thesisforge_banner.png" alt="ThesisForge Banner" width="100%" style="border-radius: 8px;">
-</p>
+# ThesisForge
 
-# 🔨 ThesisForge
-
-> **Asistente y forjador de proyectos de investigación académica con IA, RAG y BYOK.**  
-> Diseñado para guiar al estudiante de pregrado y posgrado paso a paso en la formulación metodológica, búsqueda de literatura real indexada y redacción modular de capítulos con formato APA 7ª edición.
+Asistente y forjador de proyectos de investigación académica con inteligencia artificial, búsqueda de literatura real indexada (RAG) y redacción modular por capítulos bajo normas APA 7ª edición.
 
 ---
 
-## 🎯 ¿Qué es ThesisForge?
+## Qué es ThesisForge
 
-ThesisForge es una plataforma de investigación asistida por inteligencia artificial diseñada para eliminar los tres problemas más graves del uso de LLMs en el ámbito académico:
+ThesisForge es una herramienta de ingeniería académica diseñada para abordar tres limitaciones críticas del uso de LLMs en investigación:
 
-1. **Enfoque Metodológico Débil:** Guiar mediante una entrevista interactiva estructurada para definir problemas, objetivos alineados a la taxonomía de Bloom, hipótesis y variables.
-2. **Cero Citas Inventadas (Anti-Alucinaciones):** Integración directa con Semantic Scholar, ArXiv, CrossRef y búsqueda vectorial local en PDFs subidos por el usuario.
-3. **Inconsistencia entre Capítulos:** Generación modular con memoria jerárquica contextual, asegurando que la metodología responda estrictamente al problema planteado.
+1. **Formulación metodológica guiada:** Estructuración de preguntas de investigación, hipótesis contrastables y taxonomía de objetivos (Bloom) mediante una máquina de estados finita.
+2. **Literatura científica verificada (Anti-Alucinaciones):** Recuperación aumentada (RAG) contra fuentes indexadas (Semantic Scholar, ArXiv, CrossRef) y extracción de documentos PDF locales.
+3. **Coherencia inter-capítulo:** Memoria contextual jerárquica que asegura que el marco teórico, el diseño metodológico y las conclusiones mantengan alineación estricta con el problema formulado.
 
 ```mermaid
 graph LR
-    A["🧭 1. Asesor Metodológico\n(Entrevista guiada)"] --> B["📚 2. Literatura Real (RAG)\n(Semantic Scholar / ArXiv)"]
-    B --> C["✍️ 3. Redacción Modular\n(Memoria contextual)"]
-    C --> D["📄 4. Exportación DOCX\n(APA 7ª edición)"]
+    A["1. Asesor Metodológico\n(Entrevista guiada)"] --> B["2. Literatura Real (RAG)\n(Semantic Scholar / ArXiv)"]
+    B --> C["3. Redacción Modular\n(Memoria contextual)"]
+    C --> D["4. Exportación DOCX\n(APA 7ª edición)"]
 ```
 
 ---
 
-## 🚀 Características Principales
+## Características Principales
 
-- 🔑 **100% BYOK (Bring Your Own Key):** Usa tus propias claves o modelos locales (OpenRouter, Gemini, Ollama, Groq, OpenAI).
-- 🛡️ **Seguridad Empresarial:** Bóveda local cifrada con Fernet (256-bit), protección contra SSRF con filtrado de rangos privados y sanitización de inyecciones.
-- 🖥️ **Doble Distribución:** Ejecutable standalone de escritorio (PyWebView) o servidor web asíncrono (FastAPI).
-- 📄 **Exportación APA 7:** Generación directa de archivos `.docx` listos para entrega con citas parentéticas y referencias estructuradas.
+- **Control total de claves (BYOK):** Compatible con OpenRouter, Google Gemini, Groq, OpenAI y modelos locales vía Ollama.
+- **Seguridad en reposo y de red:** Cifrado simétrico de claves mediante Fernet (256-bit), protección contra Server-Side Request Forgery (SSRF) con bloqueo estricto de rangos privados y sanitización CWE-117.
+- **Distribución dual:** Servidor web asíncrono con FastAPI y empaquetado de escritorio local (PyWebView).
+- **Exportación estructurada en Word:** Generación directa de archivos `.docx` formateados con normas APA 7ª edición (portada, márgenes de 2.54 cm, sangría francesa y DOIs activos).
 
 ---
 
-## 📚 Estructura de la Documentación
+## Estructura de la Documentación
 
-- [**Instalación**](getting-started/installation.md): Guía de instalación con `uv`, `pip`, binarios de escritorio o Docker.
-- [**Guía Metodológica**](guides/methodology.md): Cómo funciona la máquina de estados del Asesor Metodológico.
-- [**Configuración BYOK**](guides/byok-and-models.md): Cómo configurar proveedores LLM remotos o modelos locales vía Ollama.
-- [**Arquitectura**](architecture/overview.md): Diseño técnico en 3 capas y principios de ingeniería.
+- [**Instalación**](getting-started/installation.md): Guía de configuración con `uv`, `pip`, binarios standalone o Docker.
+- [**Inicio Rápido**](getting-started/quickstart.md): Configuración del primer proyecto en 5 minutos.
+- [**Asesor Metodológico**](guides/methodology.md): Arquitectura de la máquina de estados y validaciones taxonómicas.
+- [**RAG & Literatura Real**](guides/rag-literature.md): Conectores académicos y búsqueda vectorial local.
+- [**Configuración BYOK**](guides/byok-and-models.md): Integración de proveedores remotos y ejecución offline con Ollama.
+- [**Exportación APA 7**](guides/apa7-export.md): Normas tipográficas, jerarquía de títulos y referencias.
+- [**Arquitectura del Sistema**](architecture/overview.md): Patrón en 3 capas, invariantes de seguridad y concurrencia.
+

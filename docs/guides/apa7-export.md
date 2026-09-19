@@ -1,10 +1,10 @@
-# Exportación en Formato APA 7ª Edición 📄
+# Exportación en Formato APA 7ª Edición
 
 ThesisForge genera documentos en formato Microsoft Word (`.docx`) y Markdown estructurado, configurados siguiendo los lineamientos oficiales del *Manual de Publicación de la American Psychological Association (7ª edición)*.
 
 ---
 
-## 📋 Estándares de Formato Aplicados
+## Estándares de Formato Aplicados
 
 Al compilar tu proyecto de investigación, ThesisForge aplica automáticamente:
 
