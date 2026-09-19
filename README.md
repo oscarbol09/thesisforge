@@ -102,34 +102,43 @@ Accede inmediatamente en `http://localhost:8000`.
 ThesisForge aplica una arquitectura estricta en 3 capas unidireccionales y principios de ingeniería para producción:
 
 ```mermaid
-graph TD
-    subgraph UI["1. Capa de Presentación"]
-        DESK["Desktop GUI (PyWebView)"]
-        WEB["Web Client (SPA / Tailwind + Alpine.js)"]
+flowchart TD
+    subgraph Presentacion [1. Capa de Presentación]
+        DESK[Desktop GUI - PyWebView]
+        WEB[Web Client - SPA Tailwind]
     end
 
-    subgraph API["2. Capa API (FastAPI)"]
-        ROUTERS["Routers Tipados (Pydantic v2 DTOs)<br/>/api/projects, /api/advisor, /api/rag"]
-        WS["WebSocket Streamer (Tokens en tiempo real)"]
+    subgraph API [2. Capa API - FastAPI]
+        ROUTERS[Routers Tipados - Pydantic v2 DTOs]
+        WS[WebSocket Streamer - Tokens en tiempo real]
     end
 
-    subgraph Service["3. Capa de Dominio & Servicios"]
-        ADV["AdvisorService (Máquina de estados metodológica)"]
-        RAG["RAGService (Semantic Scholar, ArXiv, ChromaDB)"]
-        DRAFT["DraftService (Memoria jerárquica contextual)"]
-        EXP["ExportService (Formateador DOCX APA 7)"]
-        LLM["LLMRouter (Multi-proveedor BYOK + Fallbacks)"]
+    subgraph Servicios [3. Capa de Servicios y Dominio]
+        ADV[AdvisorService - Asesor Metodológico]
+        RAG[RAGService - Semantic Scholar y ArXiv]
+        DRAFT[DraftService - Memoria Jerárquica]
+        EXP[ExportService - Formateador DOCX APA 7]
+        LLM[LLMRouter - Multi-proveedor BYOK]
     end
 
-    subgraph Security["4. Seguridad & Persistencia"]
-        SSRF["SSRFGuard (Validación DNS y bloqueo CIDR)"]
-        VAULT["Local KeyVault (Cifrado Fernet 256-bit)"]
-        DB[("SQLite Asíncrono / SQLAlchemy 2.0")]
+    subgraph SeguridadPersistencia [4. Seguridad y Persistencia]
+        SSRF[SSRFGuard - Filtro Anti-SSRF]
+        VAULT[Local KeyVault - Cifrado Fernet 256-bit]
+        DB[(SQLite Asíncrono - SQLAlchemy 2.0)]
     end
 
-    UI --> API
-    API --> Service
-    Service --> Security
+    DESK --> ROUTERS
+    WEB --> ROUTERS
+    ROUTERS --> ADV
+    ROUTERS --> RAG
+    ROUTERS --> DRAFT
+    ROUTERS --> EXP
+    ADV --> LLM
+    DRAFT --> LLM
+    RAG --> SSRF
+    LLM --> VAULT
+    ADV --> DB
+    DRAFT --> DB
 ```
 
 ---

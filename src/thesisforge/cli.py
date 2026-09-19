@@ -50,7 +50,11 @@ def main() -> None:
     if args.command == "run" or args.command is None:
         host = args.host or settings.host
         port = args.port or settings.port
-        reload = args.reload if hasattr(args, "reload") and args.reload else settings.debug
+        reload = (
+            bool(args.reload)
+            if (hasattr(args, "reload") and args.reload)
+            else (settings.environment == "development")
+        )
 
         print(f"🔨 Starting ThesisForge v{__version__} on http://{host}:{port}")
         uvicorn.run(

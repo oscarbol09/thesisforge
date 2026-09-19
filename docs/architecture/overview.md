@@ -7,26 +7,29 @@ ThesisForge está diseñado bajo principios de software para ingeniería de prod
 ## 🏛️ Patrón Arquitectónico en 3 Capas
 
 ```mermaid
-graph TD
-    subgraph Layer1["1. Presentation & API"]
-        GUI["Desktop GUI (PyWebView)"]
-        WEB["Web Client (SPA)"]
-        ROUTERS["FastAPI Routers (Pydantic DTOs)"]
+flowchart TD
+    subgraph CapaPresentacion [1. Capa de Presentación]
+        GUI[Desktop GUI - PyWebView]
+        WEB[Web Client - SPA Tailwind]
     end
 
-    subgraph Layer2["2. Services & Domain Logic"]
-        ADV["AdvisorService"]
-        RAG["RAGService"]
-        DRAFT["DraftService"]
-        EXP["ExportService"]
-        ROUTER["LLMRouter"]
+    subgraph CapaAPI [2. Capa API y Routers]
+        ROUTERS[FastAPI Routers - Pydantic DTOs]
     end
 
-    subgraph Layer3["3. Persistence & Security Core"]
-        DB["Async SQLite (aiosqlite / SQLAlchemy 2.0)"]
-        VAULT["KeyVault (Fernet 256-bit)"]
-        SSRF["SSRFGuard"]
-        LOG["StructuredLogger"]
+    subgraph CapaServicios [3. Servicios y Lógica de Dominio]
+        ADV[AdvisorService]
+        RAG[RAGService]
+        DRAFT[DraftService]
+        EXP[ExportService]
+        ROUTER[LLMRouter]
+    end
+
+    subgraph CapaPersistencia [4. Persistencia y Seguridad]
+        DB[(Async SQLite - SQLAlchemy 2.0)]
+        VAULT[KeyVault - Fernet 256-bit]
+        SSRF[SSRFGuard]
+        LOG[StructuredLogger]
     end
 
     GUI --> ROUTERS

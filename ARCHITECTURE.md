@@ -9,40 +9,46 @@ This document details the architectural design, security boundaries, and data fl
 ThesisForge is built as a modular, local-first research platform with a strict **Three-Layer Unidirectional Architecture**:
 
 ```mermaid
-graph TD
-    subgraph Presentation["1. Presentation Layer"]
-        DESKTOP["Desktop GUI (.exe / PyWebView)"]
-        WEB["Web Browser (SPA / Tailwind + Alpine.js)"]
+flowchart TD
+    subgraph Presentacion [1. Capa de Presentación]
+        DESK[Desktop GUI - PyWebView]
+        WEB[Web Browser - SPA Tailwind]
     end
 
-    subgraph API["2. API & Controller Layer (FastAPI)"]
-        ROUTERS["Typed REST Routers<br/>• /api/projects<br/>• /api/advisor<br/>• /api/rag<br/>• /api/draft"]
-        WS["WebSocket Streamer<br/>(Real-time token & progress events)"]
+    subgraph API [2. Capa API y Controladores - FastAPI]
+        ROUTERS[Routers Tipados - Pydantic v2 DTOs]
+        WS[WebSocket Streamer - Tokens en tiempo real]
     end
 
-    subgraph Service["3. Domain & Service Layer"]
-        ADVISOR["AdvisorService<br/>(State-machine guided interview)"]
-        RAG["RAGService<br/>(Semantic Scholar, ArXiv, Vector Indexing)"]
-        DRAFT["DraftService<br/>(Hierarchical Contextual Chunking)"]
-        EXPORT["ExportService<br/>(APA 7 DOCX / LaTeX Formatter)"]
-        LLM["LLMRouter<br/>(BYOK Multi-provider Router + Retries)"]
+    subgraph Servicios [3. Capa de Dominio y Servicios]
+        ADV[AdvisorService - Asesor Metodológico]
+        RAG[RAGService - Semantic Scholar y ArXiv]
+        DRAFT[DraftService - Memoria Jerárquica Contextual]
+        EXP[ExportService - Formateador APA 7 y LaTeX]
+        LLM[LLMRouter - Multi-proveedor BYOK]
     end
 
-    subgraph Core["4. Security & Core Services"]
-        SSRF["SSRFGuard<br/>(DNS IP verification & CIDR blocking)"]
-        VAULT["KeyStoreRepository<br/>(256-bit Fernet Encryption)"]
-        LOGGER["StructuredLogger<br/>(CWE-117 Sanitizer)"]
+    subgraph CoreSeguridad [4. Seguridad y Persistencia]
+        SSRF[SSRFGuard - Filtro Anti-SSRF]
+        VAULT[KeyStoreRepository - Cifrado Fernet 256-bit]
+        LOGGER[StructuredLogger - Sanitizador CWE-117]
+        DB[(SQLite Asíncrono - SQLAlchemy 2.0)]
     end
 
-    subgraph Persistence["5. Persistence Layer"]
-        SQLITE[("Async SQLite DB<br/>SQLAlchemy 2.0 / aiosqlite")]
-        CHROMA[("Vector Store<br/>ChromaDB / SQLite-vec")]
-    end
-
-    Presentation --> API
-    API --> Service
-    Service --> Core
-    Service --> Persistence
+    DESK --> ROUTERS
+    WEB --> ROUTERS
+    ROUTERS --> ADV
+    ROUTERS --> RAG
+    ROUTERS --> DRAFT
+    ROUTERS --> EXP
+    ROUTERS --> LOGGER
+    ADV --> LLM
+    DRAFT --> LLM
+    RAG --> SSRF
+    LLM --> VAULT
+    ADV --> DB
+    DRAFT --> DB
+    RAG --> DB
 ```
 
 ---
