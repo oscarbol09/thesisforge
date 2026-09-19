@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/banner.jpg" alt="ThesisForge Banner" width="100%" style="border-radius: 8px;">
+  <img src="assets/thesisforge_banner.png" alt="ThesisForge Banner" width="100%" style="border-radius: 8px;">
 </p>
 
 # 🔨 ThesisForge

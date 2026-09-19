@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/assets/banner.jpg" alt="ThesisForge Banner" width="850" style="border-radius: 8px; box-shadow: 0 8px 30px rgba(0,0,0,0.25);">
+  <img src="docs/assets/thesisforge_banner.png" alt="ThesisForge Banner" width="850" style="border-radius: 8px; box-shadow: 0 8px 30px rgba(0,0,0,0.25);">
 </p>
 
 <div align="center">
