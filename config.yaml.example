@@ -1,0 +1,50 @@
+# Configuración YAML de ThesisForge (BYOK & Perfiles)
+version: "1.0"
+
+app:
+  name: "ThesisForge"
+  language: "es"
+  theme: "system"
+
+providers:
+  default_provider: "openrouter"
+  default_model: "anthropic/claude-3.5-sonnet"
+  timeout_seconds: 60
+  max_retries: 3
+
+  openrouter:
+    enabled: true
+    base_url: "https://openrouter.ai/api/v1"
+    models:
+      - "anthropic/claude-3.5-sonnet"
+      - "meta-llama/llama-3.3-70b-instruct"
+      - "google/gemini-2.0-flash-001"
+
+  gemini:
+    enabled: true
+    models:
+      - "gemini-2.0-flash"
+      - "gemini-1.5-pro"
+
+  groq:
+    enabled: true
+    models:
+      - "llama-3.3-70b-versatile"
+      - "mixtral-8x7b-32768"
+
+  ollama:
+    enabled: false
+    base_url: "http://localhost:11434"
+    models:
+      - "llama3:latest"
+      - "qwen2.5:14b"
+
+rag:
+  chunk_size: 1500
+  chunk_overlap: 200
+  top_k_citations: 5
+  similarity_threshold: 0.72
+  academic_apis:
+    semantic_scholar: true
+    arxiv: true
+    crossref: true
