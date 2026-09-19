@@ -52,6 +52,7 @@ gantt
 - [ ] Sanitización contra inyección de fórmulas en todas las tablas exportadas.
 - [ ] Streaming de tokens en tiempo real vía WebSockets.
 - [ ] Interfaz web interactiva con Tailwind CSS y Alpine.js.
+- [ ] **Manual de Usuario Oficial (v0.3.0):** Guía paso a paso ilustrada para estudiantes e investigadores (desde configuración BYOK y entrevista socrática hasta la exportación final de tesis).
 
 ---
 
@@ -60,6 +61,8 @@ gantt
 - [ ] Publicación del paquete en PyPI (`pip install thesisforge`).
 - [ ] Motor de exportación a LaTeX / Overleaf (archivos `.tex` y `.bib`).
 - [ ] Sincronización local con bibliotecas de Zotero y Mendeley.
+- [ ] Manual de Usuario interactivo integrado en la aplicación de escritorio y exportable a PDF.
+
 
 ---
 
