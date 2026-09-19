@@ -1,0 +1,70 @@
+site_name: ThesisForge Docs
+site_description: Asistente y forjador de proyectos de investigación académica con IA, RAG y BYOK.
+site_author: Oscar Madera
+site_url: https://oscarbol09.github.io/thesisforge/
+repo_url: https://github.com/oscarbol09/thesisforge
+repo_name: oscarbol09/thesisforge
+
+theme:
+  name: material
+  language: es
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: blue
+      toggle:
+        icon: material/brightness-7
+        name: Cambiar a modo oscuro
+    - scheme: slate
+      primary: indigo
+      accent: blue
+      toggle:
+        icon: material/brightness-4
+        name: Cambiar a modo claro
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.tabbed:
+      alternate_style: true
+  - tables
+  - attr_list
+  - md_in_html
+
+nav:
+  - Inicio: index.md
+  - Primeros Pasos:
+      - Instalación: getting-started/installation.md
+      - Configuración Rápida: getting-started/quickstart.md
+  - Guías:
+      - Asesor Metodológico: guides/methodology.md
+      - RAG & Literatura Real: guides/rag-literature.md
+      - BYOK & Modelos (Ollama, Gemini, OpenRouter): guides/byok-and-models.md
+      - Exportación APA 7: guides/apa7-export.md
+  - Arquitectura:
+      - Visión General: architecture/overview.md
+      - Seguridad & SSRF Guard: architecture/security.md
+  - Comunidad:
+      - Contribuir: contributing.md
+      - Roadmap: roadmap.md
+      - Changelog: changelog.md

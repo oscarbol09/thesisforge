@@ -1,0 +1,37 @@
+name: ✨ Feature Request
+description: Suggest a new feature or improvement for ThesisForge
+title: "[FEAT]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for suggesting an enhancement for ThesisForge!
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or Use Case
+      description: Is your feature request related to a problem or a research workflow friction?
+      placeholder: As a postgraduate researcher, I need to...
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution
+      description: Describe the solution you'd like to see implemented.
+      placeholder: Add support for exporting directly to Overleaf / LaTeX...
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: Any alternative solutions or features you've considered.
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: Would you be willing to submit a Pull Request?
+      options:
+        - label: Yes, I can implement this feature!
+        - label: I can help test and provide feedback.

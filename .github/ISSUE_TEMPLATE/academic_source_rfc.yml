@@ -1,0 +1,51 @@
+name: 📚 Academic Source / Connector RFC
+description: Propose a new literature repository connector (e.g. PubMed, IEEE, DOAJ, OpenAlex)
+title: "[RFC: Source Connector]: "
+labels: ["integration", "rag", "rfc"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this RFC template to propose adding a new academic literature database or citation indexing API to ThesisForge.
+  - type: input
+    id: source_name
+    attributes:
+      label: Academic Source Name
+      placeholder: e.g. PubMed Central / Europe PMC / IEEE Xplore / OpenAlex
+    validations:
+      required: true
+  - type: input
+    id: api_docs_url
+    attributes:
+      label: API Documentation URL
+      placeholder: https://api.openalex.org / https://eutils.ncbi.nlm.nih.gov/
+    validations:
+      required: true
+  - type: dropdown
+    id: auth_type
+    attributes:
+      label: Authentication Type
+      options:
+        - "Free / No API Key Required"
+        - "Free API Key (High Rate Limit with Key)"
+        - "Commercial / Paid Subscription Key"
+    validations:
+      required: true
+  - type: textarea
+    id: data_fields
+    attributes:
+      label: Supported Metadata Fields
+      description: Does the API return titles, abstracts, authors, publication year, DOIs, and Open Access PDF URLs?
+      placeholder: |
+        - Title: Yes
+        - Authors & Affiliations: Yes
+        - Publication Year: Yes
+        - DOI: Yes
+        - Open Access PDF Link: Yes
+    validations:
+      required: true
+  - type: textarea
+    id: implementation_notes
+    attributes:
+      label: Implementation Notes
+      description: Any specific rate limiting, pagination, or async client considerations.

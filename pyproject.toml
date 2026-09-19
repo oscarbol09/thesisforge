@@ -27,6 +27,16 @@ dependencies = [
     "tenacity>=9.1.4",
 ]
 
+[project.scripts]
+thesisforge = "thesisforge.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/oscarbol09/thesisforge"
+Documentation = "https://oscarbol09.github.io/thesisforge"
+Repository = "https://github.com/oscarbol09/thesisforge.git"
+Issues = "https://github.com/oscarbol09/thesisforge/issues"
+Changelog = "https://github.com/oscarbol09/thesisforge/blob/main/CHANGELOG.md"
+
 [project.optional-dependencies]
 dev = [
     "pytest>=8.1.0",

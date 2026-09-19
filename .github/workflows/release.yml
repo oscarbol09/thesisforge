@@ -1,0 +1,74 @@
+name: Release & Package
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  build-and-publish:
+    name: Build Wheel and Desktop Binaries (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            artifact_name: thesisforge-linux-x86_64
+          - os: windows-latest
+            artifact_name: thesisforge-windows-x64.exe
+          - os: macos-latest
+            artifact_name: thesisforge-macos-universal
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Install dependencies and build tools
+        run: |
+          uv pip install --system -e ".[dev]"
+          uv pip install --system build pyinstaller
+
+      - name: Build Python Wheel and sdist (Ubuntu only)
+        if: matrix.os == 'ubuntu-latest'
+        run: python -m build
+
+      - name: Build Standalone Desktop Binary with PyInstaller
+        run: |
+          pyinstaller --noconfirm --onedir --windowed --name "${{ matrix.artifact_name }}" src/thesisforge/api/app.py
+
+      - name: Compress Desktop Binary
+        shell: bash
+        run: |
+          cd dist
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            tar -czvf "../${{ matrix.artifact_name }}.tar.gz" *
+          else
+            tar -czvf "../${{ matrix.artifact_name }}.tar.gz" *
+          fi
+          cd ..
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/*.whl
+            dist/*.tar.gz
+            *.tar.gz
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
