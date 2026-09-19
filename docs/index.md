@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/banner.jpg" alt="ThesisForge Banner" width="100%" style="border-radius: 8px;">
+</p>
+
 # 🔨 ThesisForge
 
 > **Asistente y forjador de proyectos de investigación académica con IA, RAG y BYOK.**  
