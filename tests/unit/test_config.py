@@ -8,8 +8,9 @@ from thesisforge.config import AppSettings, load_yaml_config
 from thesisforge.exceptions import ConfigurationError
 
 
-def test_default_app_settings():
+def test_default_app_settings(monkeypatch: pytest.MonkeyPatch):
     """Test default settings instantiation."""
+    monkeypatch.delenv("THESISFORGE_ENVIRONMENT", raising=False)
     settings = AppSettings()
     assert settings.app_name == "ThesisForge"
     assert settings.environment == "development"

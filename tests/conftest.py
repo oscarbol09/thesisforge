@@ -1,9 +1,14 @@
 """Hermetic test fixtures for ThesisForge unit and property tests."""
 
+import os
 from collections.abc import AsyncGenerator
 
 import pytest
 import pytest_asyncio
+
+os.environ["THESISFORGE_ENVIRONMENT"] = "test"
+os.environ["LITELLM_LOCAL_MODEL_COST_MAP"] = "True"
+os.environ["LITELLM_TELEMETRY"] = "False"
 
 from thesisforge.core.security import LocalKeyVault
 from thesisforge.models import (
