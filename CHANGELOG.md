@@ -1,34 +1,46 @@
-# Changelog 📜
+# Changelog
 
-All notable changes to **ThesisForge** will be documented in this file.
+Todas las modificaciones notables de este proyecto se documentan en este archivo.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y este proyecto se adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 
 ---
 
 ## [Unreleased]
 
-### Added
-- GitHub Community health files (`CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `SECURITY.md`, `ROADMAP.md`, `SUPPORT.md`, `ARCHITECTURE.md`).
-- Structured GitHub Issue and Pull Request templates.
-- Release workflow with PyInstaller desktop packaging and automated GitHub Releases.
-- Documentation portal configuration with MkDocs Material.
-- Multi-stage `Dockerfile` and `docker-compose.yml` for self-hosted deployment.
-- CLI script entry point (`thesisforge`) in `pyproject.toml`.
+### Planned
+- Motor RAG con clientes asíncronos para Semantic Scholar, ArXiv y CrossRef (Sprint 2).
+- Indexación de documentos locales con ChromaDB y chunking léxico de 1500 caracteres con 200 de solapamiento.
+- Generador modular de capítulos con memoria jerárquica contextual (Sprint 3).
 
 ---
 
 ## [0.1.0] - 2026-09-18
 
 ### Added
-- **Advisor Engine:** State-machine based Methodological Advisor (`AdvisorStateMachine`, `AdvisorService`) validating research problem statements, objectives, and hypotheses.
-- **LLM Router:** Pluggable multi-provider BYOK (Bring Your Own Key) router supporting OpenRouter, Gemini, Groq, Ollama, and OpenAI-compatible endpoints with tenacity-based retries and fallbacks.
-- **Security & Core:**
-  - `SSRFGuard`: DNS-resolving security guard preventing Server-Side Request Forgery against private/reserved subnets.
-  - `KeyStoreRepository`: Symmetric 256-bit Fernet encryption for local user API keys.
-  - `StructuredLogger`: Log sanitization removing `\r` and `\n` to prevent Log Injection (CWE-117).
-  - Time utilities enforcing timezone-aware UTC timestamps.
-- **FastAPI Layer:** REST API endpoints (`/api/projects`, `/api/advisor`) with strict Pydantic v2 schemas and error handlers.
-- **Persistence Layer:** Asynchronous SQLite storage via SQLAlchemy 2.0 and `aiosqlite`.
-- **Testing & CI:** Complete hermetic test suite with unit, integration, and Hypothesis property-based testing running on Ubuntu and Windows matrices across Python 3.10, 3.11, and 3.12.
+- **Core de Seguridad:**
+  - Guardia de seguridad contra SSRF (`assert_safe_academic_url`) que resuelve nombres de host y bloquea rangos de IP privadas RFC 1918, bucles locales (loopback) y metadatos de nube.
+  - Bóveda simétrica local `LocalKeyVault` basada en Fernet (AES-128-CBC + HMAC-SHA256) para cifrar claves de API BYOK en reposo.
+  - Logger estructurado JSON con prevención de Log Injection (CWE-117) y enmascaramiento automático de secretos y tokens.
+  - Utilidades estrictas de tiempo UTC (`utc_now()`, `format_iso_utc()`, `parse_iso_utc()`).
+- **Modelos de Dominio:**
+  - Esquemas Pydantic v2 inmutables y validados: `ProjectStateDTO`, `CitationDTO`, `MethodologyDTO`, `SectionDraftDTO`, `ProjectSummaryDTO`.
+  - Enums tipados: `AcademicLevel`, `ResearchApproach`, `ProjectPhase`, `SectionStatus`.
+  - Jerarquía de excepciones de dominio (`ThesisForgeError`, `SecurityError`, `SSRFBlockedError`, `KeyVaultError`, `ProjectNotFoundError`, `InvalidPhaseTransitionError`, `MethodologyValidationError`, `LLMProviderError`).
+- **Persistencia Asíncrona:**
+  - Gestor de base de datos `DatabaseManager` con soporte para SQLite asíncrono vía `aiosqlite`, modo WAL y base de datos compartida en memoria para pruebas.
+  - Repositorio de proyectos `ProjectRepository` con operaciones CRUD completas y consultas ordenadas por fecha de actualización.
+  - Repositorio seguro de claves `SecureKeyStoreRepository` para gestión de credenciales BYOK por proveedor.
+- **Router LLM BYOK:**
+  - Módulo `LLMRouter` con soporte para OpenRouter, Google Gemini, Groq, Ollama, OpenAI, Anthropic y NVIDIA NIM.
+  - Reintentos dinámicos basados en `tenacity.AsyncRetrying` con retroceso exponencial.
+  - Soporte para respuestas estructuradas en formato JSON y streaming de tokens.
+  - Plantillas de prompts versionadas para asesoría científica y matrices de consistencia.
+- **Asesor Metodológico:**
+  - Máquina de estados `AdvisorStateMachine` para control lineal de pasos de entrevista.
+  - Validador metodológico `MethodologyValidator` con verificación de taxonomía de Bloom, partículas interrogativas formales y consistencia de hipótesis.
+  - Servicio `AdvisorService` para orquestar la entrevista y la transición hacia la fase de contextualización.
+- **API REST & Middleware:**
+  - Endpoints de FastAPI para gestión de proyectos (`/api/projects`) y asesor metodológico (`/api/advisor`).
+  - Middleware de cabeceras de seguridad HTTP (CSP, `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy`).
+  - Suite completa de 63 pruebas unitarias, de integración y basadas en propiedades con `Hypothesis` y `pytest-cov` (85.63% de cobertura).

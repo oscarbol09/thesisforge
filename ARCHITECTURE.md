@@ -1,120 +1,95 @@
-# ThesisForge Architecture Deep Dive 🏗️
+# Arquitectura de ThesisForge
 
-This document details the architectural design, security boundaries, and data flow of **ThesisForge**.
+Este documento describe la arquitectura de software, los principios de diseño, el modelo de datos y las garantías de seguridad de **ThesisForge**.
 
 ---
 
-## 1. High-Level Architecture Overview
+## 1. Visión y Principios de Diseño
 
-ThesisForge is built as a modular, local-first research platform with a strict **Three-Layer Unidirectional Architecture**:
+ThesisForge está diseñado bajo los siguientes principios arquitectónicos:
 
-```mermaid
-flowchart TD
-    subgraph Presentacion [1. Capa de Presentación]
-        DESK[Desktop GUI - PyWebView]
-        WEB[Web Browser - SPA Tailwind]
-    end
+1. **Flujo de datos unidireccional:** Las capas superiores dependen de las inferiores, nunca al revés (`Routers` $\rightarrow$ `Services` $\rightarrow$ `Repositories` $\rightarrow$ `Database`).
+2. **I/O no bloqueante estricto:** Ninguna llamada síncrona o de disco bloquea el Event Loop de Python.
+3. **Seguridad por diseño (Zero Trust & Defense in Depth):** Toda entrada externa pasa por validación de esquemas (Pydantic v2), filtrado SSRF antes de realizar peticiones de red y cifrado en reposo para credenciales.
+4. **Desacoplamiento BYOK (Bring Your Own Key):** La lógica de negocio no depende de un único proveedor de LLM; las llamadas se enrutan mediante adaptadores con interfaces unificadas.
 
-    subgraph API [2. Capa API y Controladores - FastAPI]
-        ROUTERS[Routers Tipados - Pydantic v2 DTOs]
-        WS[WebSocket Streamer - Tokens en tiempo real]
-    end
+---
 
-    subgraph Servicios [3. Capa de Dominio y Servicios]
-        ADV[AdvisorService - Asesor Metodológico]
-        RAG[RAGService - Semantic Scholar y ArXiv]
-        DRAFT[DraftService - Memoria Jerárquica Contextual]
-        EXP[ExportService - Formateador APA 7 y LaTeX]
-        LLM[LLMRouter - Multi-proveedor BYOK]
-    end
+## 2. Diagrama de Capas
 
-    subgraph CoreSeguridad [4. Seguridad y Persistencia]
-        SSRF[SSRFGuard - Filtro Anti-SSRF]
-        VAULT[KeyStoreRepository - Cifrado Fernet 256-bit]
-        LOGGER[StructuredLogger - Sanitizador CWE-117]
-        DB[(SQLite Asíncrono - SQLAlchemy 2.0)]
-    end
-
-    DESK --> ROUTERS
-    WEB --> ROUTERS
-    ROUTERS --> ADV
-    ROUTERS --> RAG
-    ROUTERS --> DRAFT
-    ROUTERS --> EXP
-    ROUTERS --> LOGGER
-    ADV --> LLM
-    DRAFT --> LLM
-    RAG --> SSRF
-    LLM --> VAULT
-    ADV --> DB
-    DRAFT --> DB
-    RAG --> DB
+```text
++-------------------------------------------------------------------+
+|                        CAPA DE PRESENTACIÓN                       |
+|   PyWebView Desktop GUI (.exe)  /  SPA Web (Tailwind + Alpine.js) |
++-------------------------------------------------------------------+
+                                  |
+                                  v
++-------------------------------------------------------------------+
+|                          CAPA HTTP / API                          |
+|   FastAPI App  |  Security Headers Middleware  |  CORS Guard      |
+|   Routers: /api/projects, /api/advisor, /api/rag, /api/generate   |
++-------------------------------------------------------------------+
+                                  |
+                                  v
++-------------------------------------------------------------------+
+|                          CAPA DE SERVICIOS                        |
+|   AdvisorService       -> Máquina de estados y entrevista         |
+|   RAGService           -> Búsqueda académica e indexación         |
+|   DraftService         -> Generación modular con memoria          |
+|   ExportService        -> Compilador DOCX / APA 7                 |
+|   LLMRouter            -> LiteLLM + Tenacity Retries              |
++-------------------------------------------------------------------+
+                                  |
+                                  v
++-------------------------------------------------------------------+
+|                        CAPA DE PERSISTENCIA                       |
+|   ProjectRepository    -> SQLite Asíncrono (aiosqlite / WAL)      |
+|   SecureKeyStore       -> Cifrado Fernet (AES-128-CBC / SHA-256)  |
+|   VectorStoreAdapter   -> ChromaDB embebido local                 |
++-------------------------------------------------------------------+
 ```
 
 ---
 
-## 2. Methodological Advisor State Machine
+## 3. Componentes Principales
 
-The research formulation workflow enforces methodological consistency using a strict deterministic state machine:
+### 3.1 Core de Seguridad (`src/thesisforge/core/`)
+- **`assert_safe_academic_url`:** Previene ataques SSRF resolviendo el DNS y bloqueando rangos IP de subredes privadas RFC 1918, loopback IPv4/IPv6 (`127.0.0.1`, `::1`), direcciones link-local (`169.254.169.254`, `fe80::/10`) y subredes reservadas.
+- **`LocalKeyVault`:** Implementa cifrado simétrico Fernet de 256 bits para proteger las claves de API de los usuarios en su base de datos local SQLite.
+- **`StructuredJsonFormatter`:** Emite logs en formato JSON de una sola línea sanitizados contra inyección de saltos de línea (CWE-117) y enmascara tokens sensibles (`sk-...`, `Bearer ...`).
+- **`utc_now`:** Garantiza el uso consistente de marcas de tiempo UTC con zona horaria explícita (`datetime.now(timezone.utc)`).
 
-```mermaid
-stateDiagram-v2
-    [*] --> TOPIC_SELECTION: Project Created
-    TOPIC_SELECTION --> PROBLEM_FORMULATION: Topic & Scope Defined
-    PROBLEM_FORMULATION --> OBJECTIVES_ALIGNMENT: Problem Statement Validated
-    OBJECTIVES_ALIGNMENT --> HYPOTHESIS_VARIABLES: Objectives (General & Specific) Aligned
-    HYPOTHESIS_VARIABLES --> METHODOLOGICAL_DESIGN: Variables & Indicators Defined
-    METHODOLOGICAL_DESIGN --> COMPLETED: Methodology Validated
-    COMPLETED --> [*]: Ready for Literature RAG & Chapter Drafting
+### 3.2 Dominio & Modelos (`src/thesisforge/models.py`)
+- **`ProjectStateDTO`:** Entidad agregada raíz que almacena el estado completo del proyecto de investigación (problema, objetivos, hipótesis, citas validadas y secciones redactadas).
+- **`CitationDTO`:** Metadatos normalizados de fuentes bibliográficas reales (DOI, autores, año, resumen, formato APA 7).
+- **`MethodologyDTO`:** Ficha metodológica con validación de enfoque, diseño, población, muestra e instrumentos.
+- **`SectionDraftDTO`:** Borrador estructurado de cada capítulo con contador de palabras, citas vinculadas y versión.
 
-    note right of OBJECTIVES_ALIGNMENT
-        Validates Bloom's taxonomy verbs 
-        and alignment with problem statement
-    end note
-```
+### 3.3 Router LLM (`src/thesisforge/llm/`)
+- **`LLMRouter`:** Gestiona el despacho de peticiones a múltiples proveedores (OpenRouter, Gemini, Groq, Ollama, OpenAI, Anthropic) utilizando `litellm`.
+- **Estrategia de reintentos:** Implementa reintentos asíncronos con `tenacity.AsyncRetrying` y retroceso exponencial, desactivando la espera en entornos de prueba (`environment == "test"`).
+- **Modo JSON estructurado:** Valida y extrae cargas JSON limpiando automáticamente delimitadores de bloques de código markdown.
 
----
+### 3.4 Asesor Metodológico (`src/thesisforge/advisor/`)
+- **`AdvisorStateMachine`:** Controla la secuencia de pasos de la entrevista y calcula el porcentaje de avance.
+- **`MethodologyValidator`:** Ejecuta auditorías de consistencia metodológica verificando la presencia de verbos taxonómicos en infinitivo, la formulación de preguntas y la coherencia de las hipótesis.
+- **`AdvisorService`:** Orquesta la interacción con el usuario y el LLM, actualizando el estado del proyecto en la base de datos.
 
-## 3. Anti-Hallucination Literature RAG Pipeline
-
-To prevent fabricated citations and non-existent DOIs, ThesisForge implements a dual-verification retrieval pipeline:
-
-```mermaid
-sequenceDiagram
-    autonumber
-    actor User as Researcher
-    participant Draft as DraftService
-    participant RAG as RAGService
-    participant SSRF as SSRFGuard
-    participant Ext as Semantic Scholar / ArXiv API
-    participant VStore as Local Vector Store (PDFs)
-    participant LLM as LLMRouter (BYOK)
-
-    User->>Draft: Request Chapter Draft (e.g. Chapter 1)
-    Draft->>RAG: Fetch verified sources for chapter topics
-    RAG->>SSRF: Validate API & download URLs
-    SSRF-->>RAG: URL verified (non-private IP)
-    RAG->>Ext: Search indexed papers & fetch DOIs / abstracts
-    RAG->>VStore: Query local indexed PDFs (hybrid lexical + vector)
-    RAG-->>Draft: Return structured verified literature citations
-    Draft->>LLM: Generate text with strict source grounding prompt
-    LLM-->>Draft: Stream draft with verified parenthetical citations [Smith, 2024]
-    Draft-->>User: Output chapter with zero hallucinated references
-```
+### 3.5 Persistencia (`src/thesisforge/repository/`)
+- **`DatabaseManager`:** Administra conexiones asíncronas SQLite mediante `aiosqlite`, activando el modo WAL (`journal_mode = WAL`) y el soporte de claves foráneas.
+- **`ProjectRepository`:** Proporciona operaciones CRUD transaccionales sobre la tabla `projects`.
+- **`SecureKeyStoreRepository`:** Almacena y recupera claves de API cifradas en la tabla `keystore`.
 
 ---
 
-## 4. Security & Defense-in-Depth
+## 4. Estrategia de Pruebas y Calidad
 
-### 4.1 Server-Side Request Forgery (SSRF) Guard
-- All outgoing network requests initiated when downloading research papers or interacting with custom LLM endpoints pass through `SSRFGuard.validate_url()`.
-- Resolves DNS hostname to IP address prior to connection.
-- Rejects connections if the target IP falls into private or restricted subnets (`127.0.0.0/8`, `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`, `169.254.0.0/16`, `::1/128`).
+El proyecto aplica una pirámide de pruebas automatizadas:
 
-### 4.2 Local Key Vault Encryption
-- User-provided BYOK API keys (OpenAI, Anthropic, Gemini, OpenRouter) are encrypted at rest using 256-bit symmetric Fernet encryption before persisting to SQLite.
-- Keys are decrypted only transiently in memory during request dispatching.
-
-### 4.3 Log Injection (CWE-117) & Formula Injection Defense
-- User input is sanitized to remove CR/LF characters before writing to logs.
-- Document and tabular export routines prefix formula triggers (`=`, `+`, `-`, `@`) with apostrophes to protect researchers opening files in Microsoft Word or Excel.
+| Nivel de Prueba | Herramienta | Enfoque |
+| :--- | :--- | :--- |
+| **Unitarias** | `pytest` + `pytest-asyncio` | Aislamiento de lógica de negocio, validadores y transformaciones DTO. |
+| **Basadas en Propiedades** | `Hypothesis` | Invariantes de cifrado/descifrado y sanitización sobre 100+ casos aleatorios. |
+| **Integración HTTP** | `httpx.AsyncClient` | Ciclo completo de endpoints REST y middleware de seguridad. |
+| **Tipado Estricto** | `mypy --strict` | Cero tipos dinámicos o implícitos en el código de producción. |
+| **Seguridad SAST** | `bandit -r src/ -ll` | Análisis estático de vulnerabilidades y buenas prácticas de seguridad. |

@@ -36,10 +36,9 @@ async def test_health_and_version(override_db: DatabaseManager):
 
 @pytest.mark.asyncio
 async def test_project_crud_and_advisor_endpoints(override_db: DatabaseManager):
-    """Test creating project, querying status, processing steps, and listing."""
+    """Verify full HTTP lifecycle for project creation, advisor step submission, and deletion."""
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
-        # 1. Create project
         create_resp = await client.post(
             "/api/projects",
             json={
@@ -54,18 +53,15 @@ async def test_project_crud_and_advisor_endpoints(override_db: DatabaseManager):
         project_id = created_data["id"]
         assert project_id is not None
 
-        # 2. Get project by ID
         get_resp = await client.get(f"/api/projects/{project_id}")
         assert get_resp.status_code == 200
         assert get_resp.json()["title"] == "Tesis sobre Algoritmos Genéticos"
 
-        # 3. Get advisor status
         status_resp = await client.get(f"/api/advisor/{project_id}/status")
         assert status_resp.status_code == 200
         status_json = status_resp.json()
         assert status_json["current_step"] == "problem_statement"
 
-        # 4. Process step
         step_resp = await client.post(
             f"/api/advisor/{project_id}/step",
             json={
@@ -76,11 +72,9 @@ async def test_project_crud_and_advisor_endpoints(override_db: DatabaseManager):
         assert step_resp.status_code == 200
         assert step_resp.json()["ai_analysis"]["is_valid"] is True
 
-        # 5. List projects
         list_resp = await client.get("/api/projects")
         assert list_resp.status_code == 200
         assert len(list_resp.json()) == 1
 
-        # 6. Delete project
         del_resp = await client.delete(f"/api/projects/{project_id}")
         assert del_resp.status_code == 204
