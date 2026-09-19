@@ -10,6 +10,7 @@ os.environ["THESISFORGE_ENVIRONMENT"] = "test"
 os.environ["LITELLM_LOCAL_MODEL_COST_MAP"] = "True"
 os.environ["LITELLM_TELEMETRY"] = "False"
 
+from thesisforge.config import get_settings
 from thesisforge.core.security import LocalKeyVault
 from thesisforge.models import (
     AcademicLevel,
@@ -22,6 +23,14 @@ from thesisforge.models import (
     SectionStatus,
 )
 from thesisforge.repository.database import DatabaseManager
+
+
+@pytest.fixture(autouse=True)
+def clear_settings_cache():
+    """Clear lru_cache on get_settings before and after every test to guarantee test isolation."""
+    get_settings.cache_clear()
+    yield
+    get_settings.cache_clear()
 
 
 @pytest.fixture

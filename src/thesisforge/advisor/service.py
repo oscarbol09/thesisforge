@@ -36,7 +36,8 @@ class AdvisorService:
         """Fetch current interview progression for a given project."""
         project = await self.repo.get_project(project_id)
         current_step = self._determine_current_step(project)
-        progress = AdvisorStateMachine.calculate_progress(current_step)
+        skipped_steps = self._determine_skipped_steps(project)
+        progress = AdvisorStateMachine.calculate_progress(current_step, skipped_steps=skipped_steps)
         audit = MethodologyValidator.audit_project(project)
 
         return {
@@ -44,10 +45,18 @@ class AdvisorService:
             "title": project.title,
             "academic_level": project.academic_level.value,
             "current_step": current_step.value,
+            "skipped_steps": [s.value for s in skipped_steps],
             "progress_percentage": progress,
             "can_advance": audit["is_consistent"],
             "audit": audit,
         }
+
+    def _determine_skipped_steps(self, project: ProjectStateDTO) -> list[AdvisorStep]:
+        """Determine intentionally skipped steps based on research approach."""
+        skipped: list[AdvisorStep] = []
+        if project.methodology.approach in (ResearchApproach.CUALITATIVO, ResearchApproach.MIXTO):
+            skipped.append(AdvisorStep.HYPOTHESIS)
+        return skipped
 
     def _determine_current_step(self, project: ProjectStateDTO) -> AdvisorStep:
         """Derive current interview step from existing project fields."""
@@ -248,12 +257,16 @@ class AdvisorService:
         # Persist updated project
         await self.repo.update_project(project)
         next_step = self._determine_current_step(project)
+        skipped_steps = self._determine_skipped_steps(project)
 
         return {
             "project_id": project.id,
             "step_processed": step.value,
             "next_step": next_step.value,
-            "progress_percentage": AdvisorStateMachine.calculate_progress(next_step),
+            "skipped_steps": [s.value for s in skipped_steps],
+            "progress_percentage": AdvisorStateMachine.calculate_progress(
+                next_step, skipped_steps=skipped_steps
+            ),
             "ai_analysis": ai_response,
             "project_state": project,
         }

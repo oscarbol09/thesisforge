@@ -42,6 +42,7 @@ class AdvisorStateDTO(BaseModel):
 
     current_step: AdvisorStep = AdvisorStep.SETUP
     completed_steps: list[AdvisorStep] = Field(default_factory=list)
+    skipped_steps: list[AdvisorStep] = Field(default_factory=list)
     step_history: dict[str, str] = Field(default_factory=dict)
     can_advance: bool = False
     progress_percentage: int = 0
@@ -51,42 +52,70 @@ class AdvisorStateMachine:
     """Controls and validates step progression during the interview."""
 
     @staticmethod
-    def calculate_progress(step: AdvisorStep) -> int:
-        """Calculate percentage completion based on step."""
+    def calculate_progress(
+        step: AdvisorStep, skipped_steps: list[AdvisorStep] | None = None
+    ) -> int:
+        """Calculate percentage completion based on step and optional skipped steps."""
         try:
-            index = ADVISOR_STEP_ORDER.index(step)
-            return int((index / (len(ADVISOR_STEP_ORDER) - 1)) * 100)
+            skipped = skipped_steps or []
+            effective_steps = [s for s in ADVISOR_STEP_ORDER if s not in skipped]
+            if not effective_steps:
+                return 0
+            if step not in effective_steps:
+                curr_idx = ADVISOR_STEP_ORDER.index(step)
+                passed = len(
+                    [s for s in effective_steps if ADVISOR_STEP_ORDER.index(s) <= curr_idx]
+                )
+                total = len(effective_steps) - 1
+                return int((passed / total) * 100) if total > 0 else 100
+            index = effective_steps.index(step)
+            total = len(effective_steps) - 1
+            return int((index / total) * 100) if total > 0 else 100
         except ValueError:
             return 0
 
     @staticmethod
-    def get_next_step(current_step: AdvisorStep) -> AdvisorStep:
-        """Get the immediate next step in the pipeline."""
+    def get_next_step(
+        current_step: AdvisorStep, skipped_steps: list[AdvisorStep] | None = None
+    ) -> AdvisorStep:
+        """Get the immediate next active step in the pipeline."""
         try:
+            skipped = skipped_steps or []
             curr_idx = ADVISOR_STEP_ORDER.index(current_step)
-            if curr_idx < len(ADVISOR_STEP_ORDER) - 1:
-                return ADVISOR_STEP_ORDER[curr_idx + 1]
+            for step in ADVISOR_STEP_ORDER[curr_idx + 1 :]:
+                if step not in skipped:
+                    return step
             return current_step
         except ValueError as err:
             raise InvalidPhaseTransitionError(f"Paso '{current_step}' desconocido.") from err
 
     @staticmethod
-    def get_previous_step(current_step: AdvisorStep) -> AdvisorStep:
-        """Get the immediate previous step for review/rollback."""
+    def get_previous_step(
+        current_step: AdvisorStep, skipped_steps: list[AdvisorStep] | None = None
+    ) -> AdvisorStep:
+        """Get the immediate previous active step for review/rollback."""
         try:
+            skipped = skipped_steps or []
             curr_idx = ADVISOR_STEP_ORDER.index(current_step)
-            if curr_idx > 0:
-                return ADVISOR_STEP_ORDER[curr_idx - 1]
+            for step in reversed(ADVISOR_STEP_ORDER[:curr_idx]):
+                if step not in skipped:
+                    return step
             return current_step
         except ValueError as err:
             raise InvalidPhaseTransitionError(f"Paso '{current_step}' desconocido.") from err
 
     @classmethod
-    def validate_transition(cls, from_step: AdvisorStep, to_step: AdvisorStep) -> bool:
-        """Ensure transitions only go forward sequentially or backward for revision."""
+    def validate_transition(
+        cls,
+        from_step: AdvisorStep,
+        to_step: AdvisorStep,
+        skipped_steps: list[AdvisorStep] | None = None,
+    ) -> bool:
+        """Ensure transitions only go forward sequentially (skipping bypassed steps) or backward for revision."""
         if from_step == to_step:
             return True
 
+        skipped = skipped_steps or []
         from_idx = ADVISOR_STEP_ORDER.index(from_step)
         to_idx = ADVISOR_STEP_ORDER.index(to_step)
 
@@ -94,8 +123,9 @@ class AdvisorStateMachine:
         if to_idx < from_idx:
             return True
 
-        # Allow advancing only to the next step
-        if to_idx == from_idx + 1:
+        # Allow advancing if all intermediate steps between from_idx and to_idx are skipped
+        intermediates = ADVISOR_STEP_ORDER[from_idx + 1 : to_idx]
+        if all(s in skipped for s in intermediates):
             return True
 
         raise InvalidPhaseTransitionError(

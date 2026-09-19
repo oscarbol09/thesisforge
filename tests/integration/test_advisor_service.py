@@ -9,8 +9,10 @@ from thesisforge.advisor.state_machine import AdvisorStep
 from thesisforge.llm.router import LLMRouter
 from thesisforge.models import (
     AcademicLevel,
+    MethodologyDTO,
     ProjectPhase,
     ProjectStateDTO,
+    ResearchApproach,
 )
 from thesisforge.repository.database import DatabaseManager
 from thesisforge.repository.project_repository import ProjectRepository
@@ -102,3 +104,44 @@ async def test_advisor_interview_progression_and_approval(in_memory_db: Database
 
     advanced_project = await service.approve_methodology("proj-interview-01")
     assert advanced_project.phase == ProjectPhase.CONTEXT
+
+
+@pytest.mark.asyncio
+async def test_qualitative_interview_progression_skips_hypothesis(
+    in_memory_db: DatabaseManager,
+):
+    """Verify that qualitative research projects properly skip hypothesis step in progress calculation."""
+    repo = ProjectRepository(in_memory_db)
+    router = LLMRouter()
+    service = AdvisorService(project_repo=repo, llm_router=router)
+
+    project = ProjectStateDTO(
+        id="proj-interview-qual-01",
+        title="Experiencias de Tesistas con Asistentes IA",
+        academic_level=AcademicLevel.MAESTRIA,
+        phase=ProjectPhase.ORIENTATION,
+        area_of_study="Ciencias de la Educación",
+        topic="Adopción tecnológica en posgrados",
+        research_problem="Existe desconocimiento sobre la vivencia fenomenológica de los tesistas al usar herramientas de IA.",
+        research_question="¿Cómo describen los estudiantes de posgrado su proceso de escritura asistida por IA?",
+        general_objective="Comprender las experiencias de estudiantes de posgrado en el uso de IA para redacción.",
+        specific_objectives=[
+            "Explorar las percepciones de autoeficacia en la redacción.",
+            "Describir las tensiones éticas experimentadas por los tesistas.",
+        ],
+        methodology=MethodologyDTO(
+            approach=ResearchApproach.CUALITATIVO,
+            design="Fenomenológico",
+            population="Estudiantes de maestría",
+            sample="12 participantes seleccionados por criterio",
+            instruments=["Entrevistas en profundidad semiestructuradas"],
+            analysis_technique="Análisis temático de Braun y Clarke",
+        ),
+    )
+
+    await repo.create_project(project)
+
+    status_info = await service.get_interview_status("proj-interview-qual-01")
+    assert AdvisorStep.HYPOTHESIS.value in status_info["skipped_steps"]
+    assert status_info["can_advance"] is True
+    assert status_info["progress_percentage"] == 100

@@ -83,9 +83,11 @@ ignore = ["E501", "B008"]
 known-first-party = ["thesisforge"]
 
 [tool.mypy]
-python_version = "3.10"
-files = ["src"]
+python_version = "3.12"
+files = ["src/thesisforge"]
 strict = true
+follow_imports = "silent"
+ignore_missing_imports = true
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = true

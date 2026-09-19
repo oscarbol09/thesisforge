@@ -7,35 +7,42 @@ from thesisforge.models import ProjectStateDTO, ResearchApproach
 
 # Standard academic taxonomy infinitive verbs (Bloom & Scientific Research Taxonomy)
 VALID_ACADEMIC_VERBS = {
-    # Exploratory / Descriptive
+    # Exploratory / Descriptive / Qualitative
     "analizar",
     "caracterizar",
     "clasificar",
     "comparar",
+    "comprender",
     "describir",
     "diagnosticar",
     "examinar",
     "explorar",
     "identificar",
+    "indagar",
     "interpretar",
+    "reconocer",
+    "sistematizar",
     # Correlational / Explanatory
+    "comprobar",
+    "contrastar",
+    "correlacionar",
+    "demostrar",
     "determinar",
     "establecer",
     "evaluar",
     "explicar",
-    "demostrar",
-    "correlacionar",
-    "comprobar",
-    "contrastar",
+    "verificar",
     # Applied / Constructive
-    "diseñar",
-    "desarrollar",
-    "implementar",
     "construir",
+    "desarrollar",
+    "diseñar",
+    "elaborar",
+    "estructurar",
     "formular",
-    "proponer",
-    "optimizar",
+    "implementar",
     "modelar",
+    "optimizar",
+    "proponer",
     "validar",
 }
 
@@ -162,16 +169,33 @@ class MethodologyValidator:
     @classmethod
     def audit_project(cls, project: ProjectStateDTO) -> dict[str, Any]:
         """Run a full consistency matrix audit across the project's methodological fields."""
-        all_issues: list[str] = []
-        all_issues.extend(cls.validate_problem_statement(project.research_problem))
-        all_issues.extend(cls.validate_research_question(project.research_question))
-        all_issues.extend(
-            cls.validate_general_objective(project.general_objective, project.research_question)
+        problem_issues = cls.validate_problem_statement(project.research_problem)
+        question_issues = cls.validate_research_question(project.research_question)
+        general_obj_issues = cls.validate_general_objective(
+            project.general_objective, project.research_question
         )
-        all_issues.extend(cls.validate_specific_objectives(project.specific_objectives))
-        all_issues.extend(cls.validate_hypothesis(project.hypothesis, project.methodology.approach))
+        spec_obj_issues = cls.validate_specific_objectives(project.specific_objectives)
+        hypo_issues = cls.validate_hypothesis(project.hypothesis, project.methodology.approach)
 
-        score = max(0, 100 - (len(all_issues) * 15))
+        all_issues: list[str] = (
+            problem_issues + question_issues + general_obj_issues + spec_obj_issues + hypo_issues
+        )
+
+        # Severity-weighted penalty calculation
+        penalty = 0
+        if problem_issues:
+            penalty += 15 * len(problem_issues)
+        if question_issues:
+            penalty += 25 * len(question_issues)
+        if general_obj_issues:
+            penalty += 25 * len(general_obj_issues)
+        if spec_obj_issues:
+            for iss in spec_obj_issues:
+                penalty += 15 if "al menos 2" in iss else 5
+        if hypo_issues:
+            penalty += 15 * len(hypo_issues)
+
+        score = max(0, 100 - penalty)
         is_consistent = len(all_issues) == 0
 
         return {
