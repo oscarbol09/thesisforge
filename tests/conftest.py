@@ -1,6 +1,7 @@
 """Hermetic test fixtures for ThesisForge unit and property tests."""
 
 import os
+import socket
 from collections.abc import AsyncGenerator
 
 import pytest
@@ -23,6 +24,25 @@ from thesisforge.models import (
     SectionStatus,
 )
 from thesisforge.repository.database import DatabaseManager
+
+
+@pytest.fixture(autouse=True)
+def mock_dns_for_hermetic_testing(monkeypatch: pytest.MonkeyPatch):
+    """Ensure hermetic test execution without outbound network DNS dependencies."""
+    original_getaddrinfo = socket.getaddrinfo
+
+    def hermetic_getaddrinfo(host, port, *args, **kwargs):
+        if not host:
+            return original_getaddrinfo(host, port, *args, **kwargs)
+        host_str = str(host).lower()
+        if host_str in ("localhost", "127.0.0.1", "::1"):
+            return [(socket.AF_INET, socket.SOCK_STREAM, 6, "", ("127.0.0.1", port or 0))]
+        if host_str.endswith(".local") or host_str.endswith(".internal"):
+            raise socket.gaierror(11001, "getaddrinfo failed")
+        # For academic APIs and external endpoints in unit tests, return a safe public IP
+        return [(socket.AF_INET, socket.SOCK_STREAM, 6, "", ("93.184.216.34", port or 0))]
+
+    monkeypatch.setattr(socket, "getaddrinfo", hermetic_getaddrinfo)
 
 
 @pytest.fixture(autouse=True)

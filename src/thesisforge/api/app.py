@@ -12,6 +12,7 @@ from starlette.responses import Response
 from thesisforge import __version__
 from thesisforge.api.deps import get_db_manager
 from thesisforge.api.routes_advisor import router as advisor_router
+from thesisforge.api.routes_literature import router as literature_router
 from thesisforge.api.routes_project import router as project_router
 from thesisforge.config import get_settings
 from thesisforge.core.logging import get_logger
@@ -142,6 +143,7 @@ def create_app() -> FastAPI:
     # Routers
     app.include_router(project_router)
     app.include_router(advisor_router)
+    app.include_router(literature_router)
 
     # Health check & system metadata
     @app.get("/health", tags=["system"])

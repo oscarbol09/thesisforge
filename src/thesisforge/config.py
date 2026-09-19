@@ -30,6 +30,8 @@ class RAGSettings(BaseModel):
     chunk_overlap: int = 200
     top_k_citations: int = 5
     similarity_threshold: float = 0.72
+    cache_ttl_hours: int = 48
+    chroma_dir: str = "data/chroma"
     academic_apis: dict[str, bool] = Field(
         default_factory=lambda: {
             "semantic_scholar": True,
@@ -70,6 +72,8 @@ class AppSettings(BaseSettings):
     openai_api_key: str | None = Field(default=None, alias="OPENAI_API_KEY")
     groq_api_key: str | None = Field(default=None, alias="GROQ_API_KEY")
     nvidia_nim_api_key: str | None = Field(default=None, alias="NVIDIA_NIM_API_KEY")
+    semantic_scholar_api_key: str | None = Field(default=None, alias="SEMANTIC_SCHOLAR_API_KEY")
+    crossref_mailto: str = Field(default="thesisforge@academic.org", alias="CROSSREF_MAILTO")
 
     # Nested sub-configs
     rag: RAGSettings = Field(default_factory=RAGSettings)

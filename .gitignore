@@ -87,8 +87,10 @@ dmypy.json
 .ruff_cache/
 
 # Chroma DB local data
+data/
 chroma_data/
 *.chroma
+
 
 # AI & Internal Development Plans / Agent docs
 implementation_plan.md

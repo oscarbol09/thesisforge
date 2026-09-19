@@ -46,7 +46,7 @@ class SectionStatus(str, Enum):
 
 
 class CitationDTO(BaseModel):
-    """Metadata for verified academic literature."""
+    """Metadata for verified academic literature with evidence traceability."""
 
     model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
 
@@ -61,12 +61,71 @@ class CitationDTO(BaseModel):
     source: str = Field(default="semantic_scholar", max_length=50)
     apa_formatted: str = Field(default="", max_length=1500)
 
+    # Evidence traceability fields (Sprint 2)
+    chunk_id: str | None = Field(default=None, max_length=100)
+    section_name: str | None = Field(default=None, max_length=200)
+    page_number: int | None = Field(default=None, ge=1)
+    relevance_score: float | None = Field(default=None, ge=0.0, le=1.0)
+    supports_claim: bool = False
+    evidence_text: str | None = Field(default=None, max_length=5000)
+
     @field_validator("authors", mode="before")
     @classmethod
     def validate_authors(cls, v: list[str] | str) -> list[str]:
         if isinstance(v, str):
             return [a.strip() for a in v.split(";") if a.strip()]
         return [str(a).strip() for a in v if str(a).strip()]
+
+
+class DocumentChunkDTO(BaseModel):
+    """Segment of indexed academic literature with structural provenance."""
+
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
+
+    id: str = Field(default_factory=lambda: uuid.uuid4().hex[:12])
+    document_id: str = Field(min_length=1, max_length=100)
+    project_id: str = Field(min_length=1, max_length=100)
+    title: str = Field(default="", max_length=500)
+    doi: str | None = Field(default=None, max_length=100)
+    authors: list[str] = Field(default_factory=list)
+    year: int | None = Field(default=None, ge=1800, le=2100)
+    page_number: int = Field(default=1, ge=1)
+    chunk_index: int = Field(default=0, ge=0)
+    section_name: str = Field(default="body", max_length=200)
+    text: str = Field(min_length=1)
+    char_start: int = 0
+    char_end: int = 0
+    created_at: datetime = Field(default_factory=utc_now)
+
+
+class EvidenceVerdictDTO(BaseModel):
+    """Validation report verifying whether a claim is substantiated by indexed literature."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    claim: str = Field(default="", min_length=0)
+    is_supported: bool
+    confidence_score: float = Field(ge=0.0, le=1.0)
+    supporting_chunks: list[CitationDTO] = Field(default_factory=list)
+    refuting_or_missing_reason: str = ""
+
+
+class AcademicSearchResultDTO(BaseModel):
+    """Unified search result entry across academic providers."""
+
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
+
+    paper_id: str
+    title: str
+    authors: list[str] = Field(default_factory=list)
+    year: int | None = None
+    venue: str | None = None
+    abstract: str | None = None
+    doi: str | None = None
+    url: str | None = None
+    citation_count: int | None = None
+    open_access_pdf: str | None = None
+    source: str = "semantic_scholar"
 
 
 class MethodologyDTO(BaseModel):

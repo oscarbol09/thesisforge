@@ -44,3 +44,19 @@ class LLMProviderError(ThesisForgeError):
 
 class RAGSearchError(ThesisForgeError):
     """Raised when academic literature retrieval or indexing fails."""
+
+
+class AcademicAPIError(RAGSearchError):
+    """Raised when an external academic API (Semantic Scholar, CrossRef, ArXiv) fails."""
+
+
+class DocumentProcessingError(ThesisForgeError):
+    """Raised when document parsing, text extraction, or chunking encounters an unrecoverable error."""
+
+
+class RAGIndexError(ThesisForgeError):
+    """Raised when indexing or querying vector embeddings in vector stores fails."""
+
+
+class CitationValidationError(ThesisForgeError):
+    """Raised when citation format, DOI validation, or academic metadata verification fails."""

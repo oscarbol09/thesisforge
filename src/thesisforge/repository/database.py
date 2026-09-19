@@ -32,6 +32,32 @@ CREATE TABLE IF NOT EXISTS keystore (
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS literature_cache (
+    cache_key TEXT PRIMARY KEY,
+    source TEXT NOT NULL,
+    data_json TEXT NOT NULL,
+    expires_at TEXT NOT NULL,
+    created_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_literature_cache_expires ON literature_cache(expires_at);
+
+CREATE TABLE IF NOT EXISTS document_chunks (
+    id TEXT PRIMARY KEY,
+    project_id TEXT NOT NULL,
+    document_id TEXT NOT NULL,
+    chunk_index INTEGER NOT NULL,
+    page_number INTEGER NOT NULL,
+    section_name TEXT NOT NULL,
+    text TEXT NOT NULL,
+    metadata_json TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    FOREIGN KEY(project_id) REFERENCES projects(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_document_chunks_project ON document_chunks(project_id);
+CREATE INDEX IF NOT EXISTS idx_document_chunks_doc ON document_chunks(document_id);
 """
 
 
