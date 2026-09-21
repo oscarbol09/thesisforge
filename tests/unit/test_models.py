@@ -61,3 +61,30 @@ def test_invalid_academic_level():
     """Test that invalid academic levels are rejected by Pydantic."""
     with pytest.raises(ValidationError):
         ProjectCreateDTO(title="Test", academic_level="post-doc")  # type: ignore[arg-type]
+
+
+def test_section_draft_dto_and_export_options():
+    """Test SectionDraftDTO chapter metadata and ExportOptionsDTO defaults."""
+    from thesisforge.models import ExportFormat, ExportOptionsDTO, SectionDraftDTO
+
+    draft = SectionDraftDTO(
+        section_id="sec_1_1",
+        title="1.1 Planteamiento del Problema",
+        chapter_number=1,
+        order_index=1,
+        content="Contenido del problema...",
+    )
+    assert draft.chapter_number == 1
+    assert draft.order_index == 1
+    assert draft.status == SectionStatus.PENDING
+
+    export_opts = ExportOptionsDTO(
+        format=ExportFormat.DOCX,
+        author_name="Oscar Madera",
+        institution_name="Universidad Nacional",
+    )
+    assert export_opts.format == ExportFormat.DOCX
+    assert export_opts.font_name == "Times New Roman"
+    assert export_opts.font_size_pt == 12
+    assert export_opts.line_spacing == 2.0
+    assert export_opts.include_cover_page is True

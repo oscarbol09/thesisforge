@@ -148,6 +148,8 @@ class SectionDraftDTO(BaseModel):
 
     section_id: str = Field(min_length=1, max_length=100)
     title: str = Field(min_length=1, max_length=300)
+    chapter_number: int = Field(default=1, ge=1, le=10)
+    order_index: int = Field(default=0, ge=0)
     content: str = ""
     summary: str = Field(default="", max_length=2000)
     status: SectionStatus = SectionStatus.PENDING
@@ -156,6 +158,35 @@ class SectionDraftDTO(BaseModel):
     user_feedback: str | None = None
     version: int = Field(default=1, ge=1)
     updated_at: datetime = Field(default_factory=utc_now)
+
+
+class ExportFormat(str, Enum):
+    """Supported document export formats."""
+
+    DOCX = "docx"
+    PDF = "pdf"
+    MARKDOWN = "markdown"
+
+
+class ExportOptionsDTO(BaseModel):
+    """Configuration options for thesis compilation and document export."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    format: ExportFormat = ExportFormat.DOCX
+    include_cover_page: bool = True
+    include_table_of_contents: bool = True
+    include_references: bool = True
+    font_name: str = Field(default="Times New Roman", max_length=50)
+    font_size_pt: int = Field(default=12, ge=10, le=14)
+    line_spacing: float = Field(default=2.0, ge=1.0, le=3.0)
+    margin_inches: float = Field(default=1.0, ge=0.5, le=2.0)
+    institution_name: str = Field(default="", max_length=200)
+    faculty_or_program: str = Field(default="", max_length=200)
+    author_name: str = Field(default="", max_length=200)
+    advisor_name: str = Field(default="", max_length=200)
+    city_and_country: str = Field(default="", max_length=200)
+    year: int | None = Field(default=None, ge=1900, le=2100)
 
 
 class ProjectCreateDTO(BaseModel):
