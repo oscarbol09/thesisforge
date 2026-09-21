@@ -102,7 +102,7 @@ class HierarchicalMemoryManager:
         # 4. Target Section Directives & Guidance
         section_title = current_section.title if current_section else (template.title if template else target_section_id)
         section_guidance = template.guidance if template else "Redacta con rigor metodológico."
-        user_notes = f"\nDirectrices específicas del investigador:\n\"\"\"\n{user_guidance.strip()}\n\"\"\"" if user_guidance else ""
+        user_notes = f'\nDirectrices específicas del investigador:\n"""\n{user_guidance.strip()}\n"""' if user_guidance else ""
 
         target_section_info = f"""[SECCIÓN A REDACTAR]
 - Identificador: {target_section_id}

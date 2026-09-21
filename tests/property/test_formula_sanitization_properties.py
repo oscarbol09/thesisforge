@@ -2,7 +2,8 @@
 
 import re
 
-from hypothesis import given, strategies as st
+from hypothesis import given
+from hypothesis import strategies as st
 
 from thesisforge.drafting.sanitizer import (
     FORMULA_TRIGGERS,

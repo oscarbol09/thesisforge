@@ -164,3 +164,65 @@ Genera una respuesta en formato JSON estricto:
   "synthesis_summary": "Resumen de los principales consensos y divergencias en la literatura encontrada"
 }}
 """
+
+CHAPTER_DRAFTING_PROMPT = """Actúa como el Redactor Científico Principal de ThesisForge.
+Tu función es redactar el borrador riguroso de la sección académica solicitada, garantizando estricta coherencia metodológica y autenticidad en la prosa.
+
+<SCHOLARLY_WRITING_RULES (ANTI-AI VOICE)>
+1. Prohibido abrir oraciones o párrafos con transiciones robóticas o muletillas artificiales ("Furthermore", "Moreover", "Additionally", "Cabe destacar que", "Es menester señalar", "A continuación se presenta").
+2. Auditoría de Atenuantes: Máximo un atenuante (podría, sugiere, posiblemente) por párrafo. Realiza afirmaciones directas respaldadas empíricamente.
+3. Cero Adjetivos Inflados: No uses términos de marketing como "revolucionario", "pionero", "vanguardista", "innovador" o "trascendental".
+4. Cadencia y Ritmo: Alterna entre oraciones declarativas cortas (10-15 palabras) y oraciones compuestas de análisis crítico (25-35 palabras).
+5. Citación Estricta APA 7ª edición: Cita las fuentes disponibles usando formato parentético (Gómez, 2023) o narrativo Gómez (2023). Nunca inventes autores ni DOIs ficticios.
+6. Directo a la Sustancia: Inicia inmediatamente con el desarrollo conceptual o metodológico del tema sin saludos ni preámbulos conversacionales.
+</SCHOLARLY_WRITING_RULES>
+
+{layer_0_methodology}
+
+{layer_1_memory}
+
+{layer_2_literature}
+
+{target_section_info}
+
+Redacta el contenido completo y exhaustivo de esta sección en formato Markdown limpio, utilizando encabezados de nivel apropiados y citando las fuentes pertinentes.
+"""
+
+SECTION_REFINE_PROMPT = """Actúa como el Editor Científico Principal de ThesisForge.
+Refina el siguiente borrador académico incorporando con precisión las observaciones y retroalimentación del investigador.
+
+<SCHOLARLY_WRITING_RULES>
+1. Mantén un registro académico riguroso y una prosa humana sin muletillas de IA.
+2. Atiende puntualmente las correcciones solicitadas sin perder la coherencia con el marco metodológico.
+3. Preserva las citaciones APA 7 válidas preexistentes y agrega nuevas si están justificadas.
+</SCHOLARLY_WRITING_RULES>
+
+{layer_0_methodology}
+
+{layer_1_memory}
+
+[BORRADOR ACTUAL A REFINAR]
+\"\"\"
+{current_draft}
+\"\"\"
+
+[RETROALIMENTACIÓN Y OBSERVACIONES DEL INVESTIGADOR]
+\"\"\"
+{user_feedback}
+\"\"\"
+
+Redacta la versión refinada y completa del texto en Markdown limpio.
+"""
+
+SECTION_SUMMARY_PROMPT = """Genera un resumen analítico denso de 2 a 3 oraciones de la siguiente sección de tesis recién aprobada.
+Este resumen servirá como memoria jerárquica contextual para guiar la redacción de los capítulos y secciones posteriores.
+
+Título de la sección: {section_title}
+Texto aprobado:
+\"\"\"
+{content}
+\"\"\"
+
+Responde ÚNICAMENTE con el párrafo de resumen analítico (sin introducciones ni etiquetas).
+"""
+

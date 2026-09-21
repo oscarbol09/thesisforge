@@ -60,3 +60,12 @@ class RAGIndexError(ThesisForgeError):
 
 class CitationValidationError(ThesisForgeError):
     """Raised when citation format, DOI validation, or academic metadata verification fails."""
+
+
+class SectionNotFoundError(ThesisForgeError):
+    """Raised when a specific chapter or section draft ID does not exist in the project."""
+
+
+class ExportError(ThesisForgeError):
+    """Raised when document compilation, DOCX formatting, or export pipeline fails."""
+
