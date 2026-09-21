@@ -8,12 +8,16 @@ import uvicorn
 
 from thesisforge import __version__
 from thesisforge.config import get_settings
-from thesisforge.models import CitationDTO
+from thesisforge.drafting.service import DraftService
+from thesisforge.export.service import ExportService
+from thesisforge.models import CitationDTO, ExportOptionsDTO
 from thesisforge.rag.apa_formatter import APA7Formatter
 from thesisforge.rag.clients.aggregator import AcademicSearchAggregator
 from thesisforge.rag.clients.arxiv import ArxivClient
 from thesisforge.rag.clients.crossref import CrossRefClient
 from thesisforge.rag.clients.semantic_scholar import SemanticScholarClient
+from thesisforge.repository.database import DatabaseManager
+from thesisforge.repository.project_repository import ProjectRepository
 
 
 async def _run_search_cli(query: str, limit: int, format_apa: bool) -> None:
@@ -58,6 +62,74 @@ async def _run_search_cli(query: str, limit: int, format_apa: bool) -> None:
         await ss.close()
         await arxiv.close()
         await cr.close()
+
+
+async def _run_export_docx_cli(
+    project_id: str,
+    output_path: str,
+    author: str = "",
+    institution: str = "",
+    advisor: str = "",
+) -> None:
+    """Compile and export project to Word (.docx) APA 7."""
+    settings = get_settings()
+    db = DatabaseManager(settings.database_url)
+    await db.initialize()
+    try:
+        repo = ProjectRepository(db)
+        export_service = ExportService(db_manager=db, project_repo=repo)
+        opts = ExportOptionsDTO(
+            author_name=author,
+            institution_name=institution,
+            advisor_name=advisor,
+        )
+        saved = await export_service.save_project_docx(project_id, output_path, opts)
+        size_kb = saved.stat().st_size / 1024
+        print(f"Documento APA 7 compilado exitosamente: {saved} ({size_kb:.1f} KB)")
+    finally:
+        await db.close()
+
+
+async def _run_draft_init_cli(project_id: str) -> None:
+    """Initialize canonical 5-chapter thesis outline."""
+    settings = get_settings()
+    db = DatabaseManager(settings.database_url)
+    await db.initialize()
+    try:
+        repo = ProjectRepository(db)
+        draft_service = DraftService(db_manager=db, project_repo=repo)
+        sections = await draft_service.initialize_thesis_sections(project_id)
+        print(f"Estructura capitular inicializada ({len(sections)} secciones creadas):")
+        for s in sections:
+            print(f"  [Cap. {s.chapter_number}] {s.section_id}: {s.title} ({s.status.value})")
+    finally:
+        await db.close()
+
+
+async def _run_draft_list_cli(project_id: str) -> None:
+    """List all sections belonging to a project."""
+    settings = get_settings()
+    db = DatabaseManager(settings.database_url)
+    await db.initialize()
+    try:
+        repo = ProjectRepository(db)
+        project = await repo.get_project(project_id)
+        if not project:
+            print(f"Proyecto '{project_id}' no encontrado.")
+            return
+
+        print(f"\nSecciones de tesis para el proyecto: '{project.title}' (ID: {project.id})\n" + "=" * 70)
+        sorted_sections = sorted(project.sections, key=lambda s: (s.chapter_number, s.order_index))
+        if not sorted_sections:
+            print("  No hay secciones inicializadas aún. Ejecute 'draft-init' primero.")
+            return
+
+        for s in sorted_sections:
+            words = f"{s.word_count} palabras"
+            print(f"  [Cap. {s.chapter_number}] {s.section_id:<12} | {s.status.value:<12} | {words:<14} | {s.title}")
+        print("=" * 70)
+    finally:
+        await db.close()
 
 
 def main() -> None:
@@ -112,12 +184,51 @@ def main() -> None:
         help="Output format: standard or apa",
     )
 
+    # export-docx command
+    export_parser = subparsers.add_parser(
+        "export-docx",
+        help="Compile and export a thesis project into APA 7th Edition Word document (.docx)",
+    )
+    export_parser.add_argument("--project-id", type=str, required=True, help="ID of the research project")
+    export_parser.add_argument("--output", type=str, required=True, help="Target .docx file path")
+    export_parser.add_argument("--author", type=str, default="", help="Author / Student name")
+    export_parser.add_argument("--institution", type=str, default="", help="Institution name")
+    export_parser.add_argument("--advisor", type=str, default="", help="Advisor name")
+
+    # draft-init command
+    init_parser = subparsers.add_parser(
+        "draft-init",
+        help="Initialize canonical 5-chapter outline sections for a thesis project",
+    )
+    init_parser.add_argument("--project-id", type=str, required=True, help="ID of the research project")
+
+    # draft-list command
+    list_parser = subparsers.add_parser(
+        "draft-list",
+        help="List all chapter sections and draft statuses for a project",
+    )
+    list_parser.add_argument("--project-id", type=str, required=True, help="ID of the research project")
+
     args = parser.parse_args()
     settings = get_settings()
 
     if args.command == "search-papers":
         format_apa = args.format_type == "apa"
         asyncio.run(_run_search_cli(query=args.query, limit=args.limit, format_apa=format_apa))
+    elif args.command == "export-docx":
+        asyncio.run(
+            _run_export_docx_cli(
+                project_id=args.project_id,
+                output_path=args.output,
+                author=args.author,
+                institution=args.institution,
+                advisor=args.advisor,
+            )
+        )
+    elif args.command == "draft-init":
+        asyncio.run(_run_draft_init_cli(project_id=args.project_id))
+    elif args.command == "draft-list":
+        asyncio.run(_run_draft_list_cli(project_id=args.project_id))
     elif args.command == "run" or args.command is None:
         host = args.host or settings.host
         port = args.port or settings.port

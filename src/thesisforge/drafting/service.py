@@ -8,7 +8,7 @@ from thesisforge.core.time import utc_now
 from thesisforge.drafting.memory import HierarchicalMemoryManager
 from thesisforge.drafting.sanitizer import clean_draft_markup
 from thesisforge.drafting.templates import get_default_thesis_sections
-from thesisforge.exceptions import SectionNotFoundError
+from thesisforge.exceptions import ConfigurationError, SectionNotFoundError
 from thesisforge.llm.prompts import (
     ADVISOR_SYSTEM_PROMPT,
     CHAPTER_DRAFTING_PROMPT,
@@ -38,7 +38,7 @@ class DraftService:
         self,
         db_manager: DatabaseManager,
         project_repo: ProjectRepository,
-        llm_router: LLMRouter,
+        llm_router: LLMRouter | None = None,
         rag_service: RAGService | None = None,
     ) -> None:
         self.db = db_manager
@@ -133,6 +133,8 @@ class DraftService:
         top_k_rag: int = 4,
     ) -> SectionDraftDTO:
         """Generate a complete chapter or subsection draft utilizing hierarchical memory and RAG."""
+        if not self.llm:
+            raise ConfigurationError("LLMRouter no está configurado en DraftService.")
         project = await self.repo.get_project(project_id)
         section = self._find_section(project, section_id)
 
@@ -180,6 +182,8 @@ class DraftService:
         top_k_rag: int = 4,
     ) -> AsyncGenerator[dict[str, Any], None]:
         """Stream generated section draft token-by-token over an async generator (WebSocket ready)."""
+        if not self.llm:
+            raise ConfigurationError("LLMRouter no está configurado en DraftService.")
         project = await self.repo.get_project(project_id)
         section = self._find_section(project, section_id)
 
@@ -237,6 +241,8 @@ class DraftService:
         user_feedback: str,
     ) -> SectionDraftDTO:
         """Refine an existing section draft based on user feedback and critiques."""
+        if not self.llm:
+            raise ConfigurationError("LLMRouter no está configurado en DraftService.")
         project = await self.repo.get_project(project_id)
         section = self._find_section(project, section_id)
 
@@ -276,6 +282,8 @@ class DraftService:
         user_feedback: str,
     ) -> AsyncGenerator[dict[str, Any], None]:
         """Stream revised draft tokens based on researcher feedback."""
+        if not self.llm:
+            raise ConfigurationError("LLMRouter no está configurado en DraftService.")
         project = await self.repo.get_project(project_id)
         section = self._find_section(project, section_id)
 
@@ -329,6 +337,7 @@ class DraftService:
         section_id: str,
         content: str,
         status: SectionStatus | None = None,
+        user_feedback: str | None = None,
     ) -> SectionDraftDTO:
         """Allow manual editing of section draft text by researcher."""
         project = await self.repo.get_project(project_id)
@@ -338,6 +347,8 @@ class DraftService:
         section.word_count = len(content.strip().split())
         if status:
             section.status = status
+        if user_feedback is not None:
+            section.user_feedback = user_feedback
         section.updated_at = utc_now()
 
         await self.repo.update_project(project)
@@ -357,22 +368,25 @@ class DraftService:
 
         # Generate summary for hierarchical memory if missing
         if not section.summary and section.content:
-            try:
-                summary_prompt = SECTION_SUMMARY_PROMPT.format(
-                    section_title=section.title,
-                    content=section.content[:3000],
-                )
-                summary_text = await self.llm.complete(
-                    prompt=summary_prompt,
-                    system_prompt=ADVISOR_SYSTEM_PROMPT.format(academic_level=project.academic_level.value),
-                    temperature=0.2,
-                )
-                section.summary = summary_text.strip()
-            except Exception as e:
-                logger.warning(
-                    "Automatic section summary generation failed on approval.",
-                    extra={"error": str(e)},
-                )
+            if self.llm:
+                try:
+                    summary_prompt = SECTION_SUMMARY_PROMPT.format(
+                        section_title=section.title,
+                        content=section.content[:3000],
+                    )
+                    summary_text = await self.llm.complete(
+                        prompt=summary_prompt,
+                        system_prompt=ADVISOR_SYSTEM_PROMPT.format(academic_level=project.academic_level.value),
+                        temperature=0.2,
+                    )
+                    section.summary = summary_text.strip()
+                except Exception as e:
+                    logger.warning(
+                        "Automatic section summary generation failed on approval.",
+                        extra={"error": str(e)},
+                    )
+                    section.summary = section.content[:250].strip() + "..."
+            else:
                 section.summary = section.content[:250].strip() + "..."
 
         # If all sections are approved, advance project phase to REVIEW

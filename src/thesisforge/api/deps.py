@@ -7,6 +7,8 @@ from fastapi import Depends
 from thesisforge.advisor.service import AdvisorService
 from thesisforge.config import AppSettings, get_settings
 from thesisforge.core.security import LocalKeyVault
+from thesisforge.drafting.service import DraftService
+from thesisforge.export.service import ExportService
 from thesisforge.llm.router import LLMRouter
 from thesisforge.rag.service import RAGService
 from thesisforge.repository.database import DatabaseManager
@@ -74,3 +76,20 @@ def get_rag_service(
         candidate_threshold=settings.rag.evidence_candidate_threshold,
         support_threshold=settings.rag.evidence_support_threshold,
     )
+
+
+def get_draft_service(
+    db: DatabaseManager = Depends(get_db_manager),
+    project_repo: ProjectRepository = Depends(get_project_repository),
+    llm_router: LLMRouter = Depends(get_llm_router),
+) -> DraftService:
+    """Drafting service dependency for section generation and memory."""
+    return DraftService(db_manager=db, project_repo=project_repo, llm_router=llm_router)
+
+
+def get_export_service(
+    db: DatabaseManager = Depends(get_db_manager),
+    project_repo: ProjectRepository = Depends(get_project_repository),
+) -> ExportService:
+    """Export service dependency for APA 7 document compilation."""
+    return ExportService(db_manager=db, project_repo=project_repo)

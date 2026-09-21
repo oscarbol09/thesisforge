@@ -12,15 +12,19 @@ from starlette.responses import Response
 from thesisforge import __version__
 from thesisforge.api.deps import get_db_manager
 from thesisforge.api.routes_advisor import router as advisor_router
+from thesisforge.api.routes_drafting import router as drafting_router
+from thesisforge.api.routes_export import router as export_router
 from thesisforge.api.routes_literature import router as literature_router
 from thesisforge.api.routes_project import router as project_router
 from thesisforge.config import get_settings
 from thesisforge.core.logging import get_logger
 from thesisforge.exceptions import (
+    ExportError,
     InvalidPhaseTransitionError,
     LLMProviderError,
     MethodologyValidationError,
     ProjectNotFoundError,
+    SectionNotFoundError,
     SecurityError,
     ThesisForgeError,
 )
@@ -89,6 +93,24 @@ def create_app() -> FastAPI:
             content={"error": "PROJECT_NOT_FOUND", "message": exc.message, "details": exc.details},
         )
 
+    @app.exception_handler(SectionNotFoundError)
+    async def section_not_found_handler(
+        request: Request, exc: SectionNotFoundError
+    ) -> JSONResponse:
+        return JSONResponse(
+            status_code=status.HTTP_404_NOT_FOUND,
+            content={"error": "SECTION_NOT_FOUND", "message": exc.message, "details": exc.details},
+        )
+
+    @app.exception_handler(ExportError)
+    async def export_error_handler(
+        request: Request, exc: ExportError
+    ) -> JSONResponse:
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content={"error": "EXPORT_ERROR", "message": exc.message, "details": exc.details},
+        )
+
     @app.exception_handler(MethodologyValidationError)
     async def methodology_validation_handler(
         request: Request, exc: MethodologyValidationError
@@ -144,6 +166,8 @@ def create_app() -> FastAPI:
     app.include_router(project_router)
     app.include_router(advisor_router)
     app.include_router(literature_router)
+    app.include_router(drafting_router)
+    app.include_router(export_router)
 
     # Health check & system metadata
     @app.get("/health", tags=["system"])
