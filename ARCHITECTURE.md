@@ -89,6 +89,16 @@ ThesisForge está diseñado bajo los siguientes principios arquitectónicos:
 - **`APA7Formatter`:** Formateador estricto de citaciones parentéticas, narrativas y lista de referencias bajo normas APA 7ª edición.
 - **`CitationGuard`:** Validador de DOIs y verificador de respaldo de afirmaciones (*claim-evidence grounding*) con umbrales configurables.
 
+### 3.7 Motor de Redacción Modular & Memoria Jerárquica (`src/thesisforge/drafting/`)
+- **`templates.py`:** Esquemas canónicos de 5 capítulos (19 secciones temáticas) para investigaciones cuantitativas, cualitativas y mixtas.
+- **`HierarchicalMemoryManager`:** Ensambla el contexto de 4 capas (Capa 0: Núcleo metodológico inmutable; Capa 1: Resúmenes de capítulos previos; Capa 2: Fragmentos RAG relevantes; Capa 3: Directrices específicas de la sección).
+- **`DraftService`:** Orquesta la generación de borradores, streaming por WebSockets, revisiones interactivas y aprobación de secciones con generación automática de resúmenes.
+- **`sanitizer.py`:** Sanitización defensiva contra Formula Injection (CWE-1236) en celdas de tablas y depuración de bloques de código markdown.
+
+### 3.8 Compilador DOCX & Exportación APA 7 (`src/thesisforge/export/`)
+- **`APA7DocxCompiler`:** Generador de documentos Word `.docx` con cumplimiento estricto de normas APA 7ma edición (márgenes de 2.54 cm, tipografía Times New Roman 12pt, interlineado doble, 5 niveles de títulos, tablas sin bordes verticales, sangría francesa en referencias y portada académica).
+- **`ExportService`:** Servicio asíncrono para exportación directa a memoria (`bytes`) y almacenamiento en disco.
+
 ---
 
 ## 4. Estrategia de Pruebas y Calidad

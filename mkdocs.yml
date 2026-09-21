@@ -56,6 +56,7 @@ markdown_extensions:
 nav:
   - Inicio: index.md
   - Primeros Pasos:
+      - Manual de Usuario: user-guide/MANUAL_DE_USUARIO.md
       - Instalación: getting-started/installation.md
       - Configuración Rápida: getting-started/quickstart.md
   - Guías:

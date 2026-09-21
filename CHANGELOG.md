@@ -9,10 +9,44 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/
 ## [Unreleased]
 
 ### Planned
-- Generador modular de capítulos con memoria jerárquica contextual (Sprint 3).
-- Compilador de documentos Word (`.docx`) formateados estrictamente según APA 7ª edición.
-- Sanitización de tablas exportadas contra inyección de fórmulas (CSV/Excel/Word).
-- Streaming de tokens en tiempo real vía WebSockets para redacción asistida.
+- Motor de auditoría y defensa de tesis en simulación de jurado evaluador (Sprint 4).
+- Interfaz gráfica web interactiva para visualización en tiempo real y edición sincronizada.
+
+---
+
+## [0.3.0] - 2026-09-21
+
+### Added
+- **Redacción Modular por Capítulos y Memoria Jerárquica Contextual:**
+  - Plantillas canónicas de tesis en 5 capítulos estructurados (`src/thesisforge/drafting/templates.py`), con esquemas diferenciados para metodologías cuantitativas, cualitativas y mixtas abarcando 19 secciones temáticas.
+  - Administrador de memoria en 4 capas (`HierarchicalMemoryManager` en `src/thesisforge/drafting/memory.py`):
+    - *Capa 0 (Núcleo Metodológico)*: Problema de investigación, pregunta general, hipótesis, variables y objetivos.
+    - *Capa 1 (Memoria Capitular Previa)*: Resúmenes sintetizados de secciones y capítulos aprobados para garantizar coherencia sintáctica e ilación lógica sin saturar la ventana de contexto del LLM.
+    - *Capa 2 (Evidencia RAG Indexada)*: Fragmentos bibliográficos recuperados de la literatura científica indexada.
+    - *Capa 3 (Directrices de Sección)*: Descripción, criterios de calidad y orientaciones específicas del tesista.
+  - Servicio de redacción `DraftService` (`src/thesisforge/drafting/service.py`) con soporte completo para inicialización capitular, generación asistida, streaming en tiempo real, revisión iterativa y aprobación con síntesis automática.
+  - Prompts de redacción científica anti-AI (`src/thesisforge/llm/prompts.py`) que imponen registro académico riguroso, especificidad empírica, voz activa y eliminación total de muletillas generadas por IA.
+- **Compilador DOCX APA 7ª Edición y Servicio de Exportación:**
+  - Compilador de documentos Word `APA7DocxCompiler` (`src/thesisforge/export/docx_compiler.py`) que implementa la totalidad de directrices editoriales APA 7:
+    - Márgenes estándar de 2.54 cm (1.0 pulgada) en los 4 bordes.
+    - Tipografía configurable (Times New Roman 12 pt, Calibri 11 pt) e interlineado doble (2.0) sin espaciado extra.
+    - Portada para estudiante y profesional con metadatos institucionales y de asesor.
+    - 5 niveles oficiales de encabezados APA (Centrado/Negrita, Alineado a la izquierda/Negrita, Cursiva, Sangrado).
+    - Renderizado de tablas APA 7 con bordes horizontales limpios y sin líneas verticales.
+    - Sección de Referencias con sangría francesa (1.27 cm) y ordenación alfabética automática.
+    - Numeración de página en el encabezado superior derecho mediante campo XML de Word.
+  - Servicio de exportación `ExportService` (`src/thesisforge/export/service.py`) para compilación asíncrona a memoria y archivo en disco.
+- **Seguridad Defensiva en Documentos (AppSec & CWE-1236):**
+  - Sanitizador `sanitize_cell_value` (`src/thesisforge/drafting/sanitizer.py`) que neutraliza caracteres peligrosos (`=`, `+`, `-`, `@`, `\t`, `\r`) en tablas de Word/Excel para prevenir ataques de Formula Injection (CWE-1236), preservando literales numéricos válidos.
+  - Filtro `clean_draft_markup` para depurar delimitadores de markdown y bloques espurios antes del guardado.
+- **Endpoints REST, WebSockets y Subcomandos CLI:**
+  - Endpoints REST en `/api/drafting` para inicializar esquemas, listar secciones, generar borradores, editar contenido, refinar texto y aprobar capítulos.
+  - Endpoint WebSocket `/api/drafting/ws/{project_id}/{section_id}` para streaming interactivo bidireccional con eventos `start`, `token` y `complete`.
+  - Endpoint REST `POST /api/export/projects/{project_id}/docx` con retorno de adjuntos Word `.docx`.
+  - Subcomandos de consola: `thesisforge draft-init`, `thesisforge draft-list` y `thesisforge export-docx`.
+- **Documentación Oficial y Suite de Pruebas:**
+  - Manual de Usuario Oficial en español (`docs/user-guide/MANUAL_DE_USUARIO.md`) que cubre el flujo integral de las tres fases.
+  - 124 pruebas unitarias, de integración y basadas en propiedades (Hypothesis) ejecutadas con 100% de aprobación.
 
 ---
 
@@ -58,14 +92,3 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/
   - Repositorio seguro de claves `SecureKeyStoreRepository` para gestión de credenciales BYOK por proveedor.
 - **Router LLM BYOK:**
   - Módulo `LLMRouter` con soporte para OpenRouter, Google Gemini, Groq, Ollama, OpenAI, Anthropic y NVIDIA NIM.
-  - Reintentos dinámicos basados en `tenacity.AsyncRetrying` con retroceso exponencial.
-  - Soporte para respuestas estructuradas en formato JSON y streaming de tokens.
-  - Plantillas de prompts versionadas para asesoría científica y matrices de consistencia.
-- **Asesor Metodológico:**
-  - Máquina de estados `AdvisorStateMachine` para control lineal de pasos de entrevista.
-  - Validador metodológico `MethodologyValidator` con verificación de taxonomía de Bloom, partículas interrogativas formales y consistencia de hipótesis.
-  - Servicio `AdvisorService` para orquestar la entrevista y la transición hacia la fase de contextualización.
-- **API REST & Middleware:**
-  - Endpoints de FastAPI para gestión de proyectos (`/api/projects`) y asesor metodológico (`/api/advisor`).
-  - Middleware de cabeceras de seguridad HTTP (CSP, `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy`).
-  - Suite completa de 63 pruebas unitarias, de integración y basadas en propiedades con `Hypothesis` y `pytest-cov` (85.63% de cobertura).

@@ -6,7 +6,7 @@ Este documento describe el plan estratégico de desarrollo técnico y evolución
 
 ## Declaración de Visión
 
-Permitir a estudiantes de pregrado, posgrado e investigadores estructurar proyectos de grado rigurosos, libres de alucinaciones y con coherencia metodológica estricta mediante IA explicable, búsqueda indexada de literatura científica real (RAG) y control total de sus datos (BYOK y local-first).
+Permitir a estudiantes de pregrado, posgrado e investigadores estructurar proyectos de grado rigurosos, libres de alucinaciones y con coherencia metodológica estricta mediante IA explicable, búsqueda indexada de literatura científica real (RAG), redacción modular asistida y control total de sus datos (BYOK y local-first).
 
 ---
 
@@ -19,11 +19,13 @@ gantt
     section Core y Asesor
     v0.1.0 Fundaciones y Máquina de Estados       :done,    des1, 2026-08, 2026-09
     section Literatura RAG
-    v0.2.0 Semantic Scholar, ArXiv y Vectores    :done,    des2, 2026-09, 2026-10
+    v0.2.0 Semantic Scholar, ArXiv y Vectores    :done,    des2, 2026-09, 2026-09
     section Redacción y APA 7
-    v0.3.0 Redacción Modular y DOCX APA 7        :active,  des3, 2026-10, 2026-11
+    v0.3.0 Redacción Modular y DOCX APA 7        :done,    des3, 2026-09, 2026-09
+    section Auditoría y Jurado
+    v0.4.0 Simulación de Jurado y Defensa        :active,  des4, 2026-10, 2026-11
     section Distribución y Escritorio
-    v1.0.0 Binarios de Escritorio y LaTeX        :         des4, 2026-11, 2026-12
+    v1.0.0 Binarios de Escritorio y LaTeX        :         des5, 2026-11, 2026-12
 ```
 
 ---
@@ -46,23 +48,28 @@ gantt
 
 ---
 
-### Fase 3: Redacción Modular y Compilación APA 7 (v0.3.0)
-- [ ] Memoria jerárquica contextual por capítulos (garantiza que el Capítulo 3 de Metodología herede los Objetivos del Capítulo 1).
-- [ ] Compilador de documentos Word (`.docx`) formateados estrictamente según APA 7 (portada, márgenes de 2.54 cm, sangría francesa y tablas).
-- [ ] Sanitización contra inyección de fórmulas en todas las tablas exportadas.
-- [ ] Streaming de tokens en tiempo real vía WebSockets.
-- [ ] Interfaz web interactiva con Tailwind CSS y Alpine.js.
-- [ ] **Manual de Usuario Oficial (v0.3.0):** Guía paso a paso ilustrada para estudiantes e investigadores (desde configuración BYOK y entrevista socrática hasta la exportación final de tesis).
+### Fase 3: Redacción Modular y Compilación APA 7 (v0.3.0) — [Completada]
+- [x] Plantillas canónicas de 5 capítulos (19 secciones) adaptadas para enfoques cuantitativos, cualitativos y mixtos.
+- [x] Memoria contextual jerárquica en 4 capas (Metodología -> Memoria de Capítulos Previos -> Evidencia RAG -> Directrices).
+- [x] Compilador de documentos Word (`.docx`) formateados estrictamente según APA 7ª edición (márgenes de 2.54 cm, tipografía, doble espacio, 5 niveles de encabezados, tablas y sangría francesa).
+- [x] Sanitización contra inyección de fórmulas (CWE-1236) en todas las tablas exportadas.
+- [x] Streaming de tokens en tiempo real vía WebSockets (`/api/drafting/ws/...`).
+- [x] **Manual de Usuario Oficial (v0.3.0):** Guía integral ilustrada en español para tesistas e investigadores (`docs/user-guide/MANUAL_DE_USUARIO.md`).
 
 ---
 
-### Fase 4: Distribución de Escritorio y Ecosistema (v1.0.0)
-- [ ] Empaquetado ejecutable de escritorio standalone con PyWebView (`.exe` para Windows, `.dmg` para macOS, AppImage para Linux).
+### Fase 4: Simulación de Jurado y Defensa de Tesis (v0.4.0) — [En Desarrollo]
+- [ ] Panel multi-agente de jurados evaluadores (Metodólogo, Especialista Temático, Auditor Estadístico).
+- [ ] Detección automatizada de sesgos metodológicos, contradicciones conceptuales y citas no fundamentadas.
+- [ ] Simulación de ronda de preguntas orales y defensa socrática de tesis.
+
+---
+
+### Fase 5: Distribución de Escritorio y Ecosistema (v1.0.0)
+- [ ] Empaquetado ejecutable de escritorio standalone (`.exe` para Windows, `.dmg` para macOS, AppImage para Linux).
 - [ ] Publicación del paquete en PyPI (`pip install thesisforge`).
 - [ ] Motor de exportación a LaTeX / Overleaf (archivos `.tex` y `.bib`).
 - [ ] Sincronización local con bibliotecas de Zotero y Mendeley.
-- [ ] Manual de Usuario interactivo integrado en la aplicación de escritorio y exportable a PDF.
-
 
 ---
 
@@ -71,4 +78,3 @@ gantt
 ¿Tienes una propuesta o mejora para ThesisForge?
 - Inicia una discusión en [GitHub Discussions](https://github.com/oscarbol09/thesisforge/discussions).
 - Envía una solicitud estructurada usando las plantillas de incidencias del repositorio.
-

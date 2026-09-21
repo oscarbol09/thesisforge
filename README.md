@@ -18,6 +18,7 @@
   <a href="https://github.com/astral-sh/ruff"><img src="https://img.shields.io/badge/code%20style-ruff-000000.svg" alt="Code style: ruff"></a>
   <a href="https://mypy.readthedocs.io/"><img src="https://img.shields.io/badge/type_checked-mypy_strict-brightgreen.svg" alt="Type Checked: mypy"></a>
   <a href="https://github.com/PyCQA/bandit"><img src="https://img.shields.io/badge/security-bandit-yellow.svg" alt="Security: Bandit"></a>
+  <a href="https://github.com/oscarbol09/thesisforge/releases"><img src="https://img.shields.io/badge/release-v0.3.0-indigo.svg" alt="Release v0.3.0"></a>
 </p>
 
 ---
@@ -44,7 +45,7 @@ $$\text{Orientación Metodológica (Entrevista Socrática)} \longrightarrow \tex
 | **Modelos locales (Ollama)** | Soportado | No | No | No |
 | **Entrevista metodológica guiada** | Sí (Máquina de estados finita) | No (Prompt libre) | Parcial | No |
 | **Verificación bibliográfica** | RAG con Semantic Scholar / CrossRef | Parcial | Sí | Alucinaciones frecuentes |
-| **Contexto jerárquico por capítulos** | Sí (Memoria acumulativa por sección) | No (Chat plano) | Parcial | Pérdida de contexto |
+| **Contexto jerárquico por capítulos** | Sí (Memoria de 4 capas por sección) | No (Chat plano) | Parcial | Pérdida de contexto |
 | **Formato de exportación** | Word (`.docx`) APA 7ª edición estructurado | Markdown plano | Limitado en plan gratuito | Texto sin formato |
 | **Licencia de software** | Código abierto (Apache 2.0) | Propietario / Freemium | Comercial (\$12–\$30/mes) | Comercial (\$20/mes) |
 
@@ -92,47 +93,77 @@ bandit -r src/ -ll
 
 ---
 
+## Uso desde la línea de comandos (CLI)
+
+```bash
+# Iniciar el servidor API local
+thesisforge run --port 8000
+
+# Buscar literatura real con citas en formato APA 7
+thesisforge search-papers "machine learning in healthcare" --limit 5 --format apa
+
+# Inicializar esquema de 5 capítulos para un proyecto
+thesisforge draft-init --project-id "proj-123"
+
+# Listar avance capitular y estado de borradores
+thesisforge draft-list --project-id "proj-123"
+
+# Compilar proyecto a Microsoft Word (.docx) APA 7ª edición
+thesisforge export-docx --project-id "proj-123" --output "./tesis_final.docx" --author "Valeria Mendoza"
+```
+
+---
+
 ## Arquitectura del sistema
 
 ThesisForge implementa una arquitectura en tres capas desacopladas con flujo de datos unidireccional:
 
 ```mermaid
 flowchart TD
-    subgraph UI ["1. Capa de Presentación"]
+    subgraph UI ["1. Capa de Presentación & CLI"]
         DESK["Desktop GUI (PyWebView)"]
         WEB["Cliente Web SPA (Tailwind + Alpine.js)"]
+        CLI["CLI de Consola (argparse + uvicorn)"]
     end
 
-    subgraph API ["2. Capa HTTP & API (FastAPI)"]
-        ROUTERS["Routers Tipados (Pydantic v2 DTOs)"]
+    subgraph API ["2. Capa HTTP & WebSockets (FastAPI)"]
+        ROUTERS["Routers Tipados (/projects, /advisor, /literature, /drafting, /export)"]
         SEC_MW["Middleware de Seguridad (CSP, CORS, Headers)"]
+        WS["WebSocket Streaming Hub (/api/drafting/ws/...)"]
     end
 
     subgraph Core ["3. Capa de Dominio & Servicios"]
         ADV["AdvisorService (Máquina de estados metodológica)"]
         RAG["RAGService (Búsqueda académica & Indexación)"]
-        DRAFT["DraftService (Memoria acumulativa por sección)"]
+        DRAFT["DraftService (Memoria jerárquica de 4 capas)"]
+        EXPORT["ExportService (Compilador Word APA 7 + CWE-1236 Defense)"]
         ROUTER_LLM["LLMRouter (BYOK Multi-proveedor + Tenacity)"]
     end
 
     subgraph Persistencia ["4. Capa de Persistencia & Criptografía"]
         VAULT["LocalKeyVault (Cifrado simétrico Fernet de 256 bits)"]
         DB[("SQLite Asíncrono (aiosqlite con modo WAL)")]
+        CHROMA[("ChromaDB Vector Store (Colecciones locales)")]
     end
 
     UI --> SEC_MW
     SEC_MW --> ROUTERS
+    SEC_MW --> WS
     ROUTERS --> ADV
     ROUTERS --> RAG
     ROUTERS --> DRAFT
+    ROUTERS --> EXPORT
+    WS --> DRAFT
     ADV --> ROUTER_LLM
     DRAFT --> ROUTER_LLM
+    RAG --> CHROMA
     ROUTER_LLM --> VAULT
     ADV --> DB
     DRAFT --> DB
+    EXPORT --> DB
 ```
 
-Consulta [`ARCHITECTURE.md`](ARCHITECTURE.md) para un desglose exhaustivo de los módulos y las decisiones de diseño.
+Consulta [`ARCHITECTURE.md`](ARCHITECTURE.md) y [`docs/user-guide/MANUAL_DE_USUARIO.md`](docs/user-guide/MANUAL_DE_USUARIO.md) para un desglose exhaustivo.
 
 ---
 
@@ -142,7 +173,7 @@ Consulta [`ARCHITECTURE.md`](ARCHITECTURE.md) para un desglose exhaustivo de los
 - **Defensa en profundidad contra SSRF:** Resolución de DNS y bloqueo estricto de direcciones IP en subredes privadas RFC 1918 (`127.0.0.0/8`, `10.0.0.0/8`, `192.168.0.0/16`, `169.254.0.0/16`, `::1/128`).
 - **Cifrado local en reposo:** Las credenciales de proveedores BYOK se cifran con Fernet (AES-128-CBC + HMAC-SHA256) antes de almacenarse en la base de datos.
 - **Sanitización de logs (CWE-117):** Registro estructurado en formato JSON con neutralización de saltos de línea y enmascaramiento de tokens y claves.
-- **Inyección de fórmulas:** Toda celda de datos que comience con caracteres ejecutables (`=`, `+`, `-`, `@`) es neutralizada al exportar a tablas.
+- **Defensa contra Formula Injection (CWE-1236):** Toda celda de datos que comience con caracteres ejecutables (`=`, `+`, `-`, `@`, `\t`, `\r`) es neutralizada al exportar a tablas Word/Excel.
 
 ---
 
@@ -159,10 +190,10 @@ Consulta [`ARCHITECTURE.md`](ARCHITECTURE.md) para un desglose exhaustivo de los
 - [x] **Sprint 0:** Fundaciones de seguridad, modelos Pydantic v2, configuración BYOK y repositorio base.
 - [x] **Sprint 1:** Router LLM multi-proveedor con reintentos Tenacity, máquina de estados del asesor metodológico y API REST.
 - [x] **Sprint 2:** Motor RAG de literatura académica (Semantic Scholar, ArXiv, CrossRef), extracción de PDFs con PyMuPDF, compuerta anti-alucinaciones e indexación local con ChromaDB (v0.2.0).
-- [ ] **Sprint 3:** Generador modular por capítulos con memoria acumulativa jerárquica y aprobación *Human-in-the-Loop*.
-- [ ] **Sprint 4:** Compilador de documentos Word (`.docx`) bajo estándar APA 7ª edición y sanitización de tablas.
+- [x] **Sprint 3:** Generador modular por capítulos con memoria acumulativa jerárquica, streaming por WebSockets, compilador APA 7 DOCX con defensa CWE-1236 y Manual de Usuario oficial (v0.3.0).
+- [ ] **Sprint 4:** Panel multi-agente de simulación de jurado y defensa de tesis (v0.4.0).
 - [ ] **Sprint 5:** Interfaz de usuario SPA con Tailwind CSS y lanzador de escritorio con PyWebView.
-- [ ] **Sprint 6:** Empaquetado ejecutable autónomo y pipeline de distribución.
+- [ ] **Sprint 6:** Empaquetado ejecutable autónomo (.exe, .dmg, AppImage) y distribución en PyPI (v1.0.0).
 
 ---
 
