@@ -59,8 +59,14 @@ async def test_api_export_project_docx(override_db: DatabaseManager):
             },
         )
         assert resp.status_code == 200
-        assert resp.headers["content-type"] == "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-        assert 'attachment; filename="tesis_proj-export-api-01.docx"' in resp.headers["content-disposition"]
+        assert (
+            resp.headers["content-type"]
+            == "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        )
+        assert (
+            'attachment; filename="tesis_proj-export-api-01.docx"'
+            in resp.headers["content-disposition"]
+        )
 
         # Parse returned bytes as valid docx
         doc = Document(io.BytesIO(resp.content))

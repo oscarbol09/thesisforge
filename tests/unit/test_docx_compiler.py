@@ -127,7 +127,8 @@ def test_docx_compiler_table_sanitization_and_borders():
                     "| Variable | Indicador | Fórmula Peligrosa |\n"
                     "|---|---|---|\n"
                     "| Rendimiento | Promedio | =SUM(A1:A10) |\n"
-                    r"| Asistencia | Porcentaje | @cmd\|' /C calc'!A0 |" "\n"
+                    r"| Asistencia | Porcentaje | @cmd\|' /C calc'!A0 |"
+                    "\n"
                     "| Control | Constante | +100 |\n"
                 ),
                 status=SectionStatus.APPROVED,

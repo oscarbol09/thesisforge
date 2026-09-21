@@ -29,7 +29,9 @@ def test_property_formula_trigger_sanitization_invariant(cell_text: str):
     # If the original started with a trigger, the sanitized version MUST start with an apostrophe
     first_char = cell_text.strip()[:1] if cell_text.strip() else ""
     if first_char in FORMULA_TRIGGERS:
-        assert sanitized.startswith("'"), f"Cell '{cell_text}' was not escaped with leading apostrophe"
+        assert sanitized.startswith("'"), (
+            f"Cell '{cell_text}' was not escaped with leading apostrophe"
+        )
 
 
 @given(st.floats(allow_nan=False, allow_infinity=False, min_value=-1e6, max_value=1e6))

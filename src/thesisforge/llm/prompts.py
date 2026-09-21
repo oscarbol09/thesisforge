@@ -225,4 +225,3 @@ Texto aprobado:
 
 Responde ÚNICAMENTE con el párrafo de resumen analítico (sin introducciones ni etiquetas).
 """
-

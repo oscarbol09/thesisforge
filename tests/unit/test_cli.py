@@ -108,7 +108,9 @@ def test_cli_export_docx_command(capsys: pytest.CaptureFixture[str], tmp_path: P
                 "Mario Vargas",
             ],
         ),
-        patch("thesisforge.export.service.ExportService.save_project_docx", new_callable=AsyncMock) as mock_save,
+        patch(
+            "thesisforge.export.service.ExportService.save_project_docx", new_callable=AsyncMock
+        ) as mock_save,
         patch("thesisforge.repository.database.DatabaseManager.initialize", new_callable=AsyncMock),
         patch("thesisforge.repository.database.DatabaseManager.close", new_callable=AsyncMock),
     ):
@@ -126,7 +128,10 @@ def test_cli_draft_init_command(capsys: pytest.CaptureFixture[str]):
             "sys.argv",
             ["thesisforge", "draft-init", "--project-id", "proj-cli-02"],
         ),
-        patch("thesisforge.drafting.service.DraftService.initialize_thesis_sections", new_callable=AsyncMock) as mock_init,
+        patch(
+            "thesisforge.drafting.service.DraftService.initialize_thesis_sections",
+            new_callable=AsyncMock,
+        ) as mock_init,
         patch("thesisforge.repository.database.DatabaseManager.initialize", new_callable=AsyncMock),
         patch("thesisforge.repository.database.DatabaseManager.close", new_callable=AsyncMock),
     ):
@@ -155,7 +160,10 @@ def test_cli_draft_list_command(capsys: pytest.CaptureFixture[str]):
             "sys.argv",
             ["thesisforge", "draft-list", "--project-id", "proj-cli-03"],
         ),
-        patch("thesisforge.repository.project_repository.ProjectRepository.get_project", new_callable=AsyncMock) as mock_get,
+        patch(
+            "thesisforge.repository.project_repository.ProjectRepository.get_project",
+            new_callable=AsyncMock,
+        ) as mock_get,
         patch("thesisforge.repository.database.DatabaseManager.initialize", new_callable=AsyncMock),
         patch("thesisforge.repository.database.DatabaseManager.close", new_callable=AsyncMock),
     ):

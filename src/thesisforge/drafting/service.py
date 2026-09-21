@@ -376,7 +376,9 @@ class DraftService:
                     )
                     summary_text = await self.llm.complete(
                         prompt=summary_prompt,
-                        system_prompt=ADVISOR_SYSTEM_PROMPT.format(academic_level=project.academic_level.value),
+                        system_prompt=ADVISOR_SYSTEM_PROMPT.format(
+                            academic_level=project.academic_level.value
+                        ),
                         temperature=0.2,
                     )
                     section.summary = summary_text.strip()
@@ -397,6 +399,10 @@ class DraftService:
         await self.repo.update_project(project)
         logger.info(
             "Section approved by researcher.",
-            extra={"project_id": project_id, "section_id": section_id, "phase": project.phase.value},
+            extra={
+                "project_id": project_id,
+                "section_id": section_id,
+                "phase": project.phase.value,
+            },
         )
         return section

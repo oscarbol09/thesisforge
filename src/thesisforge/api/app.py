@@ -103,9 +103,7 @@ def create_app() -> FastAPI:
         )
 
     @app.exception_handler(ExportError)
-    async def export_error_handler(
-        request: Request, exc: ExportError
-    ) -> JSONResponse:
+    async def export_error_handler(request: Request, exc: ExportError) -> JSONResponse:
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
             content={"error": "EXPORT_ERROR", "message": exc.message, "details": exc.details},

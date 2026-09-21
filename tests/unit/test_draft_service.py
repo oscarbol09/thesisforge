@@ -23,7 +23,9 @@ from thesisforge.repository.project_repository import ProjectRepository
 @pytest.fixture
 def mock_llm_router():
     router = AsyncMock(spec=LLMRouter)
-    router.complete.return_value = "Este es un borrador académico riguroso sobre el problema de investigación."
+    router.complete.return_value = (
+        "Este es un borrador académico riguroso sobre el problema de investigación."
+    )
 
     async def mock_stream(*args, **kwargs):
         tokens = ["Este ", "es ", "un ", "borrador ", "en ", "streaming."]
@@ -75,7 +77,9 @@ async def test_draft_service_get_section_and_not_found(
         academic_level=AcademicLevel.MAESTRIA,
         phase=ProjectPhase.DRAFTING,
         sections=[
-            SectionDraftDTO(section_id="sec_1_1", title="1.1 Planteamiento", chapter_number=1, order_index=1),
+            SectionDraftDTO(
+                section_id="sec_1_1", title="1.1 Planteamiento", chapter_number=1, order_index=1
+            ),
         ],
     )
     await repo.create_project(project)
@@ -102,7 +106,9 @@ async def test_draft_service_generate_section_draft(
         phase=ProjectPhase.DRAFTING,
         research_problem="Falta de rigor en citaciones.",
         sections=[
-            SectionDraftDTO(section_id="sec_1_1", title="1.1 Planteamiento", chapter_number=1, order_index=1),
+            SectionDraftDTO(
+                section_id="sec_1_1", title="1.1 Planteamiento", chapter_number=1, order_index=1
+            ),
         ],
     )
     await repo.create_project(project)
@@ -114,7 +120,10 @@ async def test_draft_service_generate_section_draft(
         user_guidance="Enfocarse en el contexto de universidades públicas.",
     )
 
-    assert draft.content == "Este es un borrador académico riguroso sobre el problema de investigación."
+    assert (
+        draft.content
+        == "Este es un borrador académico riguroso sobre el problema de investigación."
+    )
     assert draft.status == SectionStatus.READY_FOR_REVIEW
     assert draft.word_count == 11
     assert draft.version == 2
@@ -134,7 +143,9 @@ async def test_draft_service_stream_section_draft(
         academic_level=AcademicLevel.DOCTORADO,
         phase=ProjectPhase.DRAFTING,
         sections=[
-            SectionDraftDTO(section_id="sec_1_2", title="1.2 Preguntas", chapter_number=1, order_index=2),
+            SectionDraftDTO(
+                section_id="sec_1_2", title="1.2 Preguntas", chapter_number=1, order_index=2
+            ),
         ],
     )
     await repo.create_project(project)

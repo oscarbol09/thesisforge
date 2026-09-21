@@ -27,7 +27,9 @@ class SectionTemplate:
         AcademicLevel.DOCTORADO,
     )
     requires_rag: bool = False
-    section_type: Literal["introduction", "theory", "methods", "results", "conclusions"] = "introduction"
+    section_type: Literal["introduction", "theory", "methods", "results", "conclusions"] = (
+        "introduction"
+    )
 
 
 CANONICAL_THESIS_OUTLINE: list[SectionTemplate] = [
@@ -77,7 +79,6 @@ CANONICAL_THESIS_OUTLINE: list[SectionTemplate] = [
         guidance="Especifica las fronteras del estudio y los factores no controlados.",
         section_type="introduction",
     ),
-
     # --- CAPÍTULO 2: MARCO TEÓRICO Y CONCEPTUAL ---
     SectionTemplate(
         section_id="sec_2_1",
@@ -119,7 +120,6 @@ CANONICAL_THESIS_OUTLINE: list[SectionTemplate] = [
         applicable_approaches=(ResearchApproach.CUANTITATIVO, ResearchApproach.MIXTO),
         section_type="theory",
     ),
-
     # --- CAPÍTULO 3: MARCO METODOLÓGICO ---
     SectionTemplate(
         section_id="sec_3_1",
@@ -166,7 +166,6 @@ CANONICAL_THESIS_OUTLINE: list[SectionTemplate] = [
         guidance="Garantiza el cumplimiento de comités de ética institucionales.",
         section_type="methods",
     ),
-
     # --- CAPÍTULO 4: RESULTADOS Y DISCUSIÓN ---
     SectionTemplate(
         section_id="sec_4_1",
@@ -196,7 +195,6 @@ CANONICAL_THESIS_OUTLINE: list[SectionTemplate] = [
         requires_rag=True,
         section_type="results",
     ),
-
     # --- CAPÍTULO 5: CONCLUSIONES Y RECOMENDACIONES ---
     SectionTemplate(
         section_id="sec_5_1",

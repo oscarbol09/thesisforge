@@ -118,7 +118,9 @@ async def test_api_generate_and_refine_and_approve_section(override_deps: Databa
         assert ref_resp.json()["version"] >= 2
 
         # Approve section
-        appr_resp = await client.post("/api/drafting/projects/proj-api-draft-02/sections/sec_1_1/approve")
+        appr_resp = await client.post(
+            "/api/drafting/projects/proj-api-draft-02/sections/sec_1_1/approve"
+        )
         assert appr_resp.status_code == 200
         assert appr_resp.json()["status"] == SectionStatus.APPROVED.value
         assert appr_resp.json()["summary"] != ""

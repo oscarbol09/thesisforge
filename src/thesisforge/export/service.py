@@ -38,7 +38,9 @@ class ExportService:
 
         project = await self.project_repo.get_project(project_id)
         if not project:
-            raise ProjectNotFoundError(f"Proyecto con ID '{project_id}' no encontrado para exportación.")
+            raise ProjectNotFoundError(
+                f"Proyecto con ID '{project_id}' no encontrado para exportación."
+            )
 
         return self.compile_project_state_docx(project, options)
 
@@ -50,7 +52,9 @@ class ExportService:
         """Compile a ProjectStateDTO instance directly into APA 7 DOCX bytes."""
         opts = options or ExportOptionsDTO()
         if opts.format != ExportFormat.DOCX:
-            raise ExportError(f"Formato de exportación no soportado por este compilador: {opts.format}")
+            raise ExportError(
+                f"Formato de exportación no soportado por este compilador: {opts.format}"
+            )
 
         return self.compiler.compile_to_bytes(project, opts)
 

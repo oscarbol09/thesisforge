@@ -118,7 +118,10 @@ async def _run_draft_list_cli(project_id: str) -> None:
             print(f"Proyecto '{project_id}' no encontrado.")
             return
 
-        print(f"\nSecciones de tesis para el proyecto: '{project.title}' (ID: {project.id})\n" + "=" * 70)
+        print(
+            f"\nSecciones de tesis para el proyecto: '{project.title}' (ID: {project.id})\n"
+            + "=" * 70
+        )
         sorted_sections = sorted(project.sections, key=lambda s: (s.chapter_number, s.order_index))
         if not sorted_sections:
             print("  No hay secciones inicializadas aún. Ejecute 'draft-init' primero.")
@@ -126,7 +129,9 @@ async def _run_draft_list_cli(project_id: str) -> None:
 
         for s in sorted_sections:
             words = f"{s.word_count} palabras"
-            print(f"  [Cap. {s.chapter_number}] {s.section_id:<12} | {s.status.value:<12} | {words:<14} | {s.title}")
+            print(
+                f"  [Cap. {s.chapter_number}] {s.section_id:<12} | {s.status.value:<12} | {words:<14} | {s.title}"
+            )
         print("=" * 70)
     finally:
         await db.close()
@@ -189,7 +194,9 @@ def main() -> None:
         "export-docx",
         help="Compile and export a thesis project into APA 7th Edition Word document (.docx)",
     )
-    export_parser.add_argument("--project-id", type=str, required=True, help="ID of the research project")
+    export_parser.add_argument(
+        "--project-id", type=str, required=True, help="ID of the research project"
+    )
     export_parser.add_argument("--output", type=str, required=True, help="Target .docx file path")
     export_parser.add_argument("--author", type=str, default="", help="Author / Student name")
     export_parser.add_argument("--institution", type=str, default="", help="Institution name")
@@ -200,14 +207,18 @@ def main() -> None:
         "draft-init",
         help="Initialize canonical 5-chapter outline sections for a thesis project",
     )
-    init_parser.add_argument("--project-id", type=str, required=True, help="ID of the research project")
+    init_parser.add_argument(
+        "--project-id", type=str, required=True, help="ID of the research project"
+    )
 
     # draft-list command
     list_parser = subparsers.add_parser(
         "draft-list",
         help="List all chapter sections and draft statuses for a project",
     )
-    list_parser.add_argument("--project-id", type=str, required=True, help="ID of the research project")
+    list_parser.add_argument(
+        "--project-id", type=str, required=True, help="ID of the research project"
+    )
 
     args = parser.parse_args()
     settings = get_settings()

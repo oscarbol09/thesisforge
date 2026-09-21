@@ -32,33 +32,39 @@ class HierarchicalMemoryManager:
 
         # 1. Layer 0: Methodological Foundation
         methodology = project.methodology
-        specific_objs_formatted = "\n".join(
-            f"  - {idx + 1}. {obj}" for idx, obj in enumerate(project.specific_objectives)
-        ) or "  - No especificados"
+        specific_objs_formatted = (
+            "\n".join(
+                f"  - {idx + 1}. {obj}" for idx, obj in enumerate(project.specific_objectives)
+            )
+            or "  - No especificados"
+        )
 
-        variables_formatted = ", ".join(project.variables) if project.variables else "No especificadas"
-        instruments_formatted = ", ".join(methodology.instruments) if methodology.instruments else "No especificados"
+        variables_formatted = (
+            ", ".join(project.variables) if project.variables else "No especificadas"
+        )
+        instruments_formatted = (
+            ", ".join(methodology.instruments) if methodology.instruments else "No especificados"
+        )
 
         layer_0_methodology = f"""[FUNDACIÓN METODOLÓGICA DEL PROYECTO]
-- Título: {project.title or 'Sin título'}
+- Título: {project.title or "Sin título"}
 - Nivel Académico: {project.academic_level.value.upper()}
-- Enfoque: {methodology.approach.value.upper() if methodology.approach else 'CUANTITATIVO'}
-- Diseño: {methodology.design or 'No especificado'}
-- Problema Principal: {project.research_problem or 'No especificado'}
-- Pregunta Principal: {project.research_question or 'No especificada'}
-- Objetivo General: {project.general_objective or 'No especificado'}
+- Enfoque: {methodology.approach.value.upper() if methodology.approach else "CUANTITATIVO"}
+- Diseño: {methodology.design or "No especificado"}
+- Problema Principal: {project.research_problem or "No especificado"}
+- Pregunta Principal: {project.research_question or "No especificada"}
+- Objetivo General: {project.general_objective or "No especificado"}
 - Objetivos Específicos:
 {specific_objs_formatted}
-- Hipótesis: {project.hypothesis or 'No aplica'}
+- Hipótesis: {project.hypothesis or "No aplica"}
 - Variables / Categorías: {variables_formatted}
-- Población y Muestra: {methodology.population or 'No especificada'} | Muestra: {methodology.sample or 'No especificada'}
+- Población y Muestra: {methodology.population or "No especificada"} | Muestra: {methodology.sample or "No especificada"}
 - Instrumentos: {instruments_formatted}"""
 
         # 2. Layer 1: Preceding Chapters Memory (Cumulative)
         target_order = current_section.order_index if current_section else 999
         preceding_sections: list[SectionDraftDTO] = [
-            s for s in project.sections
-            if s.order_index < target_order and (s.summary or s.content)
+            s for s in project.sections if s.order_index < target_order and (s.summary or s.content)
         ]
 
         if preceding_sections:
@@ -70,7 +76,9 @@ class HierarchicalMemoryManager:
                 )
             layer_1_memory = "[MEMORIA DE CAPÍTULOS PRECEDENTES]\n" + "\n\n".join(preceding_entries)
         else:
-            layer_1_memory = "[MEMORIA DE CAPÍTULOS PRECEDENTES]\nEsta es la sección inicial del manuscrito."
+            layer_1_memory = (
+                "[MEMORIA DE CAPÍTULOS PRECEDENTES]\nEsta es la sección inicial del manuscrito."
+            )
 
         # 3. Layer 2: Literature & Citations (RAG)
         rag_passages_list: list[str] = []
@@ -97,17 +105,27 @@ class HierarchicalMemoryManager:
                 )
                 layer_2_literature = f"[REFERENCIAS DISPONIBLES EN EL PROYECTO]\n{cits_str}"
             else:
-                layer_2_literature = "[LITERATURA CIENTÍFICA]\nNo hay literatura indexada para esta sección."
+                layer_2_literature = (
+                    "[LITERATURA CIENTÍFICA]\nNo hay literatura indexada para esta sección."
+                )
 
         # 4. Target Section Directives & Guidance
-        section_title = current_section.title if current_section else (template.title if template else target_section_id)
+        section_title = (
+            current_section.title
+            if current_section
+            else (template.title if template else target_section_id)
+        )
         section_guidance = template.guidance if template else "Redacta con rigor metodológico."
-        user_notes = f'\nDirectrices específicas del investigador:\n"""\n{user_guidance.strip()}\n"""' if user_guidance else ""
+        user_notes = (
+            f'\nDirectrices específicas del investigador:\n"""\n{user_guidance.strip()}\n"""'
+            if user_guidance
+            else ""
+        )
 
         target_section_info = f"""[SECCIÓN A REDACTAR]
 - Identificador: {target_section_id}
 - Título: {section_title}
-- Objetivo de la sección: {template.description if template else 'Redacción de sección'}
+- Objetivo de la sección: {template.description if template else "Redacción de sección"}
 - Pautas metodológicas: {section_guidance}{user_notes}"""
 
         return {

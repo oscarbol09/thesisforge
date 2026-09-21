@@ -82,7 +82,9 @@ async def get_section(
     return await draft_service.get_section(project_id, section_id)
 
 
-@router.post("/projects/{project_id}/sections/{section_id}/generate", response_model=SectionDraftDTO)
+@router.post(
+    "/projects/{project_id}/sections/{section_id}/generate", response_model=SectionDraftDTO
+)
 async def generate_section(
     project_id: str,
     section_id: str,
@@ -172,10 +174,12 @@ async def websocket_draft_stream(
                 await websocket.send_json(event)
 
         else:
-            await websocket.send_json({
-                "event": "error",
-                "message": f"Acción desconocida: {action}",
-            })
+            await websocket.send_json(
+                {
+                    "event": "error",
+                    "message": f"Acción desconocida: {action}",
+                }
+            )
 
     except WebSocketDisconnect:
         logger.info("WebSocket client disconnected for section: %s", section_id)

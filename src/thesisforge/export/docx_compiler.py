@@ -263,7 +263,11 @@ class APA7DocxCompiler:
 
             if stripped.startswith("|") and stripped.endswith("|"):
                 table_lines: list[str] = []
-                while idx < n and lines[idx].strip().startswith("|") and lines[idx].strip().endswith("|"):
+                while (
+                    idx < n
+                    and lines[idx].strip().startswith("|")
+                    and lines[idx].strip().endswith("|")
+                ):
                     table_lines.append(lines[idx].strip())
                     idx += 1
                 self._render_table(doc, table_lines, options)
@@ -465,14 +469,14 @@ class APA7DocxCompiler:
         tblPr = table._tbl.tblPr
         ns = nsdecls("w")
         tblBorders = parse_xml(
-            f'<w:tblBorders {ns}>'
+            f"<w:tblBorders {ns}>"
             r'  <w:top w:val="single" w:sz="6" w:space="0" w:color="000000"/>'
             r'  <w:bottom w:val="single" w:sz="6" w:space="0" w:color="000000"/>'
             r'  <w:left w:val="none"/>'
             r'  <w:right w:val="none"/>'
             r'  <w:insideH w:val="none"/>'
             r'  <w:insideV w:val="none"/>'
-            r'</w:tblBorders>'
+            r"</w:tblBorders>"
         )
         tblPr.append(tblBorders)
 
@@ -480,9 +484,9 @@ class APA7DocxCompiler:
             for cell in table.rows[0].cells:
                 tcPr = cell._tc.get_or_add_tcPr()
                 tcBorders = parse_xml(
-                    f'<w:tcBorders {ns}>'
+                    f"<w:tcBorders {ns}>"
                     r'  <w:bottom w:val="single" w:sz="6" w:space="0" w:color="000000"/>'
-                    r'</w:tcBorders>'
+                    r"</w:tcBorders>"
                 )
                 tcPr.append(tcBorders)
 
@@ -552,7 +556,11 @@ class APA7DocxCompiler:
             r_jour.font.size = Pt(options.font_size_pt)
 
         if citation.doi:
-            doi_url = citation.doi if citation.doi.startswith("http") else f"https://doi.org/{citation.doi}"
+            doi_url = (
+                citation.doi
+                if citation.doi.startswith("http")
+                else f"https://doi.org/{citation.doi}"
+            )
             r_doi = p.add_run(doi_url)
             r_doi.font.name = options.font_name
             r_doi.font.size = Pt(options.font_size_pt)
@@ -582,14 +590,20 @@ class APA7DocxCompiler:
             is_code = False
             run_text = token
 
-            if (token.startswith("***") and token.endswith("***")) or (token.startswith("___") and token.endswith("___")):
+            if (token.startswith("***") and token.endswith("***")) or (
+                token.startswith("___") and token.endswith("___")
+            ):
                 bold = True
                 italic = True
                 run_text = token[3:-3]
-            elif (token.startswith("**") and token.endswith("**")) or (token.startswith("__") and token.endswith("__")):
+            elif (token.startswith("**") and token.endswith("**")) or (
+                token.startswith("__") and token.endswith("__")
+            ):
                 bold = True
                 run_text = token[2:-2]
-            elif (token.startswith("*") and token.endswith("*")) or (token.startswith("_") and token.endswith("_")):
+            elif (token.startswith("*") and token.endswith("*")) or (
+                token.startswith("_") and token.endswith("_")
+            ):
                 italic = True
                 run_text = token[1:-1]
             elif token.startswith("`") and token.endswith("`"):
