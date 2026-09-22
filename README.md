@@ -33,7 +33,7 @@ Los estudiantes de pregrado, posgrado e investigadores enfrentan tres fricciones
 
 ThesisForge estructura la elaboración del proyecto a través de cuatro etapas secuenciales con puntos de control humanos obligatorios:
 
-$$\text{Asesor Metodológico} \longrightarrow \text{Literatura RAG} \longrightarrow \text{Redacción Modular (APA 7)} \longrightarrow \text{Jurado & Defensa Oral}$$
+$$\text{Asesor Metodológico} \longrightarrow \text{Literatura RAG} \longrightarrow \text{Redacción Modular (APA 7)} \longrightarrow \text{Jurado y Defensa Oral}$$
 
 ---
 
