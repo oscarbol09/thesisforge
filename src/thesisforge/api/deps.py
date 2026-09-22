@@ -9,9 +9,11 @@ from thesisforge.config import AppSettings, get_settings
 from thesisforge.core.security import LocalKeyVault
 from thesisforge.drafting.service import DraftService
 from thesisforge.export.service import ExportService
+from thesisforge.jury.service import JuryService
 from thesisforge.llm.router import LLMRouter
 from thesisforge.rag.service import RAGService
 from thesisforge.repository.database import DatabaseManager
+from thesisforge.repository.jury_repository import JuryRepository
 from thesisforge.repository.keystore_repository import SecureKeyStoreRepository
 from thesisforge.repository.project_repository import ProjectRepository
 
@@ -93,3 +95,25 @@ def get_export_service(
 ) -> ExportService:
     """Export service dependency for APA 7 document compilation."""
     return ExportService(db_manager=db, project_repo=project_repo)
+
+
+def get_jury_repository(
+    db: DatabaseManager = Depends(get_db_manager),
+) -> JuryRepository:
+    """Jury repository dependency."""
+    return JuryRepository(db)
+
+
+def get_jury_service(
+    db: DatabaseManager = Depends(get_db_manager),
+    project_repo: ProjectRepository = Depends(get_project_repository),
+    jury_repo: JuryRepository = Depends(get_jury_repository),
+    llm_router: LLMRouter = Depends(get_llm_router),
+) -> JuryService:
+    """Jury service dependency for project audits and oral defense simulations."""
+    return JuryService(
+        db_manager=db,
+        project_repo=project_repo,
+        jury_repo=jury_repo,
+        llm_router=llm_router,
+    )

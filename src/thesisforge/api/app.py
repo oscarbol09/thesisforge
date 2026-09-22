@@ -12,15 +12,20 @@ from starlette.responses import Response
 from thesisforge import __version__
 from thesisforge.api.deps import get_db_manager
 from thesisforge.api.routes_advisor import router as advisor_router
+from thesisforge.api.routes_defense import router as defense_router
 from thesisforge.api.routes_drafting import router as drafting_router
 from thesisforge.api.routes_export import router as export_router
+from thesisforge.api.routes_jury import router as jury_router
 from thesisforge.api.routes_literature import router as literature_router
 from thesisforge.api.routes_project import router as project_router
 from thesisforge.config import get_settings
 from thesisforge.core.logging import get_logger
 from thesisforge.exceptions import (
+    DefenseSessionError,
+    DefenseTurnNotFoundError,
     ExportError,
     InvalidPhaseTransitionError,
+    JuryEvaluationError,
     LLMProviderError,
     MethodologyValidationError,
     ProjectNotFoundError,
@@ -153,6 +158,33 @@ def create_app() -> FastAPI:
             },
         )
 
+    @app.exception_handler(JuryEvaluationError)
+    async def jury_evaluation_handler(
+        request: Request, exc: JuryEvaluationError
+    ) -> JSONResponse:
+        return JSONResponse(
+            status_code=status.HTTP_404_NOT_FOUND if "no se encontró" in exc.message.lower() else status.HTTP_400_BAD_REQUEST,
+            content={"error": "JURY_EVALUATION_ERROR", "message": exc.message, "details": exc.details},
+        )
+
+    @app.exception_handler(DefenseTurnNotFoundError)
+    async def defense_turn_not_found_handler(
+        request: Request, exc: DefenseTurnNotFoundError
+    ) -> JSONResponse:
+        return JSONResponse(
+            status_code=status.HTTP_404_NOT_FOUND,
+            content={"error": "DEFENSE_TURN_NOT_FOUND", "message": exc.message, "details": exc.details},
+        )
+
+    @app.exception_handler(DefenseSessionError)
+    async def defense_session_handler(
+        request: Request, exc: DefenseSessionError
+    ) -> JSONResponse:
+        return JSONResponse(
+            status_code=status.HTTP_404_NOT_FOUND if "no se encontró" in exc.message.lower() else status.HTTP_400_BAD_REQUEST,
+            content={"error": "DEFENSE_SESSION_ERROR", "message": exc.message, "details": exc.details},
+        )
+
     @app.exception_handler(ThesisForgeError)
     async def general_domain_error_handler(request: Request, exc: ThesisForgeError) -> JSONResponse:
         return JSONResponse(
@@ -166,6 +198,8 @@ def create_app() -> FastAPI:
     app.include_router(literature_router)
     app.include_router(drafting_router)
     app.include_router(export_router)
+    app.include_router(jury_router)
+    app.include_router(defense_router)
 
     # Health check & system metadata
     @app.get("/health", tags=["system"])

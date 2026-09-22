@@ -137,6 +137,117 @@ async def _run_draft_list_cli(project_id: str) -> None:
         await db.close()
 
 
+async def _run_jury_audit_cli(project_id: str) -> None:
+    """Execute scientific jury audit from CLI and display formatted report."""
+    settings = get_settings()
+    db = DatabaseManager(settings.database_url)
+    await db.initialize()
+    try:
+        from thesisforge.jury.service import JuryService
+        from thesisforge.repository.jury_repository import JuryRepository
+
+        repo = ProjectRepository(db)
+        jury_repo = JuryRepository(db)
+        jury_service = JuryService(db_manager=db, project_repo=repo, jury_repo=jury_repo)
+
+        print(f"\nEjecutando auditoría del Tribunal Académico para el proyecto '{project_id}'...")
+        report = await jury_service.audit_project(project_id)
+
+        print("\n" + "=" * 70)
+        print(f"DICTAMEN OFICIAL DEL TRIBUNAL ACADÉMICO (ThesisForge v{__version__})")
+        print("=" * 70)
+        print(f"Calificación Global: {report.overall_score:.1f} / 100.0")
+        print(f"Veredicto:           {report.verdict.value.upper()}")
+        print(f"Dictamen Síntesis:   {report.summary_dictamen}")
+        print("\n--- EVALUACIONES POR MIEMBRO DEL TRIBUNAL ---")
+        for je in report.juror_evaluations:
+            print(f"\n• {je.juror_name} ({je.juror_role.value}) — {je.score:.1f}/100")
+            print(f"  Dimensión: {je.dimension_name}")
+            print(f"  Criterio:  {je.criteria_evaluation}")
+            print(f"  Feedback:  {je.feedback}")
+            if je.flaws:
+                print(f"  Objeciones: {', '.join(je.flaws)}")
+
+        if report.issues:
+            print("\n--- DEFECTOS E INCONSISTENCIAS DETECTADAS ---")
+            for idx, issue in enumerate(report.issues, start=1):
+                print(f"[{idx}] [{issue.severity.value.upper()}] {issue.title} ({issue.chapter_or_section})")
+                print(f"    Descripción: {issue.description}")
+                print(f"    Corrección:  {issue.recommendation}")
+
+        if report.mandatory_fixes:
+            print("\n--- MODIFICACIONES OBLIGATORIAS PARA APROBACIÓN ---")
+            for fix in report.mandatory_fixes:
+                print(f"  * {fix}")
+
+        print("=" * 70 + "\n")
+    finally:
+        await db.close()
+
+
+async def _run_defense_start_cli(project_id: str) -> None:
+    """Launch interactive thesis oral defense session in console."""
+    settings = get_settings()
+    db = DatabaseManager(settings.database_url)
+    await db.initialize()
+    try:
+        from thesisforge.jury.service import JuryService
+        from thesisforge.repository.jury_repository import JuryRepository
+
+        repo = ProjectRepository(db)
+        jury_repo = JuryRepository(db)
+        jury_service = JuryService(db_manager=db, project_repo=repo, jury_repo=jury_repo)
+
+        session = await jury_service.start_defense_session(project_id)
+        project = await repo.get_project(project_id)
+
+        print("\n" + "=" * 70)
+        print(f"TRIBUNAL DE SUSTENTACIÓN ORAL DE TESIS — NIVEL {project.academic_level.value.upper()}")
+        print(f"Proyecto: '{project.title}' (ID: {project.id})")
+        print(f"Sesión:   {session.id} ({session.total_turns} rondas de preguntas)")
+        print("=" * 70)
+
+        while session.current_turn_index < session.total_turns:
+            turn = session.turns[session.current_turn_index]
+            print(f"\n[Ronda {turn.turn_index + 1}/{session.total_turns}] {turn.juror_name} ({turn.juror_role.value})")
+            print(f"Área: {turn.focus_area}")
+            print(f'Pregunta: "{turn.question}"')
+            print("-" * 70)
+
+            # Check if running interactively
+            try:
+                answer = input("\nIngrese su argumentación y réplica oral (o 'exit' para pausar):\n> ").strip()
+            except (EOFError, KeyboardInterrupt):
+                print("\nSustentación pausada por el usuario.")
+                break
+
+            if not answer or answer.lower() == "exit":
+                print("Sesión guardada. Puede continuar en cualquier momento con el mismo comando.")
+                break
+
+            session = await jury_service.submit_defense_answer(
+                session_id=session.id,
+                turn_index=turn.turn_index,
+                student_answer=answer,
+            )
+
+            answered_turn = session.turns[turn.turn_index]
+            print(f"\nRetroalimentación del Jurado (Calificación: {answered_turn.turn_score:.1f}/100):")
+            print(f'"{answered_turn.juror_feedback}"')
+            print("=" * 70)
+
+        if session.current_turn_index >= session.total_turns:
+            print("\n" + "=" * 70)
+            print("VEREDICTO FINAL DE LA SUSTENTACIÓN ORAL DE TESIS")
+            print("=" * 70)
+            print(f"Calificación Final de Defensa: {session.final_score:.1f} / 100.0")
+            print(f"Resultado Oficial:             {session.final_verdict.value.upper() if session.final_verdict else 'N/A'}")
+            print(f"Observaciones del Tribunal:    {session.final_remarks}")
+            print("=" * 70 + "\n")
+    finally:
+        await db.close()
+
+
 def main() -> None:
     """Main CLI entrypoint for ThesisForge."""
     parser = argparse.ArgumentParser(
@@ -220,6 +331,24 @@ def main() -> None:
         "--project-id", type=str, required=True, help="ID of the research project"
     )
 
+    # jury-audit command
+    jury_parser = subparsers.add_parser(
+        "jury-audit",
+        help="Run comprehensive scientific jury evaluation and bias audit on a project",
+    )
+    jury_parser.add_argument(
+        "--project-id", type=str, required=True, help="ID of the research project"
+    )
+
+    # defense-start command
+    defense_parser = subparsers.add_parser(
+        "defense-start",
+        help="Start interactive oral thesis defense simulation with the academic jury",
+    )
+    defense_parser.add_argument(
+        "--project-id", type=str, required=True, help="ID of the research project"
+    )
+
     args = parser.parse_args()
     settings = get_settings()
 
@@ -240,6 +369,10 @@ def main() -> None:
         asyncio.run(_run_draft_init_cli(project_id=args.project_id))
     elif args.command == "draft-list":
         asyncio.run(_run_draft_list_cli(project_id=args.project_id))
+    elif args.command == "jury-audit":
+        asyncio.run(_run_jury_audit_cli(project_id=args.project_id))
+    elif args.command == "defense-start":
+        asyncio.run(_run_defense_start_cli(project_id=args.project_id))
     elif args.command == "run" or args.command is None:
         host = args.host or settings.host
         port = args.port or settings.port
