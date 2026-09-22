@@ -20,7 +20,7 @@ Aceptamos activamente contribuciones en las siguientes áreas técnicas:
 4. **Gestores bibliográficos:** Sincronización local con bibliotecas de Zotero o Mendeley.
 5. **Asesor metodológico:** Ampliación del árbol de validación y preguntas para diseños experimentales, cualitativos puros o estudios etnográficos.
 
-Revisa los problemas marcados con las etiquetas [`good first issue`](https://github.com/oscarbol09/thesisforge/labels/good%20first%20issue) o [`help wanted`](https://github.com/oscarbol09/thesisforge/labels/help%20wanted).
+Revisa los problemas marcados con las etiquetas [`good first issue`](https://github.com/oscarbol09/thesisforge/labels/good%20first%20issue) o [`help wanted`](https://github.com/oscarbol09/thesisforge/labels/help%20wanted). También puedes consultar nuestro [Catálogo de Primeros Issues](docs/guides/GOOD_FIRST_ISSUES.md) para ver tareas listas para implementar.
 
 ---
 

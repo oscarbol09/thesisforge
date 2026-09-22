@@ -70,5 +70,7 @@ nav:
       - Seguridad & SSRF Guard: architecture/security.md
   - Comunidad:
       - Contribuir: contributing.md
+      - Primeros Issues (Good First Issues): guides/GOOD_FIRST_ISSUES.md
+      - Postulaciones Awesome: guides/AWESOME_SUBMISSIONS.md
       - Roadmap: roadmap.md
       - Changelog: changelog.md
