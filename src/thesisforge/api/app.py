@@ -159,12 +159,16 @@ def create_app() -> FastAPI:
         )
 
     @app.exception_handler(JuryEvaluationError)
-    async def jury_evaluation_handler(
-        request: Request, exc: JuryEvaluationError
-    ) -> JSONResponse:
+    async def jury_evaluation_handler(request: Request, exc: JuryEvaluationError) -> JSONResponse:
         return JSONResponse(
-            status_code=status.HTTP_404_NOT_FOUND if "no se encontró" in exc.message.lower() else status.HTTP_400_BAD_REQUEST,
-            content={"error": "JURY_EVALUATION_ERROR", "message": exc.message, "details": exc.details},
+            status_code=status.HTTP_404_NOT_FOUND
+            if "no se encontró" in exc.message.lower()
+            else status.HTTP_400_BAD_REQUEST,
+            content={
+                "error": "JURY_EVALUATION_ERROR",
+                "message": exc.message,
+                "details": exc.details,
+            },
         )
 
     @app.exception_handler(DefenseTurnNotFoundError)
@@ -173,16 +177,24 @@ def create_app() -> FastAPI:
     ) -> JSONResponse:
         return JSONResponse(
             status_code=status.HTTP_404_NOT_FOUND,
-            content={"error": "DEFENSE_TURN_NOT_FOUND", "message": exc.message, "details": exc.details},
+            content={
+                "error": "DEFENSE_TURN_NOT_FOUND",
+                "message": exc.message,
+                "details": exc.details,
+            },
         )
 
     @app.exception_handler(DefenseSessionError)
-    async def defense_session_handler(
-        request: Request, exc: DefenseSessionError
-    ) -> JSONResponse:
+    async def defense_session_handler(request: Request, exc: DefenseSessionError) -> JSONResponse:
         return JSONResponse(
-            status_code=status.HTTP_404_NOT_FOUND if "no se encontró" in exc.message.lower() else status.HTTP_400_BAD_REQUEST,
-            content={"error": "DEFENSE_SESSION_ERROR", "message": exc.message, "details": exc.details},
+            status_code=status.HTTP_404_NOT_FOUND
+            if "no se encontró" in exc.message.lower()
+            else status.HTTP_400_BAD_REQUEST,
+            content={
+                "error": "DEFENSE_SESSION_ERROR",
+                "message": exc.message,
+                "details": exc.details,
+            },
         )
 
     @app.exception_handler(ThesisForgeError)

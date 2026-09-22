@@ -171,7 +171,9 @@ async def _run_jury_audit_cli(project_id: str) -> None:
         if report.issues:
             print("\n--- DEFECTOS E INCONSISTENCIAS DETECTADAS ---")
             for idx, issue in enumerate(report.issues, start=1):
-                print(f"[{idx}] [{issue.severity.value.upper()}] {issue.title} ({issue.chapter_or_section})")
+                print(
+                    f"[{idx}] [{issue.severity.value.upper()}] {issue.title} ({issue.chapter_or_section})"
+                )
                 print(f"    Descripción: {issue.description}")
                 print(f"    Corrección:  {issue.recommendation}")
 
@@ -202,21 +204,27 @@ async def _run_defense_start_cli(project_id: str) -> None:
         project = await repo.get_project(project_id)
 
         print("\n" + "=" * 70)
-        print(f"TRIBUNAL DE SUSTENTACIÓN ORAL DE TESIS — NIVEL {project.academic_level.value.upper()}")
+        print(
+            f"TRIBUNAL DE SUSTENTACIÓN ORAL DE TESIS — NIVEL {project.academic_level.value.upper()}"
+        )
         print(f"Proyecto: '{project.title}' (ID: {project.id})")
         print(f"Sesión:   {session.id} ({session.total_turns} rondas de preguntas)")
         print("=" * 70)
 
         while session.current_turn_index < session.total_turns:
             turn = session.turns[session.current_turn_index]
-            print(f"\n[Ronda {turn.turn_index + 1}/{session.total_turns}] {turn.juror_name} ({turn.juror_role.value})")
+            print(
+                f"\n[Ronda {turn.turn_index + 1}/{session.total_turns}] {turn.juror_name} ({turn.juror_role.value})"
+            )
             print(f"Área: {turn.focus_area}")
             print(f'Pregunta: "{turn.question}"')
             print("-" * 70)
 
             # Check if running interactively
             try:
-                answer = input("\nIngrese su argumentación y réplica oral (o 'exit' para pausar):\n> ").strip()
+                answer = input(
+                    "\nIngrese su argumentación y réplica oral (o 'exit' para pausar):\n> "
+                ).strip()
             except (EOFError, KeyboardInterrupt):
                 print("\nSustentación pausada por el usuario.")
                 break
@@ -232,7 +240,9 @@ async def _run_defense_start_cli(project_id: str) -> None:
             )
 
             answered_turn = session.turns[turn.turn_index]
-            print(f"\nRetroalimentación del Jurado (Calificación: {answered_turn.turn_score:.1f}/100):")
+            print(
+                f"\nRetroalimentación del Jurado (Calificación: {answered_turn.turn_score:.1f}/100):"
+            )
             print(f'"{answered_turn.juror_feedback}"')
             print("=" * 70)
 
@@ -241,7 +251,9 @@ async def _run_defense_start_cli(project_id: str) -> None:
             print("VEREDICTO FINAL DE LA SUSTENTACIÓN ORAL DE TESIS")
             print("=" * 70)
             print(f"Calificación Final de Defensa: {session.final_score:.1f} / 100.0")
-            print(f"Resultado Oficial:             {session.final_verdict.value.upper() if session.final_verdict else 'N/A'}")
+            print(
+                f"Resultado Oficial:             {session.final_verdict.value.upper() if session.final_verdict else 'N/A'}"
+            )
             print(f"Observaciones del Tribunal:    {session.final_remarks}")
             print("=" * 70 + "\n")
     finally:

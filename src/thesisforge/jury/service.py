@@ -45,7 +45,12 @@ class JuryService:
         await self.jury_repo.save_evaluation(report)
 
         # Update project phase if appropriate
-        if project.phase in (ProjectPhase.SETUP, ProjectPhase.ORIENTATION, ProjectPhase.CONTEXT, ProjectPhase.DRAFTING):
+        if project.phase in (
+            ProjectPhase.SETUP,
+            ProjectPhase.ORIENTATION,
+            ProjectPhase.CONTEXT,
+            ProjectPhase.DRAFTING,
+        ):
             project.phase = ProjectPhase.REVIEW
             await self.project_repo.update_project(project)
 
@@ -94,7 +99,11 @@ class JuryService:
         await self.jury_repo.save_defense_session(session)
         logger.info(
             "Initialized new oral defense session.",
-            extra={"session_id": session.id, "project_id": project_id, "turns": session.total_turns},
+            extra={
+                "session_id": session.id,
+                "project_id": project_id,
+                "turns": session.total_turns,
+            },
         )
         return session
 
@@ -118,7 +127,10 @@ class JuryService:
         await self.jury_repo.update_defense_session(updated_session)
 
         # If defense is completed with success, mark project as completed
-        if updated_session.status in (DefenseStatus.PASSED, DefenseStatus.PASSED_WITH_HONORS) and project.phase != ProjectPhase.COMPLETED:
+        if (
+            updated_session.status in (DefenseStatus.PASSED, DefenseStatus.PASSED_WITH_HONORS)
+            and project.phase != ProjectPhase.COMPLETED
+        ):
             project.phase = ProjectPhase.COMPLETED
             await self.project_repo.update_project(project)
 

@@ -49,10 +49,13 @@ class JuryRepository:
 
     async def get_evaluation(self, evaluation_id: str) -> JuryEvaluationReportDTO:
         """Retrieve a specific evaluation report by ID."""
-        async with self.db.get_connection() as db, db.execute(
-            "SELECT evaluation_json FROM jury_evaluations WHERE id = ?;",
-            (evaluation_id,),
-        ) as cursor:
+        async with (
+            self.db.get_connection() as db,
+            db.execute(
+                "SELECT evaluation_json FROM jury_evaluations WHERE id = ?;",
+                (evaluation_id,),
+            ) as cursor,
+        ):
             row = await cursor.fetchone()
             if not row:
                 raise JuryEvaluationError(
@@ -66,33 +69,37 @@ class JuryRepository:
         self, project_id: str
     ) -> JuryEvaluationReportDTO | None:
         """Retrieve the most recent jury evaluation report for a project."""
-        async with self.db.get_connection() as db, db.execute(
-            """
+        async with (
+            self.db.get_connection() as db,
+            db.execute(
+                """
                 SELECT evaluation_json FROM jury_evaluations
                 WHERE project_id = ?
                 ORDER BY created_at DESC
                 LIMIT 1;
                 """,
-            (project_id,),
-        ) as cursor:
+                (project_id,),
+            ) as cursor,
+        ):
             row = await cursor.fetchone()
             if not row:
                 return None
             data = json.loads(row["evaluation_json"])
             return JuryEvaluationReportDTO.model_validate(data)
 
-    async def list_evaluations_for_project(
-        self, project_id: str
-    ) -> list[JuryEvaluationReportDTO]:
+    async def list_evaluations_for_project(self, project_id: str) -> list[JuryEvaluationReportDTO]:
         """List all historical jury evaluations for a project."""
-        async with self.db.get_connection() as db, db.execute(
-            """
+        async with (
+            self.db.get_connection() as db,
+            db.execute(
+                """
                 SELECT evaluation_json FROM jury_evaluations
                 WHERE project_id = ?
                 ORDER BY created_at DESC;
                 """,
-            (project_id,),
-        ) as cursor:
+                (project_id,),
+            ) as cursor,
+        ):
             rows = await cursor.fetchall()
             results: list[JuryEvaluationReportDTO] = []
             for r in rows:
@@ -166,10 +173,13 @@ class JuryRepository:
 
     async def get_defense_session(self, session_id: str) -> DefenseSessionDTO:
         """Retrieve a defense session by its unique ID."""
-        async with self.db.get_connection() as db, db.execute(
-            "SELECT session_json FROM defense_sessions WHERE id = ?;",
-            (session_id,),
-        ) as cursor:
+        async with (
+            self.db.get_connection() as db,
+            db.execute(
+                "SELECT session_json FROM defense_sessions WHERE id = ?;",
+                (session_id,),
+            ) as cursor,
+        ):
             row = await cursor.fetchone()
             if not row:
                 raise DefenseSessionError(
@@ -183,33 +193,37 @@ class JuryRepository:
         self, project_id: str
     ) -> DefenseSessionDTO | None:
         """Retrieve the currently active (in_progress) defense session for a project if any."""
-        async with self.db.get_connection() as db, db.execute(
-            """
+        async with (
+            self.db.get_connection() as db,
+            db.execute(
+                """
                 SELECT session_json FROM defense_sessions
                 WHERE project_id = ? AND status = 'in_progress'
                 ORDER BY updated_at DESC
                 LIMIT 1;
                 """,
-            (project_id,),
-        ) as cursor:
+                (project_id,),
+            ) as cursor,
+        ):
             row = await cursor.fetchone()
             if not row:
                 return None
             data = json.loads(row["session_json"])
             return DefenseSessionDTO.model_validate(data)
 
-    async def list_defense_sessions_for_project(
-        self, project_id: str
-    ) -> list[DefenseSessionDTO]:
+    async def list_defense_sessions_for_project(self, project_id: str) -> list[DefenseSessionDTO]:
         """List all defense sessions for a given project."""
-        async with self.db.get_connection() as db, db.execute(
-            """
+        async with (
+            self.db.get_connection() as db,
+            db.execute(
+                """
                 SELECT session_json FROM defense_sessions
                 WHERE project_id = ?
                 ORDER BY created_at DESC;
                 """,
-            (project_id,),
-        ) as cursor:
+                (project_id,),
+            ) as cursor,
+        ):
             rows = await cursor.fetchall()
             results: list[DefenseSessionDTO] = []
             for r in rows:

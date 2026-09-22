@@ -37,7 +37,11 @@ async def seeded_defense_project(override_deps: DatabaseManager) -> ProjectState
         research_problem="Las plagas agrícolas generan pérdidas del 30% en cultivos de café sin detección temprana.",
         research_question="¿Qué arquitectura CNN maximiza la sensibilidad en detección de plagas?",
         general_objective="Desarrollar y evaluar un modelo CNN para detección temprana de plagas.",
-        specific_objectives=["Recopilar dataset de imágenes", "Entrenar ResNet50 y EfficientNet", "Comparar métricas F1"],
+        specific_objectives=[
+            "Recopilar dataset de imágenes",
+            "Entrenar ResNet50 y EfficientNet",
+            "Comparar métricas F1",
+        ],
         hypothesis="EfficientNetB0 supera en 5 puntos de F1-score a ResNet50.",
         methodology=MethodologyDTO(
             approach=ResearchApproach.CUANTITATIVO,

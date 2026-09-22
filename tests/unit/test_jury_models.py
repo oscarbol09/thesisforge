@@ -129,7 +129,11 @@ def test_defense_session_dto_lifecycle() -> None:
     assert session.turns[0].is_answered is False
 
     # Simulate answering turn
-    session.turns[0].student_answer = "La historia y la maduración de los sujetos fueron controladas mediante grupo de control."
+    session.turns[
+        0
+    ].student_answer = (
+        "La historia y la maduración de los sujetos fueron controladas mediante grupo de control."
+    )
     session.turns[0].juror_feedback = "Respuesta rigurosa."
     session.turns[0].turn_score = 90.0
     session.turns[0].is_answered = True

@@ -155,7 +155,9 @@ async def test_defense_session_crud_and_turn_progression(in_memory_db: DatabaseM
     assert active.id == "def-session-001"
 
     # Simulate answering turn 0 and updating session
-    session.turns[0].student_answer = "Fijamos la temperatura en 0.0 y ejecutamos 5 repeticiones por consulta."
+    session.turns[
+        0
+    ].student_answer = "Fijamos la temperatura en 0.0 y ejecutamos 5 repeticiones por consulta."
     session.turns[0].juror_feedback = "Respuesta fundamentada y metodológicamente acertada."
     session.turns[0].turn_score = 95.0
     session.turns[0].is_answered = True

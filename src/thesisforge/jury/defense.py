@@ -39,9 +39,17 @@ class ThesisDefenseSimulator:
         methodology = project.methodology
         design = methodology.design if methodology and methodology.design else "diseño metodológico"
         sample = methodology.sample if methodology and methodology.sample else "muestra de estudio"
-        technique = methodology.analysis_technique if methodology and methodology.analysis_technique else "análisis de datos"
+        technique = (
+            methodology.analysis_technique
+            if methodology and methodology.analysis_technique
+            else "análisis de datos"
+        )
 
-        level_qualifier = "doctoral" if level == AcademicLevel.DOCTORADO else ("de maestría" if level == AcademicLevel.MAESTRIA else "de pregrado")
+        level_qualifier = (
+            "doctoral"
+            if level == AcademicLevel.DOCTORADO
+            else ("de maestría" if level == AcademicLevel.MAESTRIA else "de pregrado")
+        )
 
         # Question 1: Methodologist
         if project.hypothesis:
@@ -120,14 +128,19 @@ class ThesisDefenseSimulator:
 
         if self.llm:
             try:
-                sections_summary = "\n".join(
-                    f"- {s.title}: {s.summary or s.content[:150] + '...'}"
-                    for s in project.sections
-                ) or "Borradores no inicializados."
+                sections_summary = (
+                    "\n".join(
+                        f"- {s.title}: {s.summary or s.content[:150] + '...'}"
+                        for s in project.sections
+                    )
+                    or "Borradores no inicializados."
+                )
 
                 known_flaws = ""
                 if evaluation:
-                    known_flaws = "\n".join(f"- {i.title}: {i.description}" for i in evaluation.issues[:4])
+                    known_flaws = "\n".join(
+                        f"- {i.title}: {i.description}" for i in evaluation.issues[:4]
+                    )
                 else:
                     known_flaws = "Sin auditoría previa registrada."
 
@@ -137,12 +150,20 @@ class ThesisDefenseSimulator:
                     research_question=project.research_question or "No especificada",
                     general_objective=project.general_objective or "No especificado",
                     hypothesis=project.hypothesis or "No formulada",
-                    approach=project.methodology.approach.value if project.methodology and project.methodology.approach else "No definido",
+                    approach=project.methodology.approach.value
+                    if project.methodology and project.methodology.approach
+                    else "No definido",
                     design=project.methodology.design if project.methodology else "No definido",
-                    population=project.methodology.population if project.methodology else "No definida",
+                    population=project.methodology.population
+                    if project.methodology
+                    else "No definida",
                     sample=project.methodology.sample if project.methodology else "No definida",
-                    instruments=", ".join(project.methodology.instruments) if project.methodology else "Ninguno",
-                    analysis_technique=project.methodology.analysis_technique if project.methodology else "No especificada",
+                    instruments=", ".join(project.methodology.instruments)
+                    if project.methodology
+                    else "Ninguno",
+                    analysis_technique=project.methodology.analysis_technique
+                    if project.methodology
+                    else "No especificada",
                     sections_summary=sections_summary,
                     known_flaws=known_flaws,
                 )
@@ -153,13 +174,24 @@ class ThesisDefenseSimulator:
                     llm_turns: list[DefenseTurnDTO] = []
                     role_map = {
                         "metodologo": (JurorRole.METODOLOGO, "Dr. Arístides Valenzuela"),
-                        "especialista_tematico": (JurorRole.ESPECIALISTA_TEMATICO, "Dra. Beatriz Salamanca"),
-                        "auditor_estadistico": (JurorRole.AUDITOR_ESTADISTICO, "Dr. Camilo Restrepo"),
-                        "abogado_del_diablo": (JurorRole.ABOGADO_DEL_DIABLO, "Dr. Demetrio Sotomayor"),
+                        "especialista_tematico": (
+                            JurorRole.ESPECIALISTA_TEMATICO,
+                            "Dra. Beatriz Salamanca",
+                        ),
+                        "auditor_estadistico": (
+                            JurorRole.AUDITOR_ESTADISTICO,
+                            "Dr. Camilo Restrepo",
+                        ),
+                        "abogado_del_diablo": (
+                            JurorRole.ABOGADO_DEL_DIABLO,
+                            "Dr. Demetrio Sotomayor",
+                        ),
                     }
                     for idx, q_data in enumerate(raw_questions[:4]):
                         role_str = str(q_data.get("juror_role", "")).lower()
-                        role_enum, default_name = role_map.get(role_str, (JurorRole.METODOLOGO, "Dr. Arístides Valenzuela"))
+                        role_enum, default_name = role_map.get(
+                            role_str, (JurorRole.METODOLOGO, "Dr. Arístides Valenzuela")
+                        )
                         llm_turns.append(
                             DefenseTurnDTO(
                                 turn_index=idx,
@@ -210,9 +242,23 @@ class ThesisDefenseSimulator:
 
         # Terminology & empirical grounding heuristics
         technical_keywords = [
-            "metodología", "diseño", "validez", "muestra", "variables", "análisis",
-            "control", "hipótesis", "confiabilidad", "instrumento", "limitación",
-            "alcance", "datos", "empírico", "evidencia", "teoría", "triangulación"
+            "metodología",
+            "diseño",
+            "validez",
+            "muestra",
+            "variables",
+            "análisis",
+            "control",
+            "hipótesis",
+            "confiabilidad",
+            "instrumento",
+            "limitación",
+            "alcance",
+            "datos",
+            "empírico",
+            "evidencia",
+            "teoría",
+            "triangulación",
         ]
         matches = sum(1 for kw in technical_keywords if kw in answer_clean.lower())
         score += min(20.0, matches * 4.0)
@@ -235,13 +281,9 @@ class ThesisDefenseSimulator:
                 "Se recomienda profundizar aún más en la justificación empírica de los resultados."
             )
         elif score >= 60.0:
-            feedback = (
-                "La réplica presenta argumentos plausibles pero muestra vacíos conceptuales o metodológicos frente al cuestionamiento."
-            )
+            feedback = "La réplica presenta argumentos plausibles pero muestra vacíos conceptuales o metodológicos frente al cuestionamiento."
         else:
-            feedback = (
-                "La argumentación es insuficiente para responder a la objeción del jurado. Falta respaldo metodológico concreto."
-            )
+            feedback = "La argumentación es insuficiente para responder a la objeción del jurado. Falta respaldo metodológico concreto."
 
         return score, feedback
 
@@ -268,7 +310,10 @@ class ThesisDefenseSimulator:
         if turn_index != session.current_turn_index:
             raise DefenseSessionError(
                 f"El turno actual esperado es #{session.current_turn_index}, pero se recibió #{turn_index}.",
-                details={"expected_turn": str(session.current_turn_index), "received_turn": str(turn_index)},
+                details={
+                    "expected_turn": str(session.current_turn_index),
+                    "received_turn": str(turn_index),
+                },
             )
 
         turn = session.turns[turn_index]

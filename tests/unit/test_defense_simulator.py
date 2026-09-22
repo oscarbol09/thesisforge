@@ -38,7 +38,9 @@ def sample_defense_project() -> ProjectStateDTO:
 
 
 @pytest.mark.asyncio
-async def test_initialize_defense_session_structure(sample_defense_project: ProjectStateDTO) -> None:
+async def test_initialize_defense_session_structure(
+    sample_defense_project: ProjectStateDTO,
+) -> None:
     """Verify initialization of 4-turn defense session with calibrated questions."""
     simulator = ThesisDefenseSimulator(llm_router=None)
     session = await simulator.initialize_defense_session(sample_defense_project)

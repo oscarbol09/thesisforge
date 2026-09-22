@@ -141,7 +141,9 @@ async def test_quantitative_without_hypothesis_generates_issue(
     report = await engine.evaluate_project(sample_complete_project)
 
     hyp_issues = [
-        i for i in report.issues if "hipótesis" in i.title.lower() or "hipótesis" in i.description.lower()
+        i
+        for i in report.issues
+        if "hipótesis" in i.title.lower() or "hipótesis" in i.description.lower()
     ]
     assert len(hyp_issues) >= 1
     assert hyp_issues[0].severity.value in ("major", "critical")

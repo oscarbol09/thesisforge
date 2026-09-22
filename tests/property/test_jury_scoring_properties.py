@@ -51,7 +51,11 @@ def test_property_critical_issue_vetoes_approval(score: float, issue_type: Audit
     )
     verdict = engine._determine_verdict(score, issues=[critical_issue])
     assert verdict == JuryVerdict.NO_APROBADO
-    assert verdict not in (JuryVerdict.APROBADO, JuryVerdict.APROBADO_CON_DISTINCION, JuryVerdict.MODIFICACIONES_MENORES)
+    assert verdict not in (
+        JuryVerdict.APROBADO,
+        JuryVerdict.APROBADO_CON_DISTINCION,
+        JuryVerdict.MODIFICACIONES_MENORES,
+    )
 
 
 @given(

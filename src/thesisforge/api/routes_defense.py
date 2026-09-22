@@ -29,7 +29,9 @@ class SubmitReplyRequest(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
 
     turn_index: int = Field(ge=0, description="Índice del turno de defensa a responder")
-    student_answer: str = Field(min_length=1, max_length=5000, description="Respuesta y argumentación del estudiante")
+    student_answer: str = Field(
+        min_length=1, max_length=5000, description="Respuesta y argumentación del estudiante"
+    )
 
 
 @router.post(
@@ -153,7 +155,9 @@ async def defense_websocket_endpoint(
                     await websocket.send_json(
                         {
                             "event": "defense_completed",
-                            "final_verdict": updated_session.final_verdict.value if updated_session.final_verdict else None,
+                            "final_verdict": updated_session.final_verdict.value
+                            if updated_session.final_verdict
+                            else None,
                             "final_score": updated_session.final_score,
                             "final_remarks": updated_session.final_remarks,
                             "session": updated_session.model_dump(mode="json"),
@@ -174,7 +178,10 @@ async def defense_websocket_endpoint(
     except WebSocketDisconnect:
         logger.info("Defense WebSocket disconnected by client.", extra={"session_id": session_id})
     except Exception as exc:
-        logger.exception("Error in defense WebSocket handler.", extra={"session_id": session_id, "error": str(exc)})
+        logger.exception(
+            "Error in defense WebSocket handler.",
+            extra={"session_id": session_id, "error": str(exc)},
+        )
         try:
             await websocket.send_json({"event": "error", "message": str(exc)})
             await websocket.close()

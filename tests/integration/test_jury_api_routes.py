@@ -66,7 +66,11 @@ async def test_api_jury_audit_flow(override_deps: DatabaseManager) -> None:
         research_problem="La congestión vehicular genera pérdidas económicas y retrasos logísticos en el transporte urbano.",
         research_question="¿Cómo optimiza un algoritmo genético las rutas de transporte público?",
         general_objective="Optimizar las rutas de transporte mediante algoritmos genéticos.",
-        specific_objectives=["Modelar la red vial", "Implementar operadores genéticos", "Evaluar tiempos de viaje"],
+        specific_objectives=[
+            "Modelar la red vial",
+            "Implementar operadores genéticos",
+            "Evaluar tiempos de viaje",
+        ],
         hypothesis="El algoritmo genético reduce en un 18% los tiempos promedio de recorrido.",
         methodology=MethodologyDTO(
             approach=ResearchApproach.CUANTITATIVO,

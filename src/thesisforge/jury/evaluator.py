@@ -32,7 +32,9 @@ class MultiAgentJuryEngine:
     def _determine_verdict(self, overall_score: float, issues: list[AuditIssueDTO]) -> JuryVerdict:
         """Calculate formal verdict based on numerical score and critical defect constraints."""
         has_critical = any(issue.severity == AuditSeverity.CRITICAL for issue in issues)
-        has_multiple_major = sum(1 for issue in issues if issue.severity == AuditSeverity.MAJOR) >= 3
+        has_multiple_major = (
+            sum(1 for issue in issues if issue.severity == AuditSeverity.MAJOR) >= 3
+        )
 
         if has_critical or overall_score < 50.0:
             return JuryVerdict.NO_APROBADO
@@ -93,7 +95,8 @@ class MultiAgentJuryEngine:
         design_str = (project.methodology.design if project.methodology else "").lower()
         if approach == ResearchApproach.CUANTITATIVO:
             is_correlational_or_causal = any(
-                term in design_str for term in ["correlacional", "causal", "experimental", "explicativo"]
+                term in design_str
+                for term in ["correlacional", "causal", "experimental", "explicativo"]
             )
             if is_correlational_or_causal and not project.hypothesis:
                 issues.append(
@@ -167,13 +170,20 @@ class MultiAgentJuryEngine:
         critical_score = 100.0
 
         for issue in issues:
-            penalty = 25.0 if issue.severity == AuditSeverity.CRITICAL else (15.0 if issue.severity == AuditSeverity.MAJOR else 5.0)
+            penalty = (
+                25.0
+                if issue.severity == AuditSeverity.CRITICAL
+                else (15.0 if issue.severity == AuditSeverity.MAJOR else 5.0)
+            )
             if issue.issue_type == AuditIssueType.METHODOLOGICAL_INCONSISTENCY:
                 methodology_score = max(20.0, methodology_score - penalty)
                 critical_score = max(30.0, critical_score - (penalty * 0.5))
             elif issue.issue_type == AuditIssueType.UNSUPPORTED_CLAIM:
                 literature_score = max(20.0, literature_score - penalty)
-            elif issue.issue_type in (AuditIssueType.SAMPLING_BIAS, AuditIssueType.INVALID_INSTRUMENT):
+            elif issue.issue_type in (
+                AuditIssueType.SAMPLING_BIAS,
+                AuditIssueType.INVALID_INSTRUMENT,
+            ):
                 empirical_score = max(20.0, empirical_score - penalty)
             else:
                 critical_score = max(20.0, critical_score - penalty)
@@ -199,8 +209,14 @@ class MultiAgentJuryEngine:
                     if methodology_score >= 80.0
                     else "Se detectaron incongruencias entre la pregunta rectora y la operacionalización metodológica."
                 ),
-                strengths=["Objetivo general adecuadamente delimitado"] if project.general_objective else [],
-                flaws=[i.description for i in issues if i.issue_type == AuditIssueType.METHODOLOGICAL_INCONSISTENCY],
+                strengths=["Objetivo general adecuadamente delimitado"]
+                if project.general_objective
+                else [],
+                flaws=[
+                    i.description
+                    for i in issues
+                    if i.issue_type == AuditIssueType.METHODOLOGICAL_INCONSISTENCY
+                ],
             ),
             JurorDimensionScoreDTO(
                 juror_role=JurorRole.ESPECIALISTA_TEMATICO,
@@ -213,8 +229,14 @@ class MultiAgentJuryEngine:
                     if literature_score >= 80.0
                     else "La cobertura bibliográfica es insuficiente para sustentar la discusión teórica del problema."
                 ),
-                strengths=[f"{len(project.validated_citations)} fuentes verificadas"] if len(project.validated_citations) >= 3 else [],
-                flaws=[i.description for i in issues if i.issue_type == AuditIssueType.UNSUPPORTED_CLAIM],
+                strengths=[f"{len(project.validated_citations)} fuentes verificadas"]
+                if len(project.validated_citations) >= 3
+                else [],
+                flaws=[
+                    i.description
+                    for i in issues
+                    if i.issue_type == AuditIssueType.UNSUPPORTED_CLAIM
+                ],
             ),
             JurorDimensionScoreDTO(
                 juror_role=JurorRole.AUDITOR_ESTADISTICO,
@@ -227,8 +249,15 @@ class MultiAgentJuryEngine:
                     if empirical_score >= 80.0
                     else "Falta precisión en el tamaño muestral o justificación de las técnicas de análisis."
                 ),
-                strengths=["Población delimitada"] if project.methodology and project.methodology.population else [],
-                flaws=[i.description for i in issues if i.issue_type in (AuditIssueType.SAMPLING_BIAS, AuditIssueType.INVALID_INSTRUMENT)],
+                strengths=["Población delimitada"]
+                if project.methodology and project.methodology.population
+                else [],
+                flaws=[
+                    i.description
+                    for i in issues
+                    if i.issue_type
+                    in (AuditIssueType.SAMPLING_BIAS, AuditIssueType.INVALID_INSTRUMENT)
+                ],
             ),
             JurorDimensionScoreDTO(
                 juror_role=JurorRole.ABOGADO_DEL_DIABLO,
@@ -242,7 +271,11 @@ class MultiAgentJuryEngine:
                     else "Existen supuestos no justificados que comprometen la solidez de las conclusiones."
                 ),
                 strengths=["Alcance especificado"] if project.scope_limitations else [],
-                flaws=[i.description for i in issues if i.issue_type == AuditIssueType.MISSING_LIMITATIONS],
+                flaws=[
+                    i.description
+                    for i in issues
+                    if i.issue_type == AuditIssueType.MISSING_LIMITATIONS
+                ],
             ),
         ]
 
@@ -254,8 +287,16 @@ class MultiAgentJuryEngine:
             1,
         )
 
-        mandatory_fixes = [issue.recommendation for issue in issues if issue.severity in (AuditSeverity.CRITICAL, AuditSeverity.MAJOR)]
-        recommended_improvements = [issue.recommendation for issue in issues if issue.severity in (AuditSeverity.MINOR, AuditSeverity.NOTE)]
+        mandatory_fixes = [
+            issue.recommendation
+            for issue in issues
+            if issue.severity in (AuditSeverity.CRITICAL, AuditSeverity.MAJOR)
+        ]
+        recommended_improvements = [
+            issue.recommendation
+            for issue in issues
+            if issue.severity in (AuditSeverity.MINOR, AuditSeverity.NOTE)
+        ]
 
         return overall_score, juror_evaluations, mandatory_fixes, recommended_improvements
 
@@ -265,7 +306,9 @@ class MultiAgentJuryEngine:
 
         if not self.llm:
             # Fallback to deterministic rule engine
-            overall_score, juror_evals, mandatory, recommended = self._build_rule_based_scores(project, rule_issues)
+            overall_score, juror_evals, mandatory, recommended = self._build_rule_based_scores(
+                project, rule_issues
+            )
             verdict = self._determine_verdict(overall_score, rule_issues)
             summary_dictamen = (
                 f"El Tribunal Académico ha emitido un dictamen de '{verdict.value.upper()}' con una calificación global de {overall_score}/100. "
@@ -285,15 +328,21 @@ class MultiAgentJuryEngine:
             )
 
         # Build prompt variables for LLM Multi-Agent Tribunal
-        drafted_sections_summary = "\n".join(
-            f"- [{s.section_id}] {s.title} (Estado: {s.status.value}, Palabras: {s.word_count}): {s.summary or s.content[:200] + '...'}"
-            for s in project.sections
-        ) or "No se han redactado secciones aún."
+        drafted_sections_summary = (
+            "\n".join(
+                f"- [{s.section_id}] {s.title} (Estado: {s.status.value}, Palabras: {s.word_count}): {s.summary or s.content[:200] + '...'}"
+                for s in project.sections
+            )
+            or "No se han redactado secciones aún."
+        )
 
-        citations_summary = "\n".join(
-            f"- {c.apa_formatted or c.title} ({c.year})"
-            for c in project.validated_citations[:10]
-        ) or "Sin literatura validada."
+        citations_summary = (
+            "\n".join(
+                f"- {c.apa_formatted or c.title} ({c.year})"
+                for c in project.validated_citations[:10]
+            )
+            or "Sin literatura validada."
+        )
 
         prompt = JURY_PANEL_AUDIT_PROMPT.format(
             title=project.title or "Sin título",
@@ -304,12 +353,18 @@ class MultiAgentJuryEngine:
             general_objective=project.general_objective or "No especificado",
             specific_objectives="; ".join(project.specific_objectives) or "Ninguno",
             hypothesis=project.hypothesis or "No formulada",
-            approach=project.methodology.approach.value if project.methodology and project.methodology.approach else "No definido",
+            approach=project.methodology.approach.value
+            if project.methodology and project.methodology.approach
+            else "No definido",
             design=project.methodology.design if project.methodology else "No definido",
             population=project.methodology.population if project.methodology else "No definida",
             sample=project.methodology.sample if project.methodology else "No definida",
-            instruments=", ".join(project.methodology.instruments) if project.methodology else "Ninguno",
-            analysis_technique=project.methodology.analysis_technique if project.methodology else "No especificada",
+            instruments=", ".join(project.methodology.instruments)
+            if project.methodology
+            else "Ninguno",
+            analysis_technique=project.methodology.analysis_technique
+            if project.methodology
+            else "No especificada",
             drafted_sections_summary=drafted_sections_summary,
             citation_count=len(project.validated_citations),
             citations_summary=citations_summary,
@@ -323,7 +378,9 @@ class MultiAgentJuryEngine:
                 "LLM jury panel audit encountered an issue; falling back to rule-based evaluation.",
                 extra={"error": str(exc), "project_id": project.id},
             )
-            overall_score, juror_evals, mandatory, recommended = self._build_rule_based_scores(project, rule_issues)
+            overall_score, juror_evals, mandatory, recommended = self._build_rule_based_scores(
+                project, rule_issues
+            )
             verdict = self._determine_verdict(overall_score, rule_issues)
             summary_dictamen = (
                 f"El Tribunal Académico ha emitido un dictamen de '{verdict.value.upper()}' con una calificación global de {overall_score}/100. "
@@ -352,9 +409,13 @@ class MultiAgentJuryEngine:
         llm_issues: list[AuditIssueDTO] = []
         for raw_issue in data.get("issues", []):
             try:
-                issue_type_str = str(raw_issue.get("issue_type", "methodological_inconsistency")).lower()
+                issue_type_str = str(
+                    raw_issue.get("issue_type", "methodological_inconsistency")
+                ).lower()
                 valid_types = {t.value: t for t in AuditIssueType}
-                issue_type = valid_types.get(issue_type_str, AuditIssueType.METHODOLOGICAL_INCONSISTENCY)
+                issue_type = valid_types.get(
+                    issue_type_str, AuditIssueType.METHODOLOGICAL_INCONSISTENCY
+                )
 
                 severity_str = str(raw_issue.get("severity", "major")).lower()
                 valid_sevs = {s.value: s for s in AuditSeverity}
@@ -378,16 +439,34 @@ class MultiAgentJuryEngine:
         # Merge unique issues (rule issues prioritized)
         combined_issues = list(rule_issues)
         for issue in llm_issues:
-            if not any(existing.title.lower() == issue.title.lower() for existing in combined_issues):
+            if not any(
+                existing.title.lower() == issue.title.lower() for existing in combined_issues
+            ):
                 combined_issues.append(issue)
 
         # Parse juror dimension scores
         juror_evaluations: list[JurorDimensionScoreDTO] = []
         role_map = {
-            "metodologo": (JurorRole.METODOLOGO, "Dr. Arístides Valenzuela", "Consistencia Metodológica y Epistemológica"),
-            "especialista_tematico": (JurorRole.ESPECIALISTA_TEMATICO, "Dra. Beatriz Salamanca", "Estado del Arte y Sustento Teórico"),
-            "auditor_estadistico": (JurorRole.AUDITOR_ESTADISTICO, "Dr. Camilo Restrepo", "Rigor Empírico, Muestreo e Instrumentos"),
-            "abogado_del_diablo": (JurorRole.ABOGADO_DEL_DIABLO, "Dr. Demetrio Sotomayor", "Resiliencia Crítica y Amenazas a la Validez"),
+            "metodologo": (
+                JurorRole.METODOLOGO,
+                "Dr. Arístides Valenzuela",
+                "Consistencia Metodológica y Epistemológica",
+            ),
+            "especialista_tematico": (
+                JurorRole.ESPECIALISTA_TEMATICO,
+                "Dra. Beatriz Salamanca",
+                "Estado del Arte y Sustento Teórico",
+            ),
+            "auditor_estadistico": (
+                JurorRole.AUDITOR_ESTADISTICO,
+                "Dr. Camilo Restrepo",
+                "Rigor Empírico, Muestreo e Instrumentos",
+            ),
+            "abogado_del_diablo": (
+                JurorRole.ABOGADO_DEL_DIABLO,
+                "Dr. Demetrio Sotomayor",
+                "Resiliencia Crítica y Amenazas a la Validez",
+            ),
         }
 
         for raw_eval in data.get("juror_evaluations", []):
@@ -396,7 +475,11 @@ class MultiAgentJuryEngine:
                 if role_key in role_map:
                     role_enum, default_name, default_dim = role_map[role_key]
                 else:
-                    role_enum, default_name, default_dim = JurorRole.METODOLOGO, "Dr. Arístides Valenzuela", "Consistencia Metodológica"
+                    role_enum, default_name, default_dim = (
+                        JurorRole.METODOLOGO,
+                        "Dr. Arístides Valenzuela",
+                        "Consistencia Metodológica",
+                    )
 
                 score_val = float(raw_eval.get("score", 75.0))
                 score_val = max(0.0, min(100.0, score_val))
@@ -447,10 +530,14 @@ class MultiAgentJuryEngine:
         )
 
         mandatory_fixes = [str(m) for m in data.get("mandatory_fixes", [])] or [
-            issue.recommendation for issue in combined_issues if issue.severity in (AuditSeverity.CRITICAL, AuditSeverity.MAJOR)
+            issue.recommendation
+            for issue in combined_issues
+            if issue.severity in (AuditSeverity.CRITICAL, AuditSeverity.MAJOR)
         ]
         recommended_improvements = [str(r) for r in data.get("recommended_improvements", [])] or [
-            issue.recommendation for issue in combined_issues if issue.severity in (AuditSeverity.MINOR, AuditSeverity.NOTE)
+            issue.recommendation
+            for issue in combined_issues
+            if issue.severity in (AuditSeverity.MINOR, AuditSeverity.NOTE)
         ]
 
         return JuryEvaluationReportDTO(
