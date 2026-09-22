@@ -9,8 +9,40 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/
 ## [Unreleased]
 
 ### Planned
-- Motor de auditoría y defensa de tesis en simulación de jurado evaluador (Sprint 4).
-- Interfaz gráfica web interactiva para visualización en tiempo real y edición sincronizada.
+- Interfaz gráfica de escritorio empaquetada (`.exe`, `.dmg`, AppImage) y exportación LaTeX / Overleaf (Sprint 5).
+
+---
+
+## [0.4.0] - 2026-09-22
+
+### Added
+- **Tribunal Académico Multi-Agente & Motor de Auditoría Científica (`src/thesisforge/jury/`):**
+  - Panel evaluador multi-perspectiva compuesto por 4 roles doctorales independientes (`MultiAgentJuryEngine` en `src/thesisforge/jury/evaluator.py`):
+    - *Dr. Arístides Valenzuela (Metodólogo y Epistemólogo)*: Audita consistencia interna, delimitación espacio-temporal, congruencia de objetivos e hipótesis y validez metodológica.
+    - *Dra. Beatriz Salamanca (Especialista Temática)*: Evalúa suficiencia del estado del arte, pertinencia de literatura indexada y profundidad teórica.
+    - *Dr. Camilo Restrepo (Auditor Estadístico y Cuantitativo)*: Evalúa representatividad muestral, idoneidad de instrumentos de medición y supuestos de pruebas estadísticas.
+    - *Dr. Demetrio Sotomayor (Evaluador Crítico / Abogado del Diablo)*: Cuestiona supuestos no declarados, sesgos de confirmación y explicaciones causales alternativas.
+  - Motor híbrido de auditoría científica que combina reglas deterministas (falta de hipótesis en diseños experimentales, cero citas RAG, capítulos sin aprobar) con análisis semántico profundo asistido por LLM.
+  - Sistema de calificación multidimensional ponderado (0.0 a 100.0) y cálculo de dictámenes oficiales académicos: *Aprobado con Distinción ($\ge 95$)*, *Aprobado ($\ge 80$)*, *Modificaciones Menores ($\ge 70$)*, *Modificaciones Mayores ($\ge 50$)* y *No Aprobado ($< 50$)*.
+- **Simulador Interactivo de Sustentación Oral Socrática (`src/thesisforge/jury/defense.py`):**
+  - Motor de defensa por turnos `ThesisDefenseSimulator` que genera 4 preguntas desafiantes contextualizadas al nivel académico del estudiante (Pregrado, Maestría, Doctorado) y a las debilidades del proyecto.
+  - Evaluación analítica de réplicas orales considerando solidez argumentativa, respaldo empírico, terminología disciplinar y reconocimiento honesto de limitaciones.
+  - Transición automática del estado del proyecto a `COMPLETED` cuando la sustentación resulta aprobada con éxito.
+- **Persistencia Transaccional de Dictámenes y Sesiones (`src/thesisforge/repository/jury_repository.py`):**
+  - Repositorio asíncrono SQLite `JuryRepository` para almacenamiento estructurado de informes de jurado (`jury_evaluations`) y sesiones de defensa oral (`defense_sessions`).
+  - Índices optimizados sobre `project_id`, `created_at` y `status`.
+- **Modelos de Dominio y Excepciones Tipadas (`src/thesisforge/models.py`, `src/thesisforge/exceptions.py`):**
+  - Enums: `JurorRole`, `AuditSeverity`, `AuditIssueType`, `JuryVerdict`, `DefenseStatus`.
+  - DTOs Pydantic v2: `AuditIssueDTO`, `JurorDimensionScoreDTO`, `JuryEvaluationReportDTO`, `DefenseTurnDTO`, `DefenseSessionDTO`.
+  - Excepciones de dominio: `JuryEvaluationError`, `DefenseSessionError`, `DefenseTurnNotFoundError`.
+- **Endpoints REST, WebSockets y Comandos CLI:**
+  - Rutas REST `/api/jury`: `POST /projects/{id}/audit`, `GET /projects/{id}/evaluations/latest`, `GET /projects/{id}/evaluations`, `GET /evaluations/{id}`.
+  - Rutas REST `/api/defense`: `POST /projects/{id}/start`, `POST /sessions/{id}/reply`, `GET /sessions/{id}`, `GET /projects/{id}/sessions`.
+  - Endpoint WebSocket `/api/defense/ws/{session_id}` para sustentación interactiva bidireccional en tiempo real con eventos `session_state`, `reply`, `turn_evaluated` y `defense_completed`.
+  - Subcomandos de consola CLI: `thesisforge jury-audit --project-id <id>` y `thesisforge defense-start --project-id <id>`.
+- **Suite de Pruebas Automatizadas y Aseguramiento de Calidad:**
+  - 24 nuevas pruebas unitarias, de integración y basadas en propiedades (`Hypothesis`), alcanzando un total de 148 pruebas automatizadas ejecutadas con 100% de aprobación.
+  - Tipado estricto `mypy --strict` validado en 56 archivos sin excepciones.
 
 ---
 

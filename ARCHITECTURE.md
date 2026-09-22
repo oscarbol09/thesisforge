@@ -99,6 +99,12 @@ ThesisForge está diseñado bajo los siguientes principios arquitectónicos:
 - **`APA7DocxCompiler`:** Generador de documentos Word `.docx` con cumplimiento estricto de normas APA 7ma edición (márgenes de 2.54 cm, tipografía Times New Roman 12pt, interlineado doble, 5 niveles de títulos, tablas sin bordes verticales, sangría francesa en referencias y portada académica).
 - **`ExportService`:** Servicio asíncrono para exportación directa a memoria (`bytes`) y almacenamiento en disco.
 
+### 3.9 Tribunal Académico Multi-Agente & Sustentación Oral Socrática (`src/thesisforge/jury/`)
+- **`MultiAgentJuryEngine`:** Panel doctoral multi-perspectiva (Metodólogo, Especialista Temático, Auditor Estadístico, Abogado del Diablo) que combina auditorías deterministas de consistencia con evaluación cualitativa profunda asistida por LLM para calificar el proyecto (0.0 a 100.0) y emitir dictámenes oficiales.
+- **`ThesisDefenseSimulator`:** Simulador interactivo de sustentación oral por turnos que genera rondas de preguntas incisivas y evalúa la solidez argumentativa, pertinencia empírica y reconocimiento de limitaciones de las réplicas del tesista.
+- **`JuryService`:** Fachada de orquestación que administra el ciclo de vida de auditorías, sesiones de defensa oral y transiciones de fase del proyecto a `REVIEW` y `COMPLETED`.
+- **`JuryRepository`:** Persistencia transaccional SQLite para informes de jurado (`jury_evaluations`) y sesiones de defensa (`defense_sessions`).
+
 ---
 
 ## 4. Estrategia de Pruebas y Calidad

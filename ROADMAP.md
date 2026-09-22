@@ -23,9 +23,9 @@ gantt
     section Redacción y APA 7
     v0.3.0 Redacción Modular y DOCX APA 7        :done,    des3, 2026-09, 2026-09
     section Auditoría y Jurado
-    v0.4.0 Simulación de Jurado y Defensa        :active,  des4, 2026-10, 2026-11
+    v0.4.0 Simulación de Jurado y Defensa        :done,    des4, 2026-09, 2026-09
     section Distribución y Escritorio
-    v1.0.0 Binarios de Escritorio y LaTeX        :         des5, 2026-11, 2026-12
+    v1.0.0 Binarios de Escritorio y LaTeX        :active,  des5, 2026-10, 2026-11
 ```
 
 ---
@@ -58,10 +58,12 @@ gantt
 
 ---
 
-### Fase 4: Simulación de Jurado y Defensa de Tesis (v0.4.0) — [En Desarrollo]
-- [ ] Panel multi-agente de jurados evaluadores (Metodólogo, Especialista Temático, Auditor Estadístico).
-- [ ] Detección automatizada de sesgos metodológicos, contradicciones conceptuales y citas no fundamentadas.
-- [ ] Simulación de ronda de preguntas orales y defensa socrática de tesis.
+### Fase 4: Simulación de Jurado y Defensa de Tesis (v0.4.0) — [Completada]
+- [x] Panel multi-agente de 4 jurados evaluadores (Metodólogo, Especialista Temático, Auditor Estadístico y Abogado del Diablo).
+- [x] Detección automatizada de sesgos metodológicos, inconsistencias de hipótesis, contradicciones conceptuales y literatura insuficiente.
+- [x] Simulación interactiva de ronda de preguntas orales y sustentación socrática de tesis por turnos (`/api/defense/*` y WebSockets).
+- [x] Rúbrica dimensional cuantitativa (0-100) y cualitativa con dictámenes oficiales académicos (*Aprobado con Distinción, Aprobado, Modificaciones Menores/Mayores, No Aprobado*).
+- [x] Subcomandos de consola CLI: `thesisforge jury-audit` y `thesisforge defense-start`.
 
 ---
 
