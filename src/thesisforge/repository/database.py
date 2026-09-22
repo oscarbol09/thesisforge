@@ -58,6 +58,33 @@ CREATE TABLE IF NOT EXISTS document_chunks (
 
 CREATE INDEX IF NOT EXISTS idx_document_chunks_project ON document_chunks(project_id);
 CREATE INDEX IF NOT EXISTS idx_document_chunks_doc ON document_chunks(document_id);
+
+CREATE TABLE IF NOT EXISTS jury_evaluations (
+    id TEXT PRIMARY KEY,
+    project_id TEXT NOT NULL,
+    verdict TEXT NOT NULL,
+    score REAL NOT NULL,
+    evaluation_json TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    FOREIGN KEY(project_id) REFERENCES projects(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_jury_evaluations_project ON jury_evaluations(project_id);
+CREATE INDEX IF NOT EXISTS idx_jury_evaluations_created_at ON jury_evaluations(created_at DESC);
+
+CREATE TABLE IF NOT EXISTS defense_sessions (
+    id TEXT PRIMARY KEY,
+    project_id TEXT NOT NULL,
+    status TEXT NOT NULL,
+    current_turn INTEGER NOT NULL,
+    session_json TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY(project_id) REFERENCES projects(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_defense_sessions_project ON defense_sessions(project_id);
+CREATE INDEX IF NOT EXISTS idx_defense_sessions_status ON defense_sessions(status);
 """
 
 
