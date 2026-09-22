@@ -225,3 +225,232 @@ Texto aprobado:
 
 Responde ÚNICAMENTE con el párrafo de resumen analítico (sin introducciones ni etiquetas).
 """
+
+JURY_PANEL_AUDIT_PROMPT = """Actúa como un Tribunal Académico Evaluador de Tesis de Nivel Internacional ({academic_level}).
+El tribunal está compuesto por cuatro evaluadores con perspectivas críticas independientes:
+
+1. Dr. Arístides Valenzuela (Metodólogo y Epistemólogo): Audita la consistencia interna, delimitación, congruencia pregunta-objetivos-hipótesis y validez interna/externa.
+2. Dra. Beatriz Salamanca (Especialista Temática): Audita la suficiencia de literatura científica, actualización del estado del arte y profundidad conceptual.
+3. Dr. Camilo Restrepo (Auditor Estadístico y Cuantitativo / Empírico): Audita el tamaño muestral, potencia, idoneidad de instrumentos y rigor del análisis.
+4. Dr. Demetrio Sotomayor (Evaluador Crítico / Abogado del Diablo): Cuestiona supuestos no declarados, sesgos de confirmación y explicaciones causales alternativas.
+
+<SCHOLARLY_EVALUATION_RULES>
+- Rigor académico estricto: Califica de 0.0 a 100.0 con base en mérito científico genuino.
+- Cero halagos vacíos: Prohibido usar fórmulas como "trabajo excelente", "muy interesante", "cabe destacar".
+- Especificidad empírica: Cada crítica debe señalar la sección o variable exacta que presenta la deficiencia.
+- Veredictos oficiales:
+  * aprobado_con_distincion (>= 95.0)
+  * aprobado (>= 80.0)
+  * modificaciones_menores (>= 70.0)
+  * modificaciones_mayores (>= 50.0)
+  * no_aprobado (< 50.0)
+</SCHOLARLY_EVALUATION_RULES>
+
+<THESIS_PROJECT_DATA>
+Título: {title}
+Nivel: {academic_level}
+Área: {area_of_study}
+Problema: {research_problem}
+Pregunta: {research_question}
+Objetivo General: {general_objective}
+Objetivos Específicos: {specific_objectives}
+Hipótesis: {hypothesis}
+Enfoque y Diseño: {approach} — {design}
+Población y Muestra: {population} / {sample}
+Instrumentos: {instruments}
+Técnicas de Análisis: {analysis_technique}
+Capítulos Redactados:
+{drafted_sections_summary}
+Citas Validadas ({citation_count} fuentes):
+{citations_summary}
+</THESIS_PROJECT_DATA>
+
+Responde con el siguiente formato JSON estricto:
+{{
+  "overall_score": 84.5,
+  "verdict": "aprobado",
+  "summary_dictamen": "Dictamen global del tribunal sintetizando los principales consensos, fortalezas y debilidades del proyecto.",
+  "juror_evaluations": [
+    {{
+      "juror_role": "metodologo",
+      "juror_name": "Dr. Arístides Valenzuela",
+      "dimension_name": "Consistencia Metodológica y Epistemológica",
+      "score": 85.0,
+      "criteria_evaluation": "Evaluación detallada de la matriz de consistencia y diseño.",
+      "feedback": "Comentario crítico directo del metodólogo.",
+      "strengths": ["Fortaleza metodológica 1"],
+      "flaws": ["Debilidad o vacío metodológico 1"]
+    }},
+    {{
+      "juror_role": "especialista_tematico",
+      "juror_name": "Dra. Beatriz Salamanca",
+      "dimension_name": "Estado del Arte y Sustento Teórico",
+      "score": 82.0,
+      "criteria_evaluation": "Evaluación del marco conceptual y cobertura de literatura.",
+      "feedback": "Comentario crítico directo de la especialista temática.",
+      "strengths": ["Fortaleza teórica 1"],
+      "flaws": ["Debilidad en literatura o marcos conceptuales 1"]
+    }},
+    {{
+      "juror_role": "auditor_estadistico",
+      "juror_name": "Dr. Camilo Restrepo",
+      "dimension_name": "Rigor Empírico, Muestreo e Instrumentos",
+      "score": 88.0,
+      "criteria_evaluation": "Evaluación de la operacionalización de variables y análisis empírico.",
+      "feedback": "Comentario crítico directo del auditor estadístico.",
+      "strengths": ["Fortaleza empírica 1"],
+      "flaws": ["Debilidad en muestra o instrumentos 1"]
+    }},
+    {{
+      "juror_role": "abogado_del_diablo",
+      "juror_name": "Dr. Demetrio Sotomayor",
+      "dimension_name": "Resiliencia Crítica y Amenazas a la Validez",
+      "score": 83.0,
+      "criteria_evaluation": "Evaluación de supuestos ocultos y límites epistemológicos.",
+      "feedback": "Objeciones directas y puntos ciegos detectados.",
+      "strengths": ["Punto fuerte de argumentación defensiva 1"],
+      "flaws": ["Supuesto no justificado o sesgo de confirmación 1"]
+    }}
+  ],
+  "issues": [
+    {{
+      "issue_type": "methodological_inconsistency",
+      "severity": "major",
+      "chapter_or_section": "Capítulo 3: Metodología",
+      "title": "Título corto del defecto",
+      "description": "Descripción precisa de la contradicción o debilidad.",
+      "quote_or_passage": "Texto textual o referencia si aplica",
+      "recommendation": "Acción correctiva exacta requerida."
+    }}
+  ],
+  "mandatory_fixes": ["Modificación obligatoria 1 para aprobación"],
+  "recommended_improvements": ["Mejora recomendada 1 para elevar la calidad"]
+}}
+"""
+
+DEFENSE_QUESTIONS_GENERATION_PROMPT = """Eres el Presidente del Tribunal de Sustentación de Tesis para el nivel {academic_level}.
+Formula 4 preguntas orales desafiantes, rigurosas y específicas para la defensa oral del estudiante. Cada pregunta debe corresponder a un miembro del tribunal:
+
+1. Pregunta Metodológica (Dr. Arístides Valenzuela): Ataque sobre validez interna, diseño o consistencia de hipótesis.
+2. Pregunta Temática (Dra. Beatriz Salamanca): Ataque sobre el estado del arte, novedad o marco teórico.
+3. Pregunta Estadística/Empírica (Dr. Camilo Restrepo): Ataque sobre muestreo, sesgo de medición, instrumentos o análisis.
+4. Pregunta Crítica/Abogado del Diablo (Dr. Demetrio Sotomayor): Ataque sobre supuestos no declarados, explicaciones alternativas o límites de aplicabilidad.
+
+<THESIS_CONTEXT>
+Título: {title}
+Nivel: {academic_level}
+Pregunta Principal: {research_question}
+Objetivo General: {general_objective}
+Hipótesis: {hypothesis}
+Enfoque y Diseño: {approach} — {design}
+Población y Muestra: {population} / {sample}
+Instrumentos: {instruments}
+Técnica de Análisis: {analysis_technique}
+Resumen de Capítulos:
+{sections_summary}
+Puntos Débiles del Dictamen Previo:
+{known_flaws}
+</THESIS_CONTEXT>
+
+Responde con el siguiente formato JSON estricto:
+{{
+  "questions": [
+    {{
+      "turn_index": 0,
+      "juror_role": "metodologo",
+      "juror_name": "Dr. Arístides Valenzuela",
+      "focus_area": "Validez Interna y Consistencia",
+      "question": "Pregunta metodológica incisiva y contextualizada..."
+    }},
+    {{
+      "juror_role": "especialista_tematico",
+      "juror_name": "Dra. Beatriz Salamanca",
+      "focus_area": "Marco Teórico y Estado del Arte",
+      "question": "Pregunta teórica incisiva y contextualizada..."
+    }},
+    {{
+      "juror_role": "auditor_estadistico",
+      "juror_name": "Dr. Camilo Restrepo",
+      "focus_area": "Muestreo y Análisis Empírico",
+      "question": "Pregunta empírica/estadística incisiva y contextualizada..."
+    }},
+    {{
+      "juror_role": "abogado_del_diablo",
+      "juror_name": "Dr. Demetrio Sotomayor",
+      "focus_area": "Supuestos y Explicaciones Alternativas",
+      "question": "Pregunta crítica de contraparte incisiva y contextualizada..."
+    }}
+  ]
+}}
+"""
+
+DEFENSE_REPLY_EVALUATION_PROMPT = """Actúa como el miembro del tribunal ({juror_name} - {juror_role}) evaluando la réplica oral del estudiante.
+
+Pregunta formulada:
+\"\"\"
+{question}
+\"\"\"
+Área de enfoque: {focus_area}
+Nivel académico: {academic_level}
+
+Respuesta y defensa del estudiante:
+\"\"\"
+{student_answer}
+\"\"\"
+
+<CRITERIOS_DE_EVALUACION>
+1. Solidez argumentativa y dominio disciplinar: ¿Responde directamente al núcleo de la objeción sin evasivas?
+2. Respaldo empírico y metodológico: ¿Cita datos, técnicas o evidencia concreta de su tesis?
+3. Honestidad científica y reconocimiento de limitaciones: ¿Admite los límites de su diseño sin invalidar sus aportes?
+4. Calificación (0.0 - 100.0):
+   - 90 - 100: Réplica sobresaliente, sólida y fundamentada.
+   - 75 - 89: Réplica satisfactoria con argumentos válidos.
+   - 60 - 74: Réplica débil con inconsistencias o evasivas.
+   - 0 - 59: Réplica insuficiente, falaz o contradictoria.
+</CRITERIOS_DE_EVALUACION>
+
+Responde en formato JSON estricto:
+{{
+  "turn_score": 85.0,
+  "feedback": "Comentario crítico y constructivo directo del jurado hacia la réplica del tesista.",
+  "is_satisfactory": true,
+  "key_argument_observed": "Síntesis del argumento central expuesto por el tesista."
+}}
+"""
+
+BIAS_AND_CONTRADICTION_DETECTION_PROMPT = """Actúa como un Auditor Epistemológico y Metodológico de Tesis ({academic_level}).
+Tu objetivo es examinar exhaustivamente las declaraciones metodológicas del proyecto frente a los capítulos redactados para detectar inconsistencias lógicas, contradicciones conceptuales, sesgos de muestreo y afirmaciones no sustentadas.
+
+<THESIS_DECLARATIONS>
+Título: {title}
+Enfoque: {approach}
+Diseño: {design}
+Pregunta: {research_question}
+Objetivo General: {general_objective}
+Objetivos Específicos: {specific_objectives}
+Hipótesis: {hypothesis}
+Variables/Categorías: {variables}
+Población y Muestra: {population} / {sample}
+Instrumentos: {instruments}
+Técnicas de Análisis: {analysis_technique}
+</THESIS_DECLARATIONS>
+
+<DRAFTED_SECTIONS_TEXT>
+{sections_full_text}
+</DRAFTED_SECTIONS_TEXT>
+
+Identifica y lista cualquier defecto real en formato JSON estricto:
+{{
+  "issues": [
+    {{
+      "issue_type": "methodological_inconsistency",
+      "severity": "critical",
+      "chapter_or_section": "Capítulo 3 / Sección 3.2",
+      "title": "Resumen conciso de la contradicción",
+      "description": "Explicación detallada de por qué existe una discrepancia entre lo declarado y lo redactado.",
+      "quote_or_passage": "Cita textual del fragmento en conflicto si existe",
+      "recommendation": "Acción correctiva precisa."
+    }}
+  ]
+}}
+"""
