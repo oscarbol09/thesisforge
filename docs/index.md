@@ -16,7 +16,8 @@ ThesisForge es una herramienta de ingeniería académica diseñada para abordar 
 graph LR
     A["1. Asesor Metodológico\n(Entrevista guiada)"] --> B["2. Literatura Real (RAG)\n(Semantic Scholar / ArXiv)"]
     B --> C["3. Redacción Modular\n(Memoria contextual)"]
-    C --> D["4. Exportación DOCX\n(APA 7ª edición)"]
+    C --> D["4. Jurado & Defensa Oral\n(Tribunal 4 roles + Socrático)"]
+    D --> E["5. Exportación DOCX\n(APA 7ª edición)"]
 ```
 
 ---
@@ -26,6 +27,7 @@ graph LR
 - **Control total de claves (BYOK):** Compatible con OpenRouter, Google Gemini, Groq, OpenAI y modelos locales vía Ollama.
 - **Seguridad en reposo y de red:** Cifrado simétrico de claves mediante Fernet (256-bit), protección contra Server-Side Request Forgery (SSRF) con bloqueo estricto de rangos privados y sanitización CWE-117.
 - **Distribución dual:** Servidor web asíncrono con FastAPI y empaquetado de escritorio local (PyWebView).
+- **Tribunal Multi-Agente & Defensa Socrática:** 4 perfiles de jurado académico con auditoría híbrida (reglas + LLM) y réplicas interactivas por WebSockets.
 - **Exportación estructurada en Word:** Generación directa de archivos `.docx` formateados con normas APA 7ª edición (portada, márgenes de 2.54 cm, sangría francesa y DOIs activos).
 
 ---
@@ -38,5 +40,6 @@ graph LR
 - [**RAG & Literatura Real**](guides/rag-literature.md): Conectores académicos y búsqueda vectorial local.
 - [**Configuración BYOK**](guides/byok-and-models.md): Integración de proveedores remotos y ejecución offline con Ollama.
 - [**Exportación APA 7**](guides/apa7-export.md): Normas tipográficas, jerarquía de títulos y referencias.
-- [**Arquitectura del Sistema**](architecture/overview.md): Patrón en 3 capas, invariantes de seguridad y concurrencia.
+- [**Tribunal Multi-Agente & Defensa**](guides/jury-and-defense.md): Auditoría del tribunal y simulador socrático.
+- [**Arquitectura del Sistema**](architecture/overview.md): Patrón en capas, invariantes de seguridad y concurrencia.
 

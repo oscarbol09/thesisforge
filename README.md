@@ -18,7 +18,7 @@
   <a href="https://github.com/astral-sh/ruff"><img src="https://img.shields.io/badge/code%20style-ruff-000000.svg" alt="Code style: ruff"></a>
   <a href="https://mypy.readthedocs.io/"><img src="https://img.shields.io/badge/type_checked-mypy_strict-brightgreen.svg" alt="Type Checked: mypy"></a>
   <a href="https://github.com/PyCQA/bandit"><img src="https://img.shields.io/badge/security-bandit-yellow.svg" alt="Security: Bandit"></a>
-  <a href="https://github.com/oscarbol09/thesisforge/releases"><img src="https://img.shields.io/badge/release-v0.3.0-indigo.svg" alt="Release v0.3.0"></a>
+  <a href="https://github.com/oscarbol09/thesisforge/releases"><img src="https://img.shields.io/badge/release-v0.4.0-indigo.svg" alt="Release v0.4.0"></a>
 </p>
 
 ---
@@ -31,9 +31,9 @@ Los estudiantes de pregrado, posgrado e investigadores enfrentan tres fricciones
 2. **Referencias bibliográficas alucinadas:** Los LLMs generalistas inventan autores, años y DOIs inexistentes, invalidando el rigor científico del manuscrito.
 3. **Pérdida de coherencia inter-capítulo:** Generar documentos de 50 o 100 páginas en un único prompt satura la ventana de contexto y desconecta las conclusiones del marco teórico.
 
-ThesisForge estructura la elaboración del proyecto a través de tres etapas secuenciales con puntos de control humanos obligatorios:
+ThesisForge estructura la elaboración del proyecto a través de cuatro etapas secuenciales con puntos de control humanos obligatorios:
 
-$$\text{Orientación Metodológica (Entrevista Socrática)} \longrightarrow \text{Contextualización (RAG con DOIs Reales)} \longrightarrow \text{Redacción Modular por Capítulos (APA 7)}$$
+$$\text{Asesor Metodológico} \longrightarrow \text{Literatura RAG} \longrightarrow \text{Redacción Modular (APA 7)} \longrightarrow \text{Jurado & Defensa Oral}$$
 
 ---
 
@@ -46,6 +46,7 @@ $$\text{Orientación Metodológica (Entrevista Socrática)} \longrightarrow \tex
 | **Entrevista metodológica guiada** | Sí (Máquina de estados finita) | No (Prompt libre) | Parcial | No |
 | **Verificación bibliográfica** | RAG con Semantic Scholar / CrossRef | Parcial | Sí | Alucinaciones frecuentes |
 | **Contexto jerárquico por capítulos** | Sí (Memoria de 4 capas por sección) | No (Chat plano) | Parcial | Pérdida de contexto |
+| **Jurado multi-agente & defensa oral** | Sí (4 roles académicos + Socrático) | No | No | No |
 | **Formato de exportación** | Word (`.docx`) APA 7ª edición estructurado | Markdown plano | Limitado en plan gratuito | Texto sin formato |
 | **Licencia de software** | Código abierto (Apache 2.0) | Propietario / Freemium | Comercial (\$12–\$30/mes) | Comercial (\$20/mes) |
 
@@ -110,13 +111,19 @@ thesisforge draft-list --project-id "proj-123"
 
 # Compilar proyecto a Microsoft Word (.docx) APA 7ª edición
 thesisforge export-docx --project-id "proj-123" --output "./tesis_final.docx" --author "Valeria Mendoza"
+
+# Auditar proyecto con tribunal multi-agente (Metodólogo, Especialista, Estadístico, Abogado del Diablo)
+thesisforge jury-audit --project-id "proj-123" --save
+
+# Iniciar simulador socrático interactivo de defensa oral en consola
+thesisforge defense-start --project-id "proj-123" --turns 4
 ```
 
 ---
 
 ## Arquitectura del sistema
 
-ThesisForge implementa una arquitectura en tres capas desacopladas con flujo de datos unidireccional:
+ThesisForge implementa una arquitectura en capas desacopladas con flujo de datos unidireccional:
 
 ```mermaid
 flowchart TD
@@ -127,9 +134,9 @@ flowchart TD
     end
 
     subgraph API ["2. Capa HTTP & WebSockets (FastAPI)"]
-        ROUTERS["Routers Tipados (/projects, /advisor, /literature, /drafting, /export)"]
+        ROUTERS["Routers Tipados (/projects, /advisor, /literature, /drafting, /export, /jury, /defense)"]
         SEC_MW["Middleware de Seguridad (CSP, CORS, Headers)"]
-        WS["WebSocket Streaming Hub (/api/drafting/ws/...)"]
+        WS["WebSocket Streaming Hub (/api/drafting/ws/..., /api/defense/ws/...)"]
     end
 
     subgraph Core ["3. Capa de Dominio & Servicios"]
@@ -137,6 +144,7 @@ flowchart TD
         RAG["RAGService (Búsqueda académica & Indexación)"]
         DRAFT["DraftService (Memoria jerárquica de 4 capas)"]
         EXPORT["ExportService (Compilador Word APA 7 + CWE-1236 Defense)"]
+        JURY["JuryService (Tribunal multi-agente & Simulador socrático)"]
         ROUTER_LLM["LLMRouter (BYOK Multi-proveedor + Tenacity)"]
     end
 
@@ -153,14 +161,18 @@ flowchart TD
     ROUTERS --> RAG
     ROUTERS --> DRAFT
     ROUTERS --> EXPORT
+    ROUTERS --> JURY
     WS --> DRAFT
+    WS --> JURY
     ADV --> ROUTER_LLM
     DRAFT --> ROUTER_LLM
+    JURY --> ROUTER_LLM
     RAG --> CHROMA
     ROUTER_LLM --> VAULT
     ADV --> DB
     DRAFT --> DB
     EXPORT --> DB
+    JURY --> DB
 ```
 
 Consulta [`ARCHITECTURE.md`](ARCHITECTURE.md) y [`docs/user-guide/MANUAL_DE_USUARIO.md`](docs/user-guide/MANUAL_DE_USUARIO.md) para un desglose exhaustivo.
@@ -191,7 +203,7 @@ Consulta [`ARCHITECTURE.md`](ARCHITECTURE.md) y [`docs/user-guide/MANUAL_DE_USUA
 - [x] **Sprint 1:** Router LLM multi-proveedor con reintentos Tenacity, máquina de estados del asesor metodológico y API REST.
 - [x] **Sprint 2:** Motor RAG de literatura académica (Semantic Scholar, ArXiv, CrossRef), extracción de PDFs con PyMuPDF, compuerta anti-alucinaciones e indexación local con ChromaDB (v0.2.0).
 - [x] **Sprint 3:** Generador modular por capítulos con memoria acumulativa jerárquica, streaming por WebSockets, compilador APA 7 DOCX con defensa CWE-1236 y Manual de Usuario oficial (v0.3.0).
-- [ ] **Sprint 4:** Panel multi-agente de simulación de jurado y defensa de tesis (v0.4.0).
+- [x] **Sprint 4:** Panel multi-agente de simulación de jurado y defensa de tesis (v0.4.0).
 - [ ] **Sprint 5:** Interfaz de usuario SPA con Tailwind CSS y lanzador de escritorio con PyWebView.
 - [ ] **Sprint 6:** Empaquetado ejecutable autónomo (.exe, .dmg, AppImage) y distribución en PyPI (v1.0.0).
 

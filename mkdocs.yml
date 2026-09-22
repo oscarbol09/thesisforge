@@ -64,6 +64,7 @@ nav:
       - RAG & Literatura Real: guides/rag-literature.md
       - BYOK & Modelos (Ollama, Gemini, OpenRouter): guides/byok-and-models.md
       - Exportación APA 7: guides/apa7-export.md
+      - Tribunal Multi-Agente & Defensa: guides/jury-and-defense.md
   - Arquitectura:
       - Visión General: architecture/overview.md
       - Seguridad & SSRF Guard: architecture/security.md

@@ -36,7 +36,7 @@ uv pip install -e ".[dev]"
 
 ---
 
-## 3. Flujo de Trabajo en Tres Fases
+## 3. Flujo de Trabajo en Cuatro Fases
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -54,6 +54,12 @@ uv pip install -e ".[dev]"
 ┌─────────────────────────────────────────────────────────────┐
 │ FASE 3: Redacción Modular & Compilación APA 7               │
 │ (Capítulos 1-5 -> Memoria Jerárquica -> DOCX Compilado)      │
+└──────────────────────────────┬──────────────────────────────┘
+                               │
+                               ▼
+┌─────────────────────────────────────────────────────────────┐
+│ FASE 4: Tribunal Multi-Agente & Defensa Oral Socrática     │
+│ (Auditoría 4 Jurados -> Veredicto -> Rondas de Réplica WS)  │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -212,7 +218,40 @@ curl -X POST "http://localhost:8000/api/export/projects/proj_abc123/docx" \
 
 ---
 
-## 8. Seguridad y Privacidad
+## 8. Fase 4: Tribunal Multi-Agente y Simulador de Defensa Socrática
+
+### Composición del Tribunal Académico
+ThesisForge somete la tesis a una evaluación multidisciplinaria conformada por cuatro perfiles académicos rigurosos:
+
+1. **Dr. Arístides Valenzuela (Metodólogo Principal)**: Evalúa la alineación epistemológica entre el problema, los objetivos, la hipótesis y el diseño metodológico.
+2. **Dra. Beatriz Salamanca (Especialista Temática)**: Revisa la densidad teórica, la relevancia empírica del marco conceptual y la pertinencia de los antecedentes.
+3. **Dr. Camilo Restrepo (Auditor Estadístico)**: Audita el cálculo muestral, la validez interna/externa, la coherencia de los contrastes de hipótesis y los análisis estadísticos.
+4. **Dr. Demetrio Sotomayor (Abogado del Diablo)**: Identifica sesgos de confirmación, variables confusoras no controladas, causalidades espurias y debilidades argumentativas.
+
+### Auditoría Científica Híbrida
+El motor de evaluación combina:
+* **Reglas Deterministas**: Verificación formal de matrices de consistencia, correspondencia entre enfoque cuantitativo e hipótesis explícitas, y umbral mínimo de citas APA 7.
+* **Deliberación Cualitativa**: Dictámenes analíticos con ponderaciones de 0 a 100 y clasificación de observaciones (`CRITICAL`, `MAJOR`, `MINOR`, `SUGGESTION`).
+* **Veredictos Oficiales**: `APROBADO_CON_DISTINCION`, `APROBADO`, `MODIFICACIONES_MENORES`, `MODIFICACIONES_MAYORES`, `NO_APROBADO` (con regla estricta de veto automático ante anomalías críticas).
+
+### Simulador Socrático de Defensa Oral
+Permite al tesista ensayar la sustentación de su trabajo frente al tribunal:
+* **Generación de Preguntas Calibradas**: Basadas en las debilidades reales detectadas durante la auditoría del proyecto.
+* **Evaluación de Réplicas por Turnos**: Calificación de respuestas (0–100) con retroalimentación detallada y rúbricas formativas.
+* **Sesiones en Tiempo Real vía WebSocket**: Conexión bidireccional continua en `/api/defense/ws/{session_id}`.
+
+### Comandos de Consola (CLI)
+```bash
+# Ejecutar auditoría completa del jurado y guardar acta formal
+thesisforge jury-audit --project-id "proj_abc123" --save
+
+# Iniciar simulación interactiva de sustentación en la terminal
+thesisforge defense-start --project-id "proj_abc123" --turns 4
+```
+
+---
+
+## 9. Seguridad y Privacidad
 
 * **Cero Fuga de Datos**: Las claves de API se almacenan localmente en la base de datos SQLite cifradas con una clave maestra local AES-256 (`LocalKeyVault`).
 * **Protección SSRF**: Cualquier descarga de artículos remotos pasa por filtros que bloquean direcciones IP privadas, de enlace local (`169.254.169.254`), bucles locales y esquemas inseguros (`file://`, `gopher://`).
