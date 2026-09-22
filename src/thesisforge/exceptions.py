@@ -68,3 +68,15 @@ class SectionNotFoundError(ThesisForgeError):
 
 class ExportError(ThesisForgeError):
     """Raised when document compilation, DOCX formatting, or export pipeline fails."""
+
+
+class JuryEvaluationError(ThesisForgeError):
+    """Raised when multi-agent jury evaluation or thesis audit execution encounters a failure."""
+
+
+class DefenseSessionError(ThesisForgeError):
+    """Raised when thesis oral defense session orchestration or state update fails."""
+
+
+class DefenseTurnNotFoundError(DefenseSessionError):
+    """Raised when an requested defense turn index is invalid or does not exist."""

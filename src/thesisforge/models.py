@@ -45,6 +45,55 @@ class SectionStatus(str, Enum):
     APPROVED = "approved"
 
 
+class JurorRole(str, Enum):
+    """Role and profile of a member of the academic evaluation jury."""
+
+    METODOLOGO = "metodologo"
+    ESPECIALISTA_TEMATICO = "especialista_tematico"
+    AUDITOR_ESTADISTICO = "auditor_estadistico"
+    ABOGADO_DEL_DIABLO = "abogado_del_diablo"
+
+
+class AuditSeverity(str, Enum):
+    """Severity level of an audit observation or detected defect."""
+
+    CRITICAL = "critical"
+    MAJOR = "major"
+    MINOR = "minor"
+    NOTE = "note"
+
+
+class AuditIssueType(str, Enum):
+    """Taxonomy of scientific audit issues and methodological biases."""
+
+    METHODOLOGICAL_INCONSISTENCY = "methodological_inconsistency"
+    UNSUPPORTED_CLAIM = "unsupported_claim"
+    CONCEPTUAL_CONTRADICTION = "conceptual_contradiction"
+    SAMPLING_BIAS = "sampling_bias"
+    INVALID_INSTRUMENT = "invalid_instrument"
+    MISSING_LIMITATIONS = "missing_limitations"
+
+
+class JuryVerdict(str, Enum):
+    """Formal academic verdict emitted by the multi-perspective jury."""
+
+    APROBADO_CON_DISTINCION = "aprobado_con_distincion"
+    APROBADO = "aprobado"
+    MODIFICACIONES_MENORES = "modificaciones_menores"
+    MODIFICACIONES_MAYORES = "modificaciones_mayores"
+    NO_APROBADO = "no_aprobado"
+
+
+class DefenseStatus(str, Enum):
+    """Status and final verdict of an interactive oral defense session."""
+
+    IN_PROGRESS = "in_progress"
+    PASSED_WITH_HONORS = "passed_with_honors"
+    PASSED = "passed"
+    NEEDS_REVISION = "needs_revision"
+    FAILED = "failed"
+
+
 class CitationDTO(BaseModel):
     """Metadata for verified academic literature with evidence traceability."""
 
@@ -265,3 +314,86 @@ class ProjectStateDTO(BaseModel):
             total_sections=len(self.sections),
             approved_sections=approved,
         )
+
+
+class AuditIssueDTO(BaseModel):
+    """Specific methodological, conceptual, or empirical defect identified in the thesis."""
+
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
+
+    id: str = Field(default_factory=lambda: uuid.uuid4().hex[:10])
+    issue_type: AuditIssueType
+    severity: AuditSeverity = AuditSeverity.MAJOR
+    chapter_or_section: str = Field(default="general", max_length=200)
+    title: str = Field(min_length=3, max_length=300)
+    description: str = Field(min_length=5, max_length=3000)
+    quote_or_passage: str | None = Field(default=None, max_length=1500)
+    recommendation: str = Field(min_length=5, max_length=2000)
+
+
+class JurorDimensionScoreDTO(BaseModel):
+    """Evaluation score and analytical feedback from a specific juror persona."""
+
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
+
+    juror_role: JurorRole
+    juror_name: str = Field(min_length=2, max_length=200)
+    dimension_name: str = Field(min_length=2, max_length=200)
+    score: float = Field(ge=0.0, le=100.0)
+    criteria_evaluation: str = Field(default="", max_length=3000)
+    feedback: str = Field(default="", max_length=3000)
+    strengths: list[str] = Field(default_factory=list)
+    flaws: list[str] = Field(default_factory=list)
+
+
+class JuryEvaluationReportDTO(BaseModel):
+    """Comprehensive academic jury evaluation report for a thesis project."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    id: str = Field(default_factory=lambda: uuid.uuid4().hex[:12])
+    project_id: str = Field(min_length=1, max_length=100)
+    overall_score: float = Field(ge=0.0, le=100.0)
+    verdict: JuryVerdict
+    summary_dictamen: str = Field(min_length=10, max_length=5000)
+    juror_evaluations: list[JurorDimensionScoreDTO] = Field(default_factory=list)
+    issues: list[AuditIssueDTO] = Field(default_factory=list)
+    mandatory_fixes: list[str] = Field(default_factory=list)
+    recommended_improvements: list[str] = Field(default_factory=list)
+    created_at: datetime = Field(default_factory=utc_now)
+
+
+class DefenseTurnDTO(BaseModel):
+    """A single turn in an interactive oral thesis defense."""
+
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
+
+    turn_index: int = Field(ge=0)
+    juror_role: JurorRole
+    juror_name: str = Field(min_length=2, max_length=200)
+    question: str = Field(min_length=5, max_length=2000)
+    focus_area: str = Field(default="Metodología", max_length=200)
+    student_answer: str | None = Field(default=None, max_length=5000)
+    juror_feedback: str | None = Field(default=None, max_length=3000)
+    turn_score: float | None = Field(default=None, ge=0.0, le=100.0)
+    is_answered: bool = False
+    created_at: datetime = Field(default_factory=utc_now)
+
+
+class DefenseSessionDTO(BaseModel):
+    """Stateful interactive oral thesis defense simulation session."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    id: str = Field(default_factory=lambda: uuid.uuid4().hex[:12])
+    project_id: str = Field(min_length=1, max_length=100)
+    academic_level: AcademicLevel = AcademicLevel.PREGRADO
+    status: DefenseStatus = DefenseStatus.IN_PROGRESS
+    current_turn_index: int = Field(default=0, ge=0)
+    total_turns: int = Field(default=4, ge=1, le=10)
+    turns: list[DefenseTurnDTO] = Field(default_factory=list)
+    final_verdict: DefenseStatus | None = None
+    final_score: float | None = Field(default=None, ge=0.0, le=100.0)
+    final_remarks: str | None = Field(default=None, max_length=5000)
+    created_at: datetime = Field(default_factory=utc_now)
+    updated_at: datetime = Field(default_factory=utc_now)
