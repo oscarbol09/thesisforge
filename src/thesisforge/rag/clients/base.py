@@ -13,11 +13,17 @@ from tenacity import (
     wait_exponential_jitter,
 )
 
+from thesisforge import __version__
 from thesisforge.core.logging import get_logger
 from thesisforge.core.security import assert_safe_academic_url_async
 from thesisforge.exceptions import AcademicAPIError, SSRFBlockedError
 
 logger = get_logger(__name__)
+
+DEFAULT_ACADEMIC_USER_AGENT = (
+    f"ThesisForge/{__version__} "
+    "(https://github.com/oscarbol09/thesisforge; mailto:thesisforge@academic.org)"
+)
 
 
 def _is_retryable_http_error(exc: BaseException) -> bool:
@@ -38,12 +44,12 @@ class BaseAcademicClient(ABC):
         base_url: str,
         timeout_seconds: float = 15.0,
         max_retries: int = 3,
-        user_agent: str = "ThesisForge/0.1.0 (https://github.com/oscarbol09/thesisforge; mailto:thesisforge@academic.org)",
+        user_agent: str | None = None,
     ) -> None:
         self.base_url = base_url.rstrip("/")
         self.timeout = timeout_seconds
         self.max_retries = max_retries
-        self.user_agent = user_agent
+        self.user_agent = user_agent or DEFAULT_ACADEMIC_USER_AGENT
         self._client: httpx.AsyncClient | None = None
 
     @asynccontextmanager

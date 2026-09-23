@@ -67,8 +67,6 @@ async def list_sections(
 ) -> list[SectionDraftDTO]:
     """Retrieve all structured section drafts belonging to a project."""
     project = await project_repo.get_project(project_id)
-    if not project:
-        raise ProjectNotFoundError(f"Proyecto con ID '{project_id}' no encontrado.")
     return sorted(project.sections, key=lambda s: (s.chapter_number, s.order_index))
 
 

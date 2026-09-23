@@ -36,6 +36,8 @@ from thesisforge.exceptions import (
     ThesisForgeError,
 )
 
+from thesisforge.rag.cache import LiteratureCache
+
 logger = get_logger(__name__)
 
 
@@ -66,6 +68,22 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Initialize database and resources on startup, release on shutdown."""
     db_manager = get_db_manager()
     await db_manager.initialize()
+
+    # Automatically purge expired literature cache entries on startup
+    try:
+        cache = LiteratureCache(db_manager)
+        pruned_count = await cache.prune_expired()
+        if pruned_count > 0:
+            logger.info(
+                "Pruned expired literature cache entries on startup.",
+                extra={"pruned_count": pruned_count},
+            )
+    except Exception as exc:
+        logger.warning(
+            "Could not prune literature cache during startup.",
+            extra={"error": str(exc)},
+        )
+
     logger.info("Application startup complete. Database initialized.")
     yield
     await db_manager.close()
