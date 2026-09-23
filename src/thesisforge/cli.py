@@ -10,6 +10,7 @@ from thesisforge import __version__
 from thesisforge.config import get_settings
 from thesisforge.core.time import utc_now
 from thesisforge.drafting.service import DraftService
+from thesisforge.exceptions import ThesisForgeError
 from thesisforge.export.service import ExportService
 from thesisforge.models import CitationDTO, ExportOptionsDTO
 from thesisforge.rag.apa_formatter import APA7Formatter
@@ -314,12 +315,14 @@ def main() -> None:
     )
 
     # export-docx command
+    # export-docx command
     export_parser = subparsers.add_parser(
         "export-docx",
         help="Compile and export a thesis project into APA 7th Edition Word document (.docx)",
     )
+    export_parser.add_argument("project_id", nargs="?", default=None, help="ID of the research project")
     export_parser.add_argument(
-        "--project-id", type=str, required=True, help="ID of the research project"
+        "--project-id", dest="project_id_flag", type=str, default=None, help="ID of the research project"
     )
     export_parser.add_argument("--output", type=str, required=True, help="Target .docx file path")
     export_parser.add_argument("--author", type=str, default="", help="Author / Student name")
@@ -331,8 +334,9 @@ def main() -> None:
         "draft-init",
         help="Initialize canonical 5-chapter outline sections for a thesis project",
     )
+    init_parser.add_argument("project_id", nargs="?", default=None, help="ID of the research project")
     init_parser.add_argument(
-        "--project-id", type=str, required=True, help="ID of the research project"
+        "--project-id", dest="project_id_flag", type=str, default=None, help="ID of the research project"
     )
 
     # draft-list command
@@ -340,8 +344,9 @@ def main() -> None:
         "draft-list",
         help="List all chapter sections and draft statuses for a project",
     )
+    list_parser.add_argument("project_id", nargs="?", default=None, help="ID of the research project")
     list_parser.add_argument(
-        "--project-id", type=str, required=True, help="ID of the research project"
+        "--project-id", dest="project_id_flag", type=str, default=None, help="ID of the research project"
     )
 
     # jury-audit command
@@ -349,8 +354,9 @@ def main() -> None:
         "jury-audit",
         help="Run comprehensive scientific jury evaluation and bias audit on a project",
     )
+    jury_parser.add_argument("project_id", nargs="?", default=None, help="ID of the research project")
     jury_parser.add_argument(
-        "--project-id", type=str, required=True, help="ID of the research project"
+        "--project-id", dest="project_id_flag", type=str, default=None, help="ID of the research project"
     )
 
     # defense-start command
@@ -358,8 +364,9 @@ def main() -> None:
         "defense-start",
         help="Start interactive oral thesis defense simulation with the academic jury",
     )
+    defense_parser.add_argument("project_id", nargs="?", default=None, help="ID of the research project")
     defense_parser.add_argument(
-        "--project-id", type=str, required=True, help="ID of the research project"
+        "--project-id", dest="project_id_flag", type=str, default=None, help="ID of the research project"
     )
 
     # gui command
@@ -378,54 +385,73 @@ def main() -> None:
     args = parser.parse_args()
     settings = get_settings()
 
-    if args.command == "search-papers":
-        format_apa = args.format_type == "apa"
-        asyncio.run(_run_search_cli(query=args.query, limit=args.limit, format_apa=format_apa))
-    elif args.command == "export-docx":
-        asyncio.run(
-            _run_export_docx_cli(
-                project_id=args.project_id,
-                output_path=args.output,
-                author=args.author,
-                institution=args.institution,
-                advisor=args.advisor,
+    def resolve_pid(arguments: argparse.Namespace) -> str:
+        pid = getattr(arguments, "project_id_flag", None) or getattr(arguments, "project_id", None)
+        if not pid:
+            print("Error: Se requiere el identificador del proyecto (--project-id o argumento posicional).", file=sys.stderr)
+            sys.exit(1)
+        return str(pid)
+
+    try:
+        if args.command == "search-papers":
+            format_apa = args.format_type == "apa"
+            asyncio.run(_run_search_cli(query=args.query, limit=args.limit, format_apa=format_apa))
+        elif args.command == "export-docx":
+            pid = resolve_pid(args)
+            asyncio.run(
+                _run_export_docx_cli(
+                    project_id=pid,
+                    output_path=args.output,
+                    author=args.author,
+                    institution=args.institution,
+                    advisor=args.advisor,
+                )
             )
-        )
-    elif args.command == "draft-init":
-        asyncio.run(_run_draft_init_cli(project_id=args.project_id))
-    elif args.command == "draft-list":
-        asyncio.run(_run_draft_list_cli(project_id=args.project_id))
-    elif args.command == "jury-audit":
-        asyncio.run(_run_jury_audit_cli(project_id=args.project_id))
-    elif args.command == "defense-start":
-        asyncio.run(_run_defense_start_cli(project_id=args.project_id))
-    elif args.command == "gui":
-        from thesisforge.desktop.launcher import launch_desktop
+        elif args.command == "draft-init":
+            pid = resolve_pid(args)
+            asyncio.run(_run_draft_init_cli(project_id=pid))
+        elif args.command == "draft-list":
+            pid = resolve_pid(args)
+            asyncio.run(_run_draft_list_cli(project_id=pid))
+        elif args.command == "jury-audit":
+            pid = resolve_pid(args)
+            asyncio.run(_run_jury_audit_cli(project_id=pid))
+        elif args.command == "defense-start":
+            pid = resolve_pid(args)
+            asyncio.run(_run_defense_start_cli(project_id=pid))
+        elif args.command == "gui":
+            from thesisforge.desktop.launcher import launch_desktop
 
-        launch_desktop(
-            host=args.host,
-            port=args.port,
-            debug=args.debug,
-        )
-    elif args.command == "run" or args.command is None:
-        host = args.host or settings.host
-        port = args.port or settings.port
-        reload = (
-            bool(args.reload)
-            if (hasattr(args, "reload") and args.reload)
-            else (settings.environment == "development")
-        )
+            launch_desktop(
+                host=args.host,
+                port=args.port,
+                debug=args.debug,
+            )
+        elif args.command == "run" or args.command is None:
+            host = args.host or settings.host
+            port = args.port or settings.port
+            reload = (
+                bool(args.reload)
+                if (hasattr(args, "reload") and args.reload)
+                else (settings.environment == "development")
+            )
 
-        print(f"Starting ThesisForge v{__version__} on http://{host}:{port}")
-        uvicorn.run(
-            "thesisforge.api.app:app",
-            host=host,
-            port=port,
-            reload=reload,
-        )
-    else:
-        parser.print_help()
+            print(f"Starting ThesisForge v{__version__} on http://{host}:{port}")
+            uvicorn.run(
+                "thesisforge.api.app:app",
+                host=host,
+                port=port,
+                reload=reload,
+            )
+        else:
+            parser.print_help()
+            sys.exit(1)
+    except ThesisForgeError as exc:
+        print(f"\n[Error ThesisForge] {exc}\n", file=sys.stderr)
         sys.exit(1)
+    except KeyboardInterrupt:
+        print("\nOperación cancelada por el usuario.")
+        sys.exit(0)
 
 
 if __name__ == "__main__":

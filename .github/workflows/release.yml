@@ -50,7 +50,7 @@ jobs:
 
       - name: Build Standalone Desktop Binary with PyInstaller
         run: |
-          pyinstaller --noconfirm --onedir --windowed --name "${{ matrix.artifact_name }}" src/thesisforge/api/app.py
+          pyinstaller --noconfirm --onedir --windowed --name "${{ matrix.artifact_name }}" --collect-all chromadb --collect-all litellm --collect-all fitz --collect-all pymupdf --add-data "gui:gui" src/thesisforge/desktop/launcher.py
 
       - name: Compress Desktop Binary
         shell: bash
