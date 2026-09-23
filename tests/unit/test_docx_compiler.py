@@ -214,3 +214,94 @@ def test_docx_compiler_to_bytes_roundtrip():
 
     doc = Document(io.BytesIO(docx_bytes))
     assert doc.core_properties.title == "Tesis en Memoria"
+
+
+def test_docx_compiler_table_of_contents():
+    """Verify Table of Contents generation with section entries."""
+    compiler = APA7DocxCompiler()
+    project = ProjectStateDTO(
+        id="proj-exp-07",
+        title="Tesis con Índice",
+        academic_level=AcademicLevel.PREGRADO,
+        phase=ProjectPhase.DRAFTING,
+        sections=[
+            SectionDraftDTO(
+                section_id="sec_1",
+                chapter_number=1,
+                order_index=1,
+                title="Introducción General",
+                content="Contenido de introducción.",
+                status=SectionStatus.APPROVED,
+            ),
+            SectionDraftDTO(
+                section_id="sec_2",
+                chapter_number=2,
+                order_index=1,
+                title="Marco Referencial",
+                content="Contenido del marco.",
+                status=SectionStatus.APPROVED,
+            ),
+        ],
+        validated_citations=[
+            CitationDTO(title="Estudio Fuente", authors=["Autor A"], year=2024)
+        ],
+    )
+
+    opts = ExportOptionsDTO(include_table_of_contents=True, include_references=True)
+    doc = compiler.compile(project, opts)
+
+    paragraphs = [p.text for p in doc.paragraphs]
+    assert any("Tabla de Contenidos" in p for p in paragraphs)
+    assert any("Capítulo 1. Introducción General" in p for p in paragraphs)
+    assert any("Capítulo 2. Marco Referencial" in p for p in paragraphs)
+    assert any("Referencias Bibliográficas" in p for p in paragraphs)
+
+
+def test_docx_compiler_references_deduplication():
+    """Verify identical or duplicated citations (same DOI or author/title/year) are deduplicated."""
+    compiler = APA7DocxCompiler()
+    citations = [
+        CitationDTO(
+            id="cit-01",
+            authors=["García, M."],
+            year=2023,
+            title="Inteligencia Artificial y Educación",
+            doi="10.1000/12345",
+        ),
+        CitationDTO(
+            id="cit-02",
+            authors=["García, M."],
+            year=2023,
+            title="Inteligencia Artificial y Educación",
+            doi="https://doi.org/10.1000/12345",  # Duplicate with DOI URL prefix
+        ),
+        CitationDTO(
+            id="cit-03",
+            authors=["García, M."],
+            year=2023,
+            title="Inteligencia Artificial y Educación",  # Duplicate without DOI
+        ),
+        CitationDTO(
+            id="cit-04",
+            authors=["Smith, J."],
+            year=2024,
+            title="Machine Learning Applications",
+            doi="10.1000/67890",
+        ),
+    ]
+
+    project = ProjectStateDTO(
+        id="proj-exp-08",
+        title="Tesis con Duplicados",
+        academic_level=AcademicLevel.PREGRADO,
+        phase=ProjectPhase.DRAFTING,
+        validated_citations=citations,
+    )
+
+    doc = compiler.compile(project, ExportOptionsDTO(include_references=True))
+    ref_paragraphs = [p.text for p in doc.paragraphs if "García" in p.text or "Smith" in p.text]
+    # García should only appear once despite 3 duplicate entries, Smith once = 2 total
+    assert len(ref_paragraphs) == 2
+    assert "García, M. (2023)" in ref_paragraphs[0]
+    assert "Smith, J. (2024)" in ref_paragraphs[1]
+

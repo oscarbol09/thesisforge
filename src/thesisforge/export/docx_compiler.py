@@ -55,6 +55,10 @@ class APA7DocxCompiler:
         if opts.include_cover_page:
             self._render_cover_page(doc, project, opts)
 
+        # 5.5 Table of Contents (if enabled)
+        if opts.include_table_of_contents:
+            self._render_table_of_contents(doc, project, opts)
+
         # 6. Body Sections (Sorted by chapter_number and order_index)
         sorted_sections = sorted(
             project.sections,
@@ -224,6 +228,55 @@ class APA7DocxCompiler:
             run = p.add_run(line)
             run.font.name = options.font_name
             run.font.size = Pt(options.font_size_pt)
+
+        doc.add_page_break()  # type: ignore[no-untyped-call]
+
+    def _render_table_of_contents(
+        self,
+        doc: DocxDocument,
+        project: ProjectStateDTO,
+        options: ExportOptionsDTO,
+    ) -> None:
+        """Render Table of Contents page with structured section list and Word TOC field code."""
+        self._add_heading(doc, "Tabla de Contenidos", level=1, options=options)
+
+        # Native Word dynamic TOC field code
+        p_toc = doc.add_paragraph()
+        p_toc.paragraph_format.first_line_indent = Inches(0)
+        p_toc.paragraph_format.line_spacing = 1.0
+        p_toc.paragraph_format.space_before = Pt(6)
+        p_toc.paragraph_format.space_after = Pt(6)
+        run_toc = p_toc.add_run()
+        ns = nsdecls("w")
+        fld = parse_xml(f'<w:fldSimple {ns} w:instr="TOC \\o &quot;1-3&quot; \\h \\z \\u"/>')
+        run_toc._r.append(fld)
+
+        # Structured list of chapters and sections for immediate visual fidelity
+        sorted_sections = sorted(
+            project.sections,
+            key=lambda s: (s.chapter_number, s.order_index),
+        )
+        for s in sorted_sections:
+            p_item = doc.add_paragraph()
+            p_item.paragraph_format.first_line_indent = Inches(0)
+            p_item.paragraph_format.line_spacing = options.line_spacing
+            p_item.paragraph_format.space_before = Pt(2)
+            p_item.paragraph_format.space_after = Pt(2)
+
+            prefix = f"Capítulo {s.chapter_number}. " if s.chapter_number > 0 else ""
+            r_item = p_item.add_run(f"{prefix}{s.title}")
+            r_item.font.name = options.font_name
+            r_item.font.size = Pt(options.font_size_pt)
+
+        if options.include_references and project.validated_citations:
+            p_ref = doc.add_paragraph()
+            p_ref.paragraph_format.first_line_indent = Inches(0)
+            p_ref.paragraph_format.line_spacing = options.line_spacing
+            p_ref.paragraph_format.space_before = Pt(2)
+            p_ref.paragraph_format.space_after = Pt(2)
+            r_ref = p_ref.add_run("Referencias Bibliográficas")
+            r_ref.font.name = options.font_name
+            r_ref.font.size = Pt(options.font_size_pt)
 
         doc.add_page_break()  # type: ignore[no-untyped-call]
 
@@ -496,15 +549,38 @@ class APA7DocxCompiler:
         citations: list[CitationDTO],
         options: ExportOptionsDTO,
     ) -> None:
-        """Render APA 7 References section with 0.5 in hanging indent."""
+        """Render APA 7 References section with 0.5 in hanging indent and deduplication."""
         self._add_heading(doc, "Referencias", level=1, options=options)
+
+        # Deduplicate citations by clean DOI or (first_author, title, year)
+        seen_dois: set[str] = set()
+        seen_meta: set[str] = set()
+        unique_citations: list[CitationDTO] = []
+
+        for c in citations:
+            first_auth = c.authors[0].strip().lower() if c.authors else ""
+            clean_title = re.sub(r"[^\w\s]", "", c.title.strip().lower())
+            meta_key = f"{first_auth}:{clean_title}:{c.year}"
+
+            clean_doi: str | None = None
+            if c.doi and c.doi.strip():
+                clean_doi = c.doi.strip().lower()
+                clean_doi = re.sub(r"^https?://(dx\.)?doi\.org/", "", clean_doi)
+
+            is_duplicate = bool((clean_doi and clean_doi in seen_dois) or (meta_key in seen_meta))
+
+            if not is_duplicate:
+                if clean_doi:
+                    seen_dois.add(clean_doi)
+                seen_meta.add(meta_key)
+                unique_citations.append(c)
 
         def sort_key(c: CitationDTO) -> str:
             if c.authors:
                 return c.authors[0].lower()
             return c.title.lower()
 
-        sorted_citations = sorted(citations, key=sort_key)
+        sorted_citations = sorted(unique_citations, key=sort_key)
 
         for citation in sorted_citations:
             p = doc.add_paragraph()
