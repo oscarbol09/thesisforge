@@ -123,7 +123,18 @@ async def defense_websocket_endpoint(
             event_type = data.get("event")
 
             if event_type == "reply":
-                turn_index = int(data.get("turn_index", -1))
+                raw_turn = data.get("turn_index", -1)
+                try:
+                    turn_index = int(raw_turn)
+                except (ValueError, TypeError):
+                    await websocket.send_json(
+                        {
+                            "event": "error",
+                            "message": f"El índice de turno '{raw_turn}' no es un número entero válido.",
+                        }
+                    )
+                    continue
+
                 student_answer = str(data.get("student_answer", "")).strip()
 
                 if not student_answer:
