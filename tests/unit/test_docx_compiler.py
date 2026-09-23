@@ -242,9 +242,7 @@ def test_docx_compiler_table_of_contents():
                 status=SectionStatus.APPROVED,
             ),
         ],
-        validated_citations=[
-            CitationDTO(title="Estudio Fuente", authors=["Autor A"], year=2024)
-        ],
+        validated_citations=[CitationDTO(title="Estudio Fuente", authors=["Autor A"], year=2024)],
     )
 
     opts = ExportOptionsDTO(include_table_of_contents=True, include_references=True)
@@ -304,4 +302,3 @@ def test_docx_compiler_references_deduplication():
     assert len(ref_paragraphs) == 2
     assert "García, M. (2023)" in ref_paragraphs[0]
     assert "Smith, J. (2024)" in ref_paragraphs[1]
-

@@ -79,9 +79,9 @@ async def test_complete_json_with_conversational_preamble():
     mock_resp = MagicMock()
     mock_choice = MagicMock()
     mock_choice.message.content = (
-        'Claro, a continuación presento el JSON solicitado:\n'
+        "Claro, a continuación presento el JSON solicitado:\n"
         '```json\n{"verdict": "aprobado", "score": 92.5}\n```\n'
-        'Espero que te sea de utilidad.'
+        "Espero que te sea de utilidad."
     )
     mock_resp.choices = [mock_choice]
 

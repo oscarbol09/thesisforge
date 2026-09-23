@@ -478,7 +478,8 @@ class MultiAgentJuryEngine:
                         recommendation=str(raw_issue.get("recommendation", "Revisar y corregir.")),
                     )
                 )
-            except Exception:
+            except Exception as err:
+                logger.debug("Skipping malformed LLM audit issue item.", extra={"error": str(err)})
                 continue
 
         # Merge unique issues (rule issues prioritized)
@@ -512,7 +513,8 @@ class MultiAgentJuryEngine:
                         flaws=[str(f) for f in raw_eval.get("flaws", [])],
                     )
                 )
-            except Exception:
+            except Exception as err:
+                logger.debug("Skipping malformed LLM juror eval item.", extra={"error": str(err)})
                 continue
 
         # If LLM didn't return all 4 jurors, ensure complete 4-juror panel

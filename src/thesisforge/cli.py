@@ -320,9 +320,15 @@ def main() -> None:
         "export-docx",
         help="Compile and export a thesis project into APA 7th Edition Word document (.docx)",
     )
-    export_parser.add_argument("project_id", nargs="?", default=None, help="ID of the research project")
     export_parser.add_argument(
-        "--project-id", dest="project_id_flag", type=str, default=None, help="ID of the research project"
+        "project_id", nargs="?", default=None, help="ID of the research project"
+    )
+    export_parser.add_argument(
+        "--project-id",
+        dest="project_id_flag",
+        type=str,
+        default=None,
+        help="ID of the research project",
     )
     export_parser.add_argument("--output", type=str, required=True, help="Target .docx file path")
     export_parser.add_argument("--author", type=str, default="", help="Author / Student name")
@@ -334,9 +340,15 @@ def main() -> None:
         "draft-init",
         help="Initialize canonical 5-chapter outline sections for a thesis project",
     )
-    init_parser.add_argument("project_id", nargs="?", default=None, help="ID of the research project")
     init_parser.add_argument(
-        "--project-id", dest="project_id_flag", type=str, default=None, help="ID of the research project"
+        "project_id", nargs="?", default=None, help="ID of the research project"
+    )
+    init_parser.add_argument(
+        "--project-id",
+        dest="project_id_flag",
+        type=str,
+        default=None,
+        help="ID of the research project",
     )
 
     # draft-list command
@@ -344,9 +356,15 @@ def main() -> None:
         "draft-list",
         help="List all chapter sections and draft statuses for a project",
     )
-    list_parser.add_argument("project_id", nargs="?", default=None, help="ID of the research project")
     list_parser.add_argument(
-        "--project-id", dest="project_id_flag", type=str, default=None, help="ID of the research project"
+        "project_id", nargs="?", default=None, help="ID of the research project"
+    )
+    list_parser.add_argument(
+        "--project-id",
+        dest="project_id_flag",
+        type=str,
+        default=None,
+        help="ID of the research project",
     )
 
     # jury-audit command
@@ -354,9 +372,15 @@ def main() -> None:
         "jury-audit",
         help="Run comprehensive scientific jury evaluation and bias audit on a project",
     )
-    jury_parser.add_argument("project_id", nargs="?", default=None, help="ID of the research project")
     jury_parser.add_argument(
-        "--project-id", dest="project_id_flag", type=str, default=None, help="ID of the research project"
+        "project_id", nargs="?", default=None, help="ID of the research project"
+    )
+    jury_parser.add_argument(
+        "--project-id",
+        dest="project_id_flag",
+        type=str,
+        default=None,
+        help="ID of the research project",
     )
 
     # defense-start command
@@ -364,9 +388,15 @@ def main() -> None:
         "defense-start",
         help="Start interactive oral thesis defense simulation with the academic jury",
     )
-    defense_parser.add_argument("project_id", nargs="?", default=None, help="ID of the research project")
     defense_parser.add_argument(
-        "--project-id", dest="project_id_flag", type=str, default=None, help="ID of the research project"
+        "project_id", nargs="?", default=None, help="ID of the research project"
+    )
+    defense_parser.add_argument(
+        "--project-id",
+        dest="project_id_flag",
+        type=str,
+        default=None,
+        help="ID of the research project",
     )
 
     # gui command
@@ -388,7 +418,10 @@ def main() -> None:
     def resolve_pid(arguments: argparse.Namespace) -> str:
         pid = getattr(arguments, "project_id_flag", None) or getattr(arguments, "project_id", None)
         if not pid:
-            print("Error: Se requiere el identificador del proyecto (--project-id o argumento posicional).", file=sys.stderr)
+            print(
+                "Error: Se requiere el identificador del proyecto (--project-id o argumento posicional).",
+                file=sys.stderr,
+            )
             sys.exit(1)
         return str(pid)
 

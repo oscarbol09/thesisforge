@@ -51,10 +51,14 @@ def test_citation_dto_author_string_parsing():
 def test_citation_dto_year_validation():
     """Test CitationDTO accepts historical classical years (e.g. 1687, 1850) and rejects invalid years."""
     # Historical classics allowed
-    cit_newton = CitationDTO(title="Philosophiae Naturalis Principia Mathematica", authors=["Isaac Newton"], year=1687)
+    cit_newton = CitationDTO(
+        title="Philosophiae Naturalis Principia Mathematica", authors=["Isaac Newton"], year=1687
+    )
     assert cit_newton.year == 1687
 
-    cit_darwin = CitationDTO(title="On the Origin of Species", authors=["Charles Darwin"], year=1859)
+    cit_darwin = CitationDTO(
+        title="On the Origin of Species", authors=["Charles Darwin"], year=1859
+    )
     assert cit_darwin.year == 1859
 
     with pytest.raises(ValidationError):

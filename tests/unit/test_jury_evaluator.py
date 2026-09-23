@@ -225,4 +225,3 @@ def test_normalize_juror_role():
     assert normalize_juror_role("Abogado del Diablo") == JurorRole.ABOGADO_DEL_DIABLO
     assert normalize_juror_role("devil_advocate") == JurorRole.ABOGADO_DEL_DIABLO
     assert normalize_juror_role(JurorRole.AUDITOR_ESTADISTICO) == JurorRole.AUDITOR_ESTADISTICO
-

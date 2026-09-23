@@ -103,4 +103,3 @@ def test_validate_hypothesis_approaches():
     issues = MethodologyValidator.validate_hypothesis("", ResearchApproach.MIXTO)
     assert len(issues) == 1
     assert "enfoque mixto" in issues[0]
-

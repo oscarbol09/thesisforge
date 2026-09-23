@@ -113,4 +113,3 @@ def test_pdf_document_parser_encrypted_pdf():
             title="Encrypted doc",
             year=2024,
         )
-

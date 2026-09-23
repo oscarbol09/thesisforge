@@ -168,4 +168,3 @@ def test_chroma_collection_name_sanitization():
     res = store._get_collection_name(long_name)
     assert len(res) <= 55
     assert res.startswith("proj_")
-

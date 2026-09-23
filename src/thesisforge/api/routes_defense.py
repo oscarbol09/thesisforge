@@ -185,5 +185,7 @@ async def defense_websocket_endpoint(
         try:
             await websocket.send_json({"event": "error", "message": str(exc)})
             await websocket.close()
-        except Exception:
-            pass
+        except Exception as close_exc:
+            logger.debug(
+                "Could not send error frame to WebSocket.", extra={"error": str(close_exc)}
+            )
