@@ -8,8 +8,10 @@ from thesisforge.rag.clients.arxiv import ArxivClient
 from thesisforge.rag.clients.base import BaseAcademicClient
 from thesisforge.rag.clients.crossref import CrossRefClient
 from thesisforge.rag.clients.semantic_scholar import SemanticScholarClient
+from thesisforge.rag.ieee_formatter import IEEEFormatter
 from thesisforge.rag.parser import PDFDocumentParser, SentenceAwareChunker
 from thesisforge.rag.service import RAGService
+from thesisforge.rag.vancouver_formatter import VancouverFormatter
 from thesisforge.rag.vectorstore import ChromaVectorStore
 
 __all__ = [
@@ -20,9 +22,11 @@ __all__ = [
     "ChromaVectorStore",
     "CitationGuard",
     "CrossRefClient",
+    "IEEEFormatter",
     "LiteratureCache",
     "PDFDocumentParser",
     "RAGService",
     "SemanticScholarClient",
     "SentenceAwareChunker",
+    "VancouverFormatter",
 ]
