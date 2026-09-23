@@ -24,8 +24,10 @@ gantt
     v0.3.0 Redacción Modular y DOCX APA 7        :done,    des3, 2026-09, 2026-09
     section Auditoría y Jurado
     v0.4.0 Simulación de Jurado y Defensa        :done,    des4, 2026-09, 2026-09
-    section Distribución y Escritorio
-    v1.0.0 Binarios de Escritorio y LaTeX        :active,  des5, 2026-10, 2026-11
+    section Frontend y Escritorio
+    v0.5.0 Interfaz SPA y PyWebView              :done,    des5, 2026-09, 2026-09
+    section Distribución y Ecosistema
+    v1.0.0 Binarios Autónomos y PyPI             :active,  des6, 2026-10, 2026-11
 ```
 
 ---
@@ -67,7 +69,15 @@ gantt
 
 ---
 
-### Fase 5: Distribución de Escritorio y Ecosistema (v1.0.0)
+### Fase 5: Interfaz de Usuario SPA y Contenedor de Escritorio (v0.5.0) — [Completada]
+- [x] Interfaz de usuario SPA con Tailwind CSS y Alpine.js servida directamente por FastAPI sin dependencias de Node.js.
+- [x] Contenedor de escritorio nativo con PyWebView para ejecución local monousuario (`thesisforge gui`).
+- [x] Vistas reactivas completas para gestión de proyectos, asesor metodológico, literatura/RAG, redacción con WebSockets, compilación Word APA 7, jurado doctoral y sustentación oral.
+- [x] Modal de configuración BYOK con almacenamiento cifrado local.
+
+---
+
+### Fase 6: Empaquetado y Ecosistema de Distribución (v1.0.0)
 - [ ] Empaquetado ejecutable de escritorio standalone (`.exe` para Windows, `.dmg` para macOS, AppImage para Linux).
 - [ ] Publicación del paquete en PyPI (`pip install thesisforge`).
 - [ ] Motor de exportación a LaTeX / Overleaf (archivos `.tex` y `.bib`).

@@ -105,6 +105,12 @@ ThesisForge está diseñado bajo los siguientes principios arquitectónicos:
 - **`JuryService`:** Fachada de orquestación que administra el ciclo de vida de auditorías, sesiones de defensa oral y transiciones de fase del proyecto a `REVIEW` y `COMPLETED`.
 - **`JuryRepository`:** Persistencia transaccional SQLite para informes de jurado (`jury_evaluations`) y sesiones de defensa (`defense_sessions`).
 
+### 3.10 Interfaz Web SPA & Lanzador de Escritorio (`gui/`, `src/thesisforge/desktop/`)
+- **SPA Monomando (`gui/`):** Aplicación cliente construida sobre HTML5 semántico, Alpine.js y Tailwind CSS servida directamente desde FastAPI sin dependencias de compilación en Node.js ni empaquetadores externos.
+- **Sistema de Tokens Semánticos (`gui/css/tokens.css`):** Implementa el principio 60-30-10 con variables CSS para modos claro/oscuro, radios sobrios de 6px/8px, tipografía tabular y micro-interacciones rápidas (150ms-220ms).
+- **Sanitización Defensiva en DOM:** Sanitización estricta de cualquier contenido generado por LLM mediante `DOMPurify` antes de su renderizado.
+- **Lanzador Nativo PyWebView (`src/thesisforge/desktop/launcher.py`):** Asigna puertos TCP libres en loopback de forma dinámica, levanta el servidor Uvicorn en un hilo daemon en segundo plano, verifica el estado de salud mediante sondeo a `/health` y embebe la interfaz en una ventana nativa de escritorio con soporte de herramientas de desarrollo.
+
 ---
 
 ## 4. Estrategia de Pruebas y Calidad

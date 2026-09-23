@@ -18,7 +18,7 @@
   <a href="https://github.com/astral-sh/ruff"><img src="https://img.shields.io/badge/code%20style-ruff-000000.svg" alt="Code style: ruff"></a>
   <a href="https://mypy.readthedocs.io/"><img src="https://img.shields.io/badge/type_checked-mypy_strict-brightgreen.svg" alt="Type Checked: mypy"></a>
   <a href="https://github.com/PyCQA/bandit"><img src="https://img.shields.io/badge/security-bandit-yellow.svg" alt="Security: Bandit"></a>
-  <a href="https://github.com/oscarbol09/thesisforge/releases"><img src="https://img.shields.io/badge/release-v0.4.0-indigo.svg" alt="Release v0.4.0"></a>
+  <a href="https://github.com/oscarbol09/thesisforge/releases"><img src="https://img.shields.io/badge/release-v0.5.0-indigo.svg" alt="Release v0.5.0"></a>
 </p>
 
 ---
@@ -97,6 +97,9 @@ bandit -r src/ -ll
 ## Uso desde la línea de comandos (CLI)
 
 ```bash
+# Iniciar la interfaz gráfica de escritorio interactiva (PyWebView + SPA)
+thesisforge gui
+
 # Iniciar el servidor API local
 thesisforge run --port 8000
 
@@ -204,7 +207,7 @@ Consulta [`ARCHITECTURE.md`](ARCHITECTURE.md) y [`docs/user-guide/MANUAL_DE_USUA
 - [x] **Sprint 2:** Motor RAG de literatura académica (Semantic Scholar, ArXiv, CrossRef), extracción de PDFs con PyMuPDF, compuerta anti-alucinaciones e indexación local con ChromaDB (v0.2.0).
 - [x] **Sprint 3:** Generador modular por capítulos con memoria acumulativa jerárquica, streaming por WebSockets, compilador APA 7 DOCX con defensa CWE-1236 y Manual de Usuario oficial (v0.3.0).
 - [x] **Sprint 4:** Panel multi-agente de simulación de jurado y defensa de tesis (v0.4.0).
-- [ ] **Sprint 5:** Interfaz de usuario SPA con Tailwind CSS y lanzador de escritorio con PyWebView.
+- [x] **Sprint 5:** Interfaz de usuario SPA con Tailwind CSS y lanzador de escritorio con PyWebView (v0.5.0).
 - [ ] **Sprint 6:** Empaquetado ejecutable autónomo (.exe, .dmg, AppImage) y distribución en PyPI (v1.0.0).
 
 ---
