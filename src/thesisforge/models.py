@@ -97,7 +97,7 @@ class DefenseStatus(str, Enum):
 class CitationDTO(BaseModel):
     """Metadata for verified academic literature with evidence traceability."""
 
-    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
+    model_config = ConfigDict(str_strip_whitespace=True, extra="ignore")
 
     id: str = Field(default_factory=lambda: uuid.uuid4().hex[:10])
     doi: str | None = Field(default=None, max_length=100)
@@ -129,7 +129,7 @@ class CitationDTO(BaseModel):
 class DocumentChunkDTO(BaseModel):
     """Segment of indexed academic literature with structural provenance."""
 
-    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
+    model_config = ConfigDict(str_strip_whitespace=True, extra="ignore")
 
     id: str = Field(default_factory=lambda: uuid.uuid4().hex[:12])
     document_id: str = Field(min_length=1, max_length=100)
@@ -150,7 +150,7 @@ class DocumentChunkDTO(BaseModel):
 class EvidenceVerdictDTO(BaseModel):
     """Validation report verifying whether a claim is substantiated by indexed literature."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="ignore")
 
     claim: str = Field(default="", min_length=0)
     is_supported: bool
@@ -162,7 +162,7 @@ class EvidenceVerdictDTO(BaseModel):
 class AcademicSearchResultDTO(BaseModel):
     """Unified search result entry across academic providers."""
 
-    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
+    model_config = ConfigDict(str_strip_whitespace=True, extra="ignore")
 
     paper_id: str
     title: str
@@ -180,7 +180,7 @@ class AcademicSearchResultDTO(BaseModel):
 class MethodologyDTO(BaseModel):
     """Validated methodological data sheet created during Phase 1."""
 
-    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
+    model_config = ConfigDict(str_strip_whitespace=True, extra="ignore")
 
     approach: ResearchApproach | None = None
     design: str = Field(default="", max_length=500)
@@ -193,7 +193,7 @@ class MethodologyDTO(BaseModel):
 class SectionDraftDTO(BaseModel):
     """Structured draft of a thesis chapter or subsection."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="ignore")
 
     section_id: str = Field(min_length=1, max_length=100)
     title: str = Field(min_length=1, max_length=300)
@@ -220,7 +220,7 @@ class ExportFormat(str, Enum):
 class ExportOptionsDTO(BaseModel):
     """Configuration options for thesis compilation and document export."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="ignore")
 
     format: ExportFormat = ExportFormat.DOCX
     include_cover_page: bool = True
@@ -253,7 +253,7 @@ class ProjectCreateDTO(BaseModel):
 class ProjectSummaryDTO(BaseModel):
     """Lightweight summary of a project for listings."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="ignore")
 
     id: str
     title: str
@@ -268,7 +268,7 @@ class ProjectSummaryDTO(BaseModel):
 class ProjectStateDTO(BaseModel):
     """Global master state of a research project."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="ignore")
 
     id: str = Field(default_factory=lambda: uuid.uuid4().hex[:12])
     created_at: datetime = Field(default_factory=utc_now)
@@ -319,7 +319,7 @@ class ProjectStateDTO(BaseModel):
 class AuditIssueDTO(BaseModel):
     """Specific methodological, conceptual, or empirical defect identified in the thesis."""
 
-    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
+    model_config = ConfigDict(str_strip_whitespace=True, extra="ignore")
 
     id: str = Field(default_factory=lambda: uuid.uuid4().hex[:10])
     issue_type: AuditIssueType
@@ -334,7 +334,7 @@ class AuditIssueDTO(BaseModel):
 class JurorDimensionScoreDTO(BaseModel):
     """Evaluation score and analytical feedback from a specific juror persona."""
 
-    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
+    model_config = ConfigDict(str_strip_whitespace=True, extra="ignore")
 
     juror_role: JurorRole
     juror_name: str = Field(min_length=2, max_length=200)
@@ -349,7 +349,7 @@ class JurorDimensionScoreDTO(BaseModel):
 class JuryEvaluationReportDTO(BaseModel):
     """Comprehensive academic jury evaluation report for a thesis project."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="ignore")
 
     id: str = Field(default_factory=lambda: uuid.uuid4().hex[:12])
     project_id: str = Field(min_length=1, max_length=100)
@@ -366,7 +366,7 @@ class JuryEvaluationReportDTO(BaseModel):
 class DefenseTurnDTO(BaseModel):
     """A single turn in an interactive oral thesis defense."""
 
-    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
+    model_config = ConfigDict(str_strip_whitespace=True, extra="ignore")
 
     turn_index: int = Field(ge=0)
     juror_role: JurorRole
@@ -383,7 +383,7 @@ class DefenseTurnDTO(BaseModel):
 class DefenseSessionDTO(BaseModel):
     """Stateful interactive oral thesis defense simulation session."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="ignore")
 
     id: str = Field(default_factory=lambda: uuid.uuid4().hex[:12])
     project_id: str = Field(min_length=1, max_length=100)
