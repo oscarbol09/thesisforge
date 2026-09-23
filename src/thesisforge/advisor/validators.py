@@ -157,11 +157,19 @@ class MethodologyValidator:
                 issues.append(
                     "Para investigaciones con enfoque cuantitativo, es altamente recomendable o requerida una hipótesis explícita y contrastable."
                 )
+            elif len(cleaned) < 15:
+                issues.append(
+                    "La hipótesis cuantitativa es demasiado escueta para establecer una relación verificable entre variables."
+                )
         elif (
             approach == ResearchApproach.CUALITATIVO and cleaned and "estadístic" in cleaned.lower()
         ):
             issues.append(
                 "En investigaciones cualitativas puras, las hipótesis no deben plantear contrastes estadísticos formales (usar supuestos o preguntas directrices)."
+            )
+        elif approach == ResearchApproach.MIXTO and not cleaned:
+            issues.append(
+                "En investigaciones de enfoque mixto, se recomienda formular hipótesis de trabajo o supuestos directrices para integrar ambas fases metodológicas."
             )
 
         return issues

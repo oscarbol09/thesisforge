@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from thesisforge.jury.evaluator import MultiAgentJuryEngine
+from thesisforge.jury.evaluator import MultiAgentJuryEngine, normalize_juror_role
 from thesisforge.llm.router import LLMRouter
 from thesisforge.models import (
     AcademicLevel,
@@ -211,3 +211,18 @@ async def test_llm_panel_audit_with_mock(sample_complete_project: ProjectStateDT
     assert report.verdict == JuryVerdict.APROBADO
     assert len(report.juror_evaluations) == 4
     assert mock_router.complete_json.await_count == 1
+
+
+def test_normalize_juror_role():
+    """Verify normalize_juror_role correctly maps variations with accents and casing."""
+    assert normalize_juror_role("Metodólogo") == JurorRole.METODOLOGO
+    assert normalize_juror_role("metodologo") == JurorRole.METODOLOGO
+    assert normalize_juror_role("Methodologist") == JurorRole.METODOLOGO
+    assert normalize_juror_role("Especialista Temático") == JurorRole.ESPECIALISTA_TEMATICO
+    assert normalize_juror_role("tematico") == JurorRole.ESPECIALISTA_TEMATICO
+    assert normalize_juror_role("Auditor Estadístico") == JurorRole.AUDITOR_ESTADISTICO
+    assert normalize_juror_role("estadistico") == JurorRole.AUDITOR_ESTADISTICO
+    assert normalize_juror_role("Abogado del Diablo") == JurorRole.ABOGADO_DEL_DIABLO
+    assert normalize_juror_role("devil_advocate") == JurorRole.ABOGADO_DEL_DIABLO
+    assert normalize_juror_role(JurorRole.AUDITOR_ESTADISTICO) == JurorRole.AUDITOR_ESTADISTICO
+

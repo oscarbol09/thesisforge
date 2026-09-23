@@ -3,6 +3,7 @@
 from thesisforge.advisor.validators import MethodologyValidator
 from thesisforge.models import (
     ProjectStateDTO,
+    ResearchApproach,
 )
 
 
@@ -70,3 +71,36 @@ def test_audit_project_full_consistency(sample_project: ProjectStateDTO):
     assert audit["is_consistent"] is True
     assert audit["score"] == 100
     assert audit["status"] == "APPROVED"
+
+
+def test_validate_hypothesis_approaches():
+    """Test hypothesis validation across quantitative, qualitative, and mixed approaches."""
+    # Quantitative empty -> issue
+    issues = MethodologyValidator.validate_hypothesis("", ResearchApproach.CUANTITATIVO)
+    assert len(issues) == 1
+    assert "altamente recomendable" in issues[0]
+
+    # Quantitative too short -> issue
+    issues = MethodologyValidator.validate_hypothesis("Corta", ResearchApproach.CUANTITATIVO)
+    assert len(issues) == 1
+    assert "demasiado escueta" in issues[0]
+
+    # Quantitative valid -> no issues
+    issues = MethodologyValidator.validate_hypothesis(
+        "El uso de ThesisForge incrementa significativamente la precisión bibliográfica.",
+        ResearchApproach.CUANTITATIVO,
+    )
+    assert len(issues) == 0
+
+    # Qualitative with statistical hypothesis -> issue
+    issues = MethodologyValidator.validate_hypothesis(
+        "Se realizará un contraste estadístico de medias.", ResearchApproach.CUALITATIVO
+    )
+    assert len(issues) == 1
+    assert "no deben plantear contrastes estadísticos" in issues[0]
+
+    # Mixed without hypothesis -> recommendation issue
+    issues = MethodologyValidator.validate_hypothesis("", ResearchApproach.MIXTO)
+    assert len(issues) == 1
+    assert "enfoque mixto" in issues[0]
+

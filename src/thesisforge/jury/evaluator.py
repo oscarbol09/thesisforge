@@ -1,5 +1,4 @@
-"""Multi-agent scientific thesis jury evaluation engine and bias detector."""
-
+import unicodedata
 import uuid
 from typing import Any
 
@@ -21,6 +20,52 @@ from thesisforge.models import (
 )
 
 logger = get_logger(__name__)
+
+JUROR_DEFAULTS: dict[JurorRole, tuple[str, str]] = {
+    JurorRole.METODOLOGO: (
+        "Dr. Arístides Valenzuela",
+        "Consistencia Metodológica y Epistemológica",
+    ),
+    JurorRole.ESPECIALISTA_TEMATICO: (
+        "Dra. Beatriz Salamanca",
+        "Estado del Arte y Sustento Teórico",
+    ),
+    JurorRole.AUDITOR_ESTADISTICO: (
+        "Dr. Camilo Restrepo",
+        "Rigor Empírico, Muestreo e Instrumentos",
+    ),
+    JurorRole.ABOGADO_DEL_DIABLO: (
+        "Dr. Demetrio Sotomayor",
+        "Resiliencia Crítica y Amenazas a la Validez",
+    ),
+}
+
+
+def normalize_juror_role(raw_role: str | JurorRole) -> JurorRole:
+    """Normalize raw juror role strings (with or without accents/variations) into canonical JurorRole."""
+    if isinstance(raw_role, JurorRole):
+        return raw_role
+
+    text = (
+        unicodedata.normalize("NFKD", str(raw_role))
+        .encode("ASCII", "ignore")
+        .decode("utf-8")
+        .lower()
+        .strip()
+    )
+    if any(k in text for k in ["metodolog", "methodolog"]):
+        return JurorRole.METODOLOGO
+    if any(k in text for k in ["tematic", "thematic", "especialista", "expert"]):
+        return JurorRole.ESPECIALISTA_TEMATICO
+    if any(k in text for k in ["estadist", "statistic", "auditor", "cuantitativ"]):
+        return JurorRole.AUDITOR_ESTADISTICO
+    if any(k in text for k in ["diablo", "devil", "critico", "adversar", "advocate"]):
+        return JurorRole.ABOGADO_DEL_DIABLO
+
+    for role in JurorRole:
+        if role.value in text:
+            return role
+    return JurorRole.METODOLOGO
 
 
 class MultiAgentJuryEngine:
@@ -446,40 +491,11 @@ class MultiAgentJuryEngine:
 
         # Parse juror dimension scores
         juror_evaluations: list[JurorDimensionScoreDTO] = []
-        role_map = {
-            "metodologo": (
-                JurorRole.METODOLOGO,
-                "Dr. Arístides Valenzuela",
-                "Consistencia Metodológica y Epistemológica",
-            ),
-            "especialista_tematico": (
-                JurorRole.ESPECIALISTA_TEMATICO,
-                "Dra. Beatriz Salamanca",
-                "Estado del Arte y Sustento Teórico",
-            ),
-            "auditor_estadistico": (
-                JurorRole.AUDITOR_ESTADISTICO,
-                "Dr. Camilo Restrepo",
-                "Rigor Empírico, Muestreo e Instrumentos",
-            ),
-            "abogado_del_diablo": (
-                JurorRole.ABOGADO_DEL_DIABLO,
-                "Dr. Demetrio Sotomayor",
-                "Resiliencia Crítica y Amenazas a la Validez",
-            ),
-        }
-
         for raw_eval in data.get("juror_evaluations", []):
             try:
-                role_key = str(raw_eval.get("juror_role", "")).lower()
-                if role_key in role_map:
-                    role_enum, default_name, default_dim = role_map[role_key]
-                else:
-                    role_enum, default_name, default_dim = (
-                        JurorRole.METODOLOGO,
-                        "Dr. Arístides Valenzuela",
-                        "Consistencia Metodológica",
-                    )
+                raw_role = str(raw_eval.get("juror_role", ""))
+                role_enum = normalize_juror_role(raw_role)
+                default_name, default_dim = JUROR_DEFAULTS[role_enum]
 
                 score_val = float(raw_eval.get("score", 75.0))
                 score_val = max(0.0, min(100.0, score_val))
@@ -487,8 +503,8 @@ class MultiAgentJuryEngine:
                 juror_evaluations.append(
                     JurorDimensionScoreDTO(
                         juror_role=role_enum,
-                        juror_name=str(raw_eval.get("juror_name", default_name)),
-                        dimension_name=str(raw_eval.get("dimension_name", default_dim)),
+                        juror_name=str(raw_eval.get("juror_name") or default_name),
+                        dimension_name=str(raw_eval.get("dimension_name") or default_dim),
                         score=round(score_val, 1),
                         criteria_evaluation=str(raw_eval.get("criteria_evaluation", "")),
                         feedback=str(raw_eval.get("feedback", "")),
@@ -500,7 +516,7 @@ class MultiAgentJuryEngine:
                 continue
 
         # If LLM didn't return all 4 jurors, ensure complete 4-juror panel
-        for _role_key, (role_enum, default_name, default_dim) in role_map.items():
+        for role_enum, (default_name, default_dim) in JUROR_DEFAULTS.items():
             if not any(je.juror_role == role_enum for je in juror_evaluations):
                 juror_evaluations.append(
                     JurorDimensionScoreDTO(

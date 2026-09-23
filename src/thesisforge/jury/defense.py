@@ -5,6 +5,7 @@ import uuid
 from thesisforge.core.logging import get_logger
 from thesisforge.core.time import utc_now
 from thesisforge.exceptions import DefenseSessionError, DefenseTurnNotFoundError
+from thesisforge.jury.evaluator import JUROR_DEFAULTS, normalize_juror_role
 from thesisforge.llm.prompts import (
     DEFENSE_QUESTIONS_GENERATION_PROMPT,
     DEFENSE_REPLY_EVALUATION_PROMPT,
@@ -172,31 +173,15 @@ class ThesisDefenseSimulator:
                 raw_questions = parsed_json.get("questions", [])
                 if len(raw_questions) >= 4:
                     llm_turns: list[DefenseTurnDTO] = []
-                    role_map = {
-                        "metodologo": (JurorRole.METODOLOGO, "Dr. Arístides Valenzuela"),
-                        "especialista_tematico": (
-                            JurorRole.ESPECIALISTA_TEMATICO,
-                            "Dra. Beatriz Salamanca",
-                        ),
-                        "auditor_estadistico": (
-                            JurorRole.AUDITOR_ESTADISTICO,
-                            "Dr. Camilo Restrepo",
-                        ),
-                        "abogado_del_diablo": (
-                            JurorRole.ABOGADO_DEL_DIABLO,
-                            "Dr. Demetrio Sotomayor",
-                        ),
-                    }
                     for idx, q_data in enumerate(raw_questions[:4]):
-                        role_str = str(q_data.get("juror_role", "")).lower()
-                        role_enum, default_name = role_map.get(
-                            role_str, (JurorRole.METODOLOGO, "Dr. Arístides Valenzuela")
-                        )
+                        role_str = str(q_data.get("juror_role", ""))
+                        role_enum = normalize_juror_role(role_str)
+                        default_name, _ = JUROR_DEFAULTS[role_enum]
                         llm_turns.append(
                             DefenseTurnDTO(
                                 turn_index=idx,
                                 juror_role=role_enum,
-                                juror_name=str(q_data.get("juror_name", default_name)),
+                                juror_name=str(q_data.get("juror_name") or default_name),
                                 focus_area=str(q_data.get("focus_area", "Defensa Metodológica")),
                                 question=str(q_data.get("question", turns[idx].question)),
                                 created_at=utc_now(),
