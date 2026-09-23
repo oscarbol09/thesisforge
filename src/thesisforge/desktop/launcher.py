@@ -1,10 +1,10 @@
 """Desktop launcher embedding FastAPI within PyWebView native window."""
 
+import contextlib
+import http.client
 import socket
 import threading
 import time
-import urllib.error
-import urllib.request
 from typing import Any
 
 import uvicorn
@@ -35,15 +35,21 @@ def find_available_port(host: str = "127.0.0.1", default_port: int = 8000) -> in
 def wait_for_server(host: str, port: int, timeout_seconds: float = 12.0) -> bool:
     """Poll the /health endpoint until FastAPI is ready to receive requests."""
     start_time = time.monotonic()
-    health_url = f"http://{host}:{port}/health"
 
     while time.monotonic() - start_time < timeout_seconds:
+        conn = None
         try:
-            req = urllib.request.Request(health_url, headers={"User-Agent": "ThesisForge-Launcher"})
-            with urllib.request.urlopen(req, timeout=1.0) as response:
-                if response.status == 200:
-                    return True
-        except (urllib.error.URLError, OSError):
+            conn = http.client.HTTPConnection(host, port, timeout=1.0)
+            conn.request("GET", "/health", headers={"User-Agent": "ThesisForge-Launcher"})
+            response = conn.getresponse()
+            if response.status == 200:
+                conn.close()
+                return True
+            conn.close()
+        except (OSError, http.client.HTTPException):
+            if conn:
+                with contextlib.suppress(Exception):
+                    conn.close()
             time.sleep(0.15)
 
     return False
