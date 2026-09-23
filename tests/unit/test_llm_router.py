@@ -72,6 +72,28 @@ async def test_complete_json_success():
 
 
 @pytest.mark.asyncio
+async def test_complete_json_with_conversational_preamble():
+    """Test JSON completion parsing when response includes surrounding conversation."""
+    router = LLMRouter()
+
+    mock_resp = MagicMock()
+    mock_choice = MagicMock()
+    mock_choice.message.content = (
+        'Claro, a continuación presento el JSON solicitado:\n'
+        '```json\n{"verdict": "aprobado", "score": 92.5}\n```\n'
+        'Espero que te sea de utilidad.'
+    )
+    mock_resp.choices = [mock_choice]
+
+    with patch("litellm.acompletion", new_callable=AsyncMock) as mock_acompletion:
+        mock_acompletion.return_value = mock_resp
+        data = await router.complete_json("Prompt con preámbulo")
+
+        assert data["verdict"] == "aprobado"
+        assert data["score"] == 92.5
+
+
+@pytest.mark.asyncio
 async def test_complete_llm_error_handling():
     """Test LLM exception is wrapped into LLMProviderError."""
     router = LLMRouter()

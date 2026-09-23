@@ -62,6 +62,8 @@ def test_keyvault_invalid_master_key():
         "http://172.16.0.5/status",
         "http://169.254.169.254/latest/meta-data",
         "http://[::1]/secret",
+        "http://[::ffff:127.0.0.1]/status",
+        "http://[::ffff:192.168.1.1]/api",
         "file:///etc/passwd",
         "ftp://internal-server.local",
         "javascript:alert(1)",

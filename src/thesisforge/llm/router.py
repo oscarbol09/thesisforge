@@ -2,6 +2,7 @@
 
 import json
 import os
+import re
 from collections.abc import AsyncGenerator
 from typing import Any
 
@@ -184,26 +185,31 @@ class LLMRouter:
         )
 
         cleaned = raw_text.strip()
-        # Strip markdown code blocks if wrapped in ```json ... ```
-        if cleaned.startswith("```json"):
-            cleaned = cleaned[7:]
-        elif cleaned.startswith("```"):
-            cleaned = cleaned[3:]
-        if cleaned.endswith("```"):
-            cleaned = cleaned[:-3]
-        cleaned = cleaned.strip()
+        # Robust regex extraction for JSON block wrapped in markdown or surrounded by commentary
+        json_match = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", cleaned, re.DOTALL)
+        if json_match:
+            candidate = json_match.group(1).strip()
+        else:
+            brace_match = re.search(r"(\{.*\})", cleaned, re.DOTALL)
+            candidate = brace_match.group(1).strip() if brace_match else cleaned
 
         try:
-            parsed = json.loads(cleaned)
+            parsed = json.loads(candidate)
             if isinstance(parsed, dict):
                 return parsed
             return {"data": parsed}
-        except json.JSONDecodeError as err:
-            logger.warning(
-                "JSON decode failed on LLM response, attempting fallback extraction.",
-                extra={"raw_text": raw_text},
-            )
-            raise LLMProviderError(f"El modelo no retornó un JSON válido: {err}") from err
+        except json.JSONDecodeError:
+            try:
+                parsed = json.loads(cleaned)
+                if isinstance(parsed, dict):
+                    return parsed
+                return {"data": parsed}
+            except json.JSONDecodeError as err:
+                logger.warning(
+                    "JSON decode failed on LLM response, attempting fallback extraction.",
+                    extra={"raw_text": raw_text},
+                )
+                raise LLMProviderError(f"El modelo no retornó un JSON válido: {err}") from err
 
     async def stream_completion(
         self,

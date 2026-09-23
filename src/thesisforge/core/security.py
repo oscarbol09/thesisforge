@@ -35,7 +35,12 @@ BLOCKED_SUBNETS = [
 def _check_ip_safety(ips: list[ipaddress.IPv4Address | ipaddress.IPv6Address]) -> None:
     """Verify that none of the resolved IPs fall into blocked or private subnets."""
     for ip in ips:
-        if any(ip in subnet for subnet in BLOCKED_SUBNETS):
+        target_ip = (
+            ip.ipv4_mapped
+            if isinstance(ip, ipaddress.IPv6Address) and ip.ipv4_mapped is not None
+            else ip
+        )
+        if any(target_ip in subnet for subnet in BLOCKED_SUBNETS):
             raise SSRFBlockedError(
                 f"Acceso denegado: La dirección IP {ip} pertenece a una red privada o reservada (SSRF Guard)."
             )

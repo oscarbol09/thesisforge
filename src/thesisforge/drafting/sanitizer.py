@@ -24,12 +24,13 @@ def sanitize_cell_value(val: Any) -> str:
     if re.match(r"^[+-]?\d+(\.\d+)?([eE][+-]?\d+)?$", text):
         return text
 
+    # Neutralize internal tab/newline injection across all values
+    text = text.replace("\r", " ").replace("\n", " ").replace("\t", " ")
+
     # Check for formula execution triggers
     if text.startswith(FORMULA_TRIGGERS):
         return f"'{text}"
 
-    # Also neutralize internal tab/newline injection
-    text = text.replace("\r", " ").replace("\n", " ").replace("\t", " ")
     return text
 
 
