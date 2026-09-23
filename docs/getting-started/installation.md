@@ -10,7 +10,10 @@ ThesisForge ofrece múltiples opciones de instalación según tu entorno y flujo
 # Instalar paquete oficial
 pip install thesisforge
 
-# Iniciar servidor y abrir en navegador
+# Iniciar aplicación de escritorio interactiva
+thesisforge gui
+
+# O iniciar como servidor web local
 thesisforge run
 ```
 

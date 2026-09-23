@@ -36,7 +36,7 @@ uv pip install -e ".[dev]"
 
 ---
 
-## 3. Flujo de Trabajo en Cuatro Fases
+## 3. Flujo de Trabajo en Cinco Fases
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -60,6 +60,12 @@ uv pip install -e ".[dev]"
 ┌─────────────────────────────────────────────────────────────┐
 │ FASE 4: Tribunal Multi-Agente & Defensa Oral Socrática     │
 │ (Auditoría 4 Jurados -> Veredicto -> Rondas de Réplica WS)  │
+└──────────────────────────────┬──────────────────────────────┘
+                               │
+                               ▼
+┌─────────────────────────────────────────────────────────────┐
+│ FASE 5: Interfaz Visual SPA & Lanzador de Escritorio       │
+│ (PyWebView -> Tailwind + Alpine.js -> Experiencia Monomando) │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -189,9 +195,10 @@ ThesisForge compila directamente el estado del proyecto en un archivo `.docx` co
 * **Interlineado**: Doble espacio (2.0) sin espaciado adicional entre párrafos.
 * **Sangría**: Primera línea de cada párrafo con 1.27 cm (0.5 pulgadas).
 * **Portada para Estudiante / Profesional**: Título en negrita centrado, autor, afiliación institucional, asesor y fecha.
+* **Tabla de Contenidos (TOC)**: Inclusión automática de índice formal con código de campo Word `TOC \o "1-3" \h \z \u` y lista jerárquica de secciones.
 * **Paginación**: Número de página en esquina superior derecha de cada encabezado.
 * **Tablas**: Estilo APA 7 con bordes horizontales únicamente y sanitización estricta contra inyección de fórmulas (CWE-1236).
-* **Referencias**: Sangría francesa de 1.27 cm y ordenación alfabética automática.
+* **Referencias Desduplicadas**: Sangría francesa de 1.27 cm, ordenación alfabética automática y desduplicación por DOI normalizado y firma autor-título-año.
 
 ### Compilación desde la Terminal
 ```bash
@@ -251,8 +258,33 @@ thesisforge defense-start --project-id "proj_abc123" --turns 4
 
 ---
 
-## 9. Seguridad y Privacidad
+## 9. Fase 5: Interfaz de Usuario SPA y Entorno de Escritorio Nativo
+
+### Lanzamiento de la Aplicación de Escritorio
+ThesisForge integra una interfaz gráfica completa servida por FastAPI y renderizada en una ventana nativa de escritorio mediante PyWebView:
+
+```bash
+# Iniciar la interfaz gráfica de escritorio interactiva
+thesisforge gui
+
+# Iniciar en un puerto específico con soporte de DevTools
+thesisforge gui --port 8080 --debug
+```
+
+### Navegación y Vistas de la SPA
+* **Portafolio / Dashboard**: Gestión visual de proyectos, métricas de avance y creación guiada.
+* **Asesor Metodológico**: Formulario interactivo con retroalimentación socrática en vivo y validación taxonómica.
+* **Literatura & RAG**: Búsqueda federada (Semantic Scholar, ArXiv, CrossRef), indexación de PDFs con PyMuPDF y verificación de afirmaciones (*claim grounding*).
+* **Estudio de Redacción Modular**: Esquema canónico de 5 capítulos, streaming en tiempo real vía WebSockets y aprobación de secciones con síntesis en memoria jerárquica.
+* **Compilación Word APA 7**: Configuración de metadatos institucionales y descarga directa de archivos `.docx` formateados.
+* **Tribunal y Sustentación**: Deliberación doctoral multi-agente y simulador interactivo de defensa oral.
+* **Configuración BYOK**: Modal seguro para registrar claves de API locales cifradas (OpenRouter, Google Gemini, OpenAI, Groq, NVIDIA NIM, Ollama).
+
+---
+
+## 10. Seguridad y Privacidad
 
 * **Cero Fuga de Datos**: Las claves de API se almacenan localmente en la base de datos SQLite cifradas con una clave maestra local AES-256 (`LocalKeyVault`).
 * **Protección SSRF**: Cualquier descarga de artículos remotos pasa por filtros que bloquean direcciones IP privadas, de enlace local (`169.254.169.254`), bucles locales y esquemas inseguros (`file://`, `gopher://`).
 * **Defensa CWE-1236**: Los datos contenidos en tablas se escapan ante fórmulas maliciosas de Excel/Word (`=`, `+`, `-`, `@`, `\t`, `\r`).
+

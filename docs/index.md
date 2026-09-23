@@ -36,6 +36,7 @@ graph LR
 
 - [**Instalación**](getting-started/installation.md): Guía de configuración con `uv`, `pip`, binarios standalone o Docker.
 - [**Inicio Rápido**](getting-started/quickstart.md): Configuración del primer proyecto en 5 minutos.
+- [**Interfaz SPA & Escritorio**](guides/desktop-and-gui.md): Experiencia gráfica interactiva con Tailwind CSS y lanzador PyWebView.
 - [**Asesor Metodológico**](guides/methodology.md): Arquitectura de la máquina de estados y validaciones taxonómicas.
 - [**RAG & Literatura Real**](guides/rag-literature.md): Conectores académicos y búsqueda vectorial local.
 - [**Configuración BYOK**](guides/byok-and-models.md): Integración de proveedores remotos y ejecución offline con Ollama.

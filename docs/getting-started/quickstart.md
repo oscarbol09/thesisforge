@@ -9,10 +9,14 @@ Aprende a configurar tu primer proyecto de investigación en menos de 5 minutos.
 Inicia ThesisForge ejecutando:
 
 ```bash
+# Opción A: Iniciar en modo escritorio interactivo (Ventana nativa con PyWebView)
+thesisforge gui
+
+# Opción B: Iniciar únicamente el servidor web local
 thesisforge run
 ```
 
-Abre tu navegador en `http://127.0.0.1:8000` o utiliza la ventana de la aplicación de escritorio.
+Abre tu navegador en `http://127.0.0.1:8000` o interactúa directamente en la ventana de escritorio.
 
 ---
 

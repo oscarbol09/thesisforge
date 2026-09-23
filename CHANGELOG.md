@@ -13,6 +13,29 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/
 
 ---
 
+## [0.5.1] - 2026-09-23
+
+### Security & Hardening
+- **Defensa contra DNS Rebinding (TOCTOU) en SSRFGuard:**
+  - Implementación de `CustomAsyncHTTPTransport` que enlaza el socket directamente a la IP validada pre-resuelta, eliminando la ventana de vulnerabilidad entre validación DNS y petición HTTP.
+- **Bóveda de Claves con Derivación de Sal Criptográfica Única:**
+  - Robustecimiento de `LocalKeyVault` para generar y persistir sales PBKDF2 únicas por secreto almacenado.
+
+### Fixed & Improved
+- **Compilador DOCX APA 7 (`src/thesisforge/export/docx_compiler.py`):**
+  - Inserción de campo dinámico Word XML `TOC \o "1-3" \h \z \u` con instrucción explícita de actualización F9/Cmd+A.
+  - Desduplicación estricta de referencias bibliográficas combinando normalización de DOIs y tuplas (primer autor, año, título).
+  - Jerarquía de 5 niveles de encabezados según estándar APA 7.
+- **Evaluador de Jurados Multi-Agente (`src/thesisforge/jury/evaluator.py`):**
+  - Normalización robusta de roles contra diacríticos y variantes ortográficas.
+  - Ponderaciones calibradas: Metodólogo 35%, Temático 25%, Estadístico 25%, Abogado del Diablo 15%.
+  - Regla de veto y umbrales de dictamen alineados ($\ge 95, \ge 80, \ge 70, \ge 50, < 50$).
+- **SPA Frontend & Resiliencia WebSocket (`gui/js/`):**
+  - Manejo de reconexión con *exponential backoff* en sockets de redacción capitular y sustentación oral.
+  - Mejora de contraste tipográfico y accesibilidad WCAG 2.2 en componentes oscuros y modales.
+
+---
+
 ## [0.5.0] - 2026-09-23
 
 ### Added

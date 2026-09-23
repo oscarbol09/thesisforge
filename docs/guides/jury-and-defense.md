@@ -10,10 +10,10 @@ ThesisForge modela un tribunal colegiado de cuatro examinadores con criterios de
 
 | Jurado | Rol Académico | Foco de Evaluación | Ponderación |
 | :--- | :--- | :--- | :---: |
-| **Dr. Arístides Valenzuela** | Metodólogo Principal | Consistencia epistemológica, diseño del estudio, hipótesis y objetivos | 25% |
+| **Dr. Arístides Valenzuela** | Metodólogo Principal | Consistencia epistemológica, diseño del estudio, hipótesis y objetivos | 35% |
 | **Dra. Beatriz Salamanca** | Especialista Temática | Marco conceptual, estado del arte, pertinencia y densidad bibliográfica | 25% |
 | **Dr. Camilo Restrepo** | Auditor Estadístico | Muestreo, análisis de datos, potencia estadística e inferencias | 25% |
-| **Dr. Demetrio Sotomayor** | Abogado del Diablo | Causalidades espurias, variables confusoras y sesgos argumentativos | 25% |
+| **Dr. Demetrio Sotomayor** | Abogado del Diablo | Causalidades espurias, variables confusoras y sesgos argumentativos | 15% |
 
 ---
 
@@ -29,14 +29,14 @@ La auditoría se ejecuta mediante dos capas complementarias:
 ### B. Deliberación Cualitativa de LLM
 Cada jurado evalúa el proyecto y emite:
 - **Puntuación Dimensional (0–100)** con justificación académica fundamentada.
-- **Observaciones Tipadas**: Clasificadas por severidad (`CRITICAL`, `MAJOR`, `MINOR`, `SUGGESTION`) y tipo (`METHODOLOGICAL_GAP`, `CITATION_UNSUPPORTED`, `LOGICAL_CONTRADICTION`, `STATISTICAL_FLAW`, `LITERATURE_OBSOLETE`, `FORMAT_NONCOMPLIANCE`).
+- **Observaciones Tipadas**: Clasificadas por severidad (`CRITICAL`, `MAJOR`, `MINOR`, `NOTE`) y tipo (`METHODOLOGICAL_INCONSISTENCY`, `UNSUPPORTED_CLAIM`, `SAMPLING_BIAS`, `INVALID_INSTRUMENT`, `MISSING_LIMITATIONS`, etc.).
 
 ### C. Veredictos Formales y Regla de Veto
-- **Aprobado con Distinción** ($\ge 90$ puntos y 0 fallos críticos/mayores).
-- **Aprobado** ($\ge 70$ puntos y 0 fallos críticos).
-- **Modificaciones Menores** ($\ge 60$ puntos).
-- **Modificaciones Mayores** ($\ge 40$ puntos).
-- **No Aprobado** ($< 40$ puntos o presencia de cualquier fallo `CRITICAL`).
+- **Aprobado con Distinción** ($\ge 95.0$ puntos y 0 fallos críticos).
+- **Aprobado** ($\ge 80.0$ puntos y 0 fallos críticos).
+- **Modificaciones Menores** ($\ge 70.0$ puntos y 0 fallos críticos).
+- **Modificaciones Mayores** ($\ge 50.0$ puntos o $\ge 3$ fallos mayores).
+- **No Aprobado** ($< 50.0$ puntos o presencia de cualquier fallo `CRITICAL`).
 
 ---
 

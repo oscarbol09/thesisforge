@@ -60,6 +60,7 @@ nav:
       - Instalación: getting-started/installation.md
       - Configuración Rápida: getting-started/quickstart.md
   - Guías:
+      - Interfaz SPA & Escritorio: guides/desktop-and-gui.md
       - Asesor Metodológico: guides/methodology.md
       - RAG & Literatura Real: guides/rag-literature.md
       - BYOK & Modelos (Ollama, Gemini, OpenRouter): guides/byok-and-models.md
