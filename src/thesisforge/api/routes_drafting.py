@@ -13,7 +13,6 @@ from thesisforge.api.deps import (
     get_project_repository,
 )
 from thesisforge.core.logging import get_logger
-from thesisforge.exceptions import ProjectNotFoundError
 from thesisforge.models import SectionDraftDTO
 
 if TYPE_CHECKING:

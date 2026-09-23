@@ -35,7 +35,6 @@ from thesisforge.exceptions import (
     SecurityError,
     ThesisForgeError,
 )
-
 from thesisforge.rag.cache import LiteratureCache
 
 logger = get_logger(__name__)

@@ -159,3 +159,49 @@ def test_api_defense_websocket_flow(
             ws.send_json({"event": "ping"})
             pong_msg = ws.receive_json()
             assert pong_msg["event"] == "pong"
+
+
+def test_api_defense_websocket_malformed_payload_handling(
+    override_deps: DatabaseManager,
+    seeded_defense_project: ProjectStateDTO,
+) -> None:
+    """Verify WebSocket resilience against non-integer turn_index and empty answers without crashing."""
+    with TestClient(app) as test_client:
+        resp_start = test_client.post(
+            "/api/defense/projects/proj-api-def-01/start",
+            json={"force_new": True},
+        )
+        session_id = resp_start.json()["id"]
+
+        with test_client.websocket_connect(f"/api/defense/ws/{session_id}") as ws:
+            init_msg = ws.receive_json()
+            assert init_msg["event"] == "session_state"
+
+            # 1. Send invalid string turn_index
+            ws.send_json(
+                {
+                    "event": "reply",
+                    "turn_index": "not-an-integer",
+                    "student_answer": "Respuesta de prueba.",
+                }
+            )
+            err_msg1 = ws.receive_json()
+            assert err_msg1["event"] == "error"
+            assert "no es un número entero válido" in err_msg1["message"]
+
+            # 2. Send empty student answer
+            ws.send_json(
+                {
+                    "event": "reply",
+                    "turn_index": 0,
+                    "student_answer": "   ",
+                }
+            )
+            err_msg2 = ws.receive_json()
+            assert err_msg2["event"] == "error"
+            assert "no puede estar vacía" in err_msg2["message"]
+
+            # 3. Verify connection is still alive with ping
+            ws.send_json({"event": "ping"})
+            pong = ws.receive_json()
+            assert pong["event"] == "pong"

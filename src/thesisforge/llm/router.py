@@ -10,7 +10,6 @@ import litellm
 from tenacity import (
     AsyncRetrying,
     retry_if_exception,
-    retry_if_exception_type,
     stop_after_attempt,
     wait_none,
     wait_random_exponential,
@@ -45,10 +44,7 @@ def _is_retryable_llm_error(exc: BaseException) -> bool:
         return False
 
     status_code = getattr(exc, "status_code", None)
-    if isinstance(status_code, int) and status_code in (400, 401, 403, 404, 422):
-        return False
-
-    return True
+    return not (isinstance(status_code, int) and status_code in (400, 401, 403, 404, 422))
 
 
 class LLMRouter:
