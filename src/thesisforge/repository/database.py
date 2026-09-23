@@ -122,6 +122,7 @@ class DatabaseManager:
         async with aiosqlite.connect(self.connection_string, uri=self._is_uri) as db:
             db.row_factory = aiosqlite.Row
             await db.execute("PRAGMA foreign_keys = ON;")
+            await db.execute("PRAGMA busy_timeout = 5000;")
             if not self._is_memory:
                 await db.execute("PRAGMA journal_mode = WAL;")
             yield db

@@ -8,6 +8,7 @@ import uvicorn
 
 from thesisforge import __version__
 from thesisforge.config import get_settings
+from thesisforge.core.time import utc_now
 from thesisforge.drafting.service import DraftService
 from thesisforge.export.service import ExportService
 from thesisforge.models import CitationDTO, ExportOptionsDTO
@@ -40,7 +41,7 @@ async def _run_search_cli(query: str, limit: int, format_apa: bool) -> None:
                     doi=paper.doi,
                     title=paper.title,
                     authors=paper.authors,
-                    year=paper.year or 2024,
+                    year=paper.year or utc_now().year,
                     journal=paper.venue,
                     abstract=paper.abstract,
                     url=paper.url,

@@ -84,9 +84,15 @@ def get_draft_service(
     db: DatabaseManager = Depends(get_db_manager),
     project_repo: ProjectRepository = Depends(get_project_repository),
     llm_router: LLMRouter = Depends(get_llm_router),
+    rag_service: RAGService = Depends(get_rag_service),
 ) -> DraftService:
     """Drafting service dependency for section generation and memory."""
-    return DraftService(db_manager=db, project_repo=project_repo, llm_router=llm_router)
+    return DraftService(
+        db_manager=db,
+        project_repo=project_repo,
+        llm_router=llm_router,
+        rag_service=rag_service,
+    )
 
 
 def get_export_service(
