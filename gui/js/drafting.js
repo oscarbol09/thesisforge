@@ -64,6 +64,15 @@ function draftingComponent() {
     },
 
     selectSection(sectionId) {
+      if (this.wsSocket) {
+        try {
+          this.wsSocket.close();
+        } catch (e) {
+          // ignore
+        }
+        this.wsSocket = null;
+        this.isStreaming = false;
+      }
       this.selectedSectionId = sectionId;
       this.selectedSection = this.sections.find(s => s.section_id === sectionId) || null;
       if (this.selectedSection) {
@@ -120,6 +129,15 @@ function draftingComponent() {
       const project = Alpine.store('app').activeProject;
       if (!project || !this.selectedSectionId) return;
 
+      if (this.wsSocket) {
+        try {
+          this.wsSocket.close();
+        } catch (e) {
+          // ignore
+        }
+        this.wsSocket = null;
+      }
+
       this.isStreaming = true;
       this.streamingTokens = '';
       this.editorContent = '';
@@ -147,11 +165,13 @@ function draftingComponent() {
             } else if (data.event === 'complete') {
               this.editorContent = data.content || this.streamingTokens;
               this.isStreaming = false;
+              this.wsSocket = null;
               Alpine.store('app').toast('success', 'Generación Completada', `Se redactaron ${data.word_count || 0} palabras.`);
               this.loadSections();
             } else if (data.event === 'error') {
               Alpine.store('app').toast('error', 'Error en Streaming', data.message);
               this.isStreaming = false;
+              this.wsSocket = null;
             }
           } catch (e) {
             console.error('Error parsing websocket chunk:', e);
@@ -162,15 +182,18 @@ function draftingComponent() {
           console.error('WebSocket Error:', err);
           Alpine.store('app').toast('error', 'Error de Conexión', 'No se pudo mantener la conexión WebSocket.');
           this.isStreaming = false;
+          this.wsSocket = null;
         };
 
         ws.onclose = () => {
           this.isStreaming = false;
+          this.wsSocket = null;
         };
 
       } catch (err) {
         Alpine.store('app').toast('error', 'Error al Iniciar Streaming', err.message);
         this.isStreaming = false;
+        this.wsSocket = null;
       }
     },
 
