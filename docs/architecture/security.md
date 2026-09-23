@@ -1,39 +1,54 @@
 # Seguridad y AppSec en ThesisForge
 
-ThesisForge incorpora mecanismos de defensa en profundidad para proteger al investigador contra riesgos de seguridad comunes en aplicaciones asistidas por IA.
+ThesisForge incorpora mecanismos de defensa en profundidad para proteger al investigador contra riesgos de seguridad comunes en aplicaciones asistidas por IA y herramientas de procesamiento de documentos.
 
 ---
 
-## SSRF Guard (Server-Side Request Forgery)
+## 1. SSRF Guard (Server-Side Request Forgery) y Defensa Dual-Stack
 
-Cuando el sistema descarga artículos científicos de URLs proporcionadas por APIs o el usuario, `SSRFGuard` ejecuta una validación de dos pasos antes de abrir cualquier socket de red:
+Cuando el sistema descarga artículos científicos o recupera metadatos a partir de URLs suministradas por APIs o por el usuario, `SSRFGuard` (`src/thesisforge/core/security.py`) ejecuta una validación de dos pasos antes de abrir cualquier socket de red:
 
 ```mermaid
 graph TD
-    URL["URL a Descargar (Paper / PDF)"] --> DNS["Resolución DNS"]
-    DNS --> CHECK{"¿La IP resuelta pertenece a rangos privados o de loopback?"}
-    CHECK -->|Sí: 127.0.0.1, 10.0.0.0/8, 192.168.0.0/16, etc.| BLOCK["Bloqueo Inmediato (SecurityError)"]
-    CHECK -->|No: IP Pública Válida| FETCH["Petición Httpx Segura"]
+    URL["URL a Descargar (Paper / PDF / DOI)"] --> DNS["Resolución DNS"]
+    DNS --> NORM["Normalización Dual-Stack (IPv4-mapped en IPv6)"]
+    NORM --> CHECK{"¿La IP resuelta pertenece a rangos privados, loopback o metadata?"}
+    CHECK -->|Sí: 127.0.0.1, 10.0.0.0/8, 192.168.0.0/16, ::ffff:127.0.0.1, ::1| BLOCK["Bloqueo Inmediato (SSRFBlockedError)"]
+    CHECK -->|No: IP Pública Válida| FETCH["Petición HTTP Segura con httpx.AsyncClient"]
 ```
 
----
-
-## Key Vault Local
-
-- Las claves de API introducidas por el usuario (OpenRouter, OpenAI, Gemini) se cifran en reposo con **Fernet**.
-- Cada registro en la base de datos almacena el vector cifrado junto con su tag de autenticación HMAC.
-- Ningún endpoint de la API devuelve las claves en texto plano tras su registro.
-
----
-
-## Sanitización de Logs (CWE-117)
-
-- `StructuredLogger` procesa todas las cadenas de texto del usuario eliminando secuencias de retorno de carro (`\r`) y salto de línea (`\n`).
-- Evita ataques de inyección de logs donde un atacante falsifica entradas de auditoría en los archivos de registro.
+### Reglas de Bloqueo de Red:
+- **Rangos IPv4 privados (RFC 1918)**: `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`.
+- **Direcciones Loopback**: `127.0.0.0/8` y `::1/128`.
+- **Direcciones de enlace local (Link-Local / RFC 3927)**: `169.254.0.0/16` (usadas frecuentemente para atacar endpoints de metadatos en AWS/GCP/Azure como `169.254.169.254`).
+- **Direcciones IPv4 mapeadas en IPv6**: Prefijos `::ffff:0:0/96` que representan direcciones IPv4 dentro de una estructura IPv6 (`ip.ipv4_mapped`).
+- **Esquemas no permitidos**: Bloqueo absoluto de esquemas locales (`file://`, `gopher://`, `ftp://`), admitiendo únicamente `http://` y `https://`.
 
 ---
 
-## Defensa contra Formula Injection (CSV / XLSX / DOCX)
+## 2. Bóveda Criptográfica Local (KeyVault)
 
-- Si un investigador procesa tablas de datos donde las celdas comienzan con caracteres de fórmula (`=`, `+`, `-`, `@`), ThesisForge prefija automáticamente la celda con un apóstrofe (`'`).
-- Esto evita que Microsoft Excel o LibreOffice Calc ejecuten fórmulas maliciosas cuando el usuario abre el archivo exportado.
+ThesisForge sigue una filosofía estricta de **Bring Your Own Key (BYOK)** y almacenamiento seguro en reposo:
+
+- **Cifrado Simétrico Fernet:** AES-128-CBC autenticado mediante HMAC-SHA256 (`src/thesisforge/core/security.py`).
+- **Derivación de Clave (KDF):** Derivación robusta basada en PBKDF2-HMAC-SHA256 con 100,000 iteraciones y sal criptográfica única.
+- **Aislamiento de Secretos:** Las claves privadas nunca se devuelven en texto plano a través de la API REST tras su registro y se almacenan únicamente en la base de datos local SQLite del usuario.
+
+---
+
+## 3. Sanitización de Logs (CWE-117)
+
+El registrador estructurado `StructuredLogger` (`src/thesisforge/core/logging.py`) emite eventos en formato JSON y neutraliza cualquier intento de manipulación de bitácoras:
+
+- **Eliminación de saltos de línea:** Reemplaza caracteres de retorno de carro (`\r`) y salto de línea (`\n`) en todas las cadenas proporcionadas por el usuario.
+- **Enmascaramiento de Secretos:** Ofuscación automática de tokens, claves de API (`sk-or-v1-...`, `AIzaSy...`) y encabezados de autorización en las trazas de depuración.
+
+---
+
+## 4. Defensa contra Formula Injection en Tablas (CWE-1236)
+
+Al compilar documentos a Microsoft Word (`.docx`) u hojas de cálculo con datos de investigación:
+
+- `sanitize_cell_value` (`src/thesisforge/drafting/sanitizer.py`) depura primero los caracteres de control (`\r`, `\n`, `\t`).
+- Si una celda comienza con caracteres ejecutables (`=`, `+`, `-`, `@`, `|`), el sistema antepone un apóstrofe de escape (`'`).
+- Preserva de forma transparente literales numéricos legítimos (por ejemplo, `-15.4` o `+3.2`) sin corromper el análisis estadístico ni las tablas del marco empírico.
