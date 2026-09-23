@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "thesisforge"
-version = "0.4.0"
+version = "0.5.0"
 description = "Asistente y forjador de proyectos de investigación académica con IA, RAG y BYOK."
 readme = "README.md"
 license = { text = "Apache-2.0" }
@@ -30,6 +30,7 @@ dependencies = [
     "defusedxml>=0.7.1",
     "python-multipart>=0.0.9",
     "python-docx>=1.1.0",
+    "pywebview>=5.0.0",
 ]
 
 [project.scripts]

@@ -361,6 +361,19 @@ def main() -> None:
         "--project-id", type=str, required=True, help="ID of the research project"
     )
 
+    # gui command
+    gui_parser = subparsers.add_parser(
+        "gui",
+        help="Launch ThesisForge in a native PyWebView desktop window",
+    )
+    gui_parser.add_argument(
+        "--host", type=str, default="127.0.0.1", help="Host interface (default: 127.0.0.1)"
+    )
+    gui_parser.add_argument(
+        "--port", type=int, default=0, help="Port to bind (default: 0 for automatic port discovery)"
+    )
+    gui_parser.add_argument("--debug", action="store_true", help="Enable WebView Developer Tools")
+
     args = parser.parse_args()
     settings = get_settings()
 
@@ -385,6 +398,14 @@ def main() -> None:
         asyncio.run(_run_jury_audit_cli(project_id=args.project_id))
     elif args.command == "defense-start":
         asyncio.run(_run_defense_start_cli(project_id=args.project_id))
+    elif args.command == "gui":
+        from thesisforge.desktop.launcher import launch_desktop
+
+        launch_desktop(
+            host=args.host,
+            port=args.port,
+            debug=args.debug,
+        )
     elif args.command == "run" or args.command is None:
         host = args.host or settings.host
         port = args.port or settings.port
