@@ -87,6 +87,9 @@ async def verify_doi(
     }
 
 
+MAX_PDF_UPLOAD_BYTES = 50 * 1024 * 1024  # 50 MB limit
+
+
 @router.post(
     "/index-pdf", status_code=status.HTTP_201_CREATED, response_model=list[DocumentChunkDTO]
 )
@@ -104,6 +107,11 @@ async def index_pdf_file(
     pdf_bytes = await file.read()
     if not pdf_bytes:
         raise DocumentProcessingError("El archivo subido está vacío.")
+
+    if len(pdf_bytes) > MAX_PDF_UPLOAD_BYTES:
+        raise DocumentProcessingError(
+            f"El archivo PDF excede el límite máximo permitido de {MAX_PDF_UPLOAD_BYTES // (1024 * 1024)} MB."
+        )
 
     document_id = uuid.uuid4().hex[:10]
     doc_title = title or file.filename.rsplit(".", 1)[0]
