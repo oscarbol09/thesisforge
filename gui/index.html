@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>ThesisForge — Asistente de Investigación Académica</title>
+  
+  <!-- Fonts: Inter & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS CDN + Configuration -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            cobalt: {
+              50: '#eff6ff',
+              100: '#dbeafe',
+              500: '#3b82f6',
+              600: '#2563eb',
+              700: '#1d4ed8',
+              800: '#1e40af',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Core Component & Token Styles -->
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/components.css">
+
+  <!-- DOMPurify for strict AppSec LLM sanitization -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.9/dompurify.min.js"></script>
+
+  <!-- Alpine.js Core -->
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.7/dist/cdn.min.js"></script>
+</head>
+<body class="h-full flex flex-col bg-[var(--bg-app)] text-[var(--text-primary)]" x-data>
+
+  <!-- 1. Global Navigation Top Bar -->
+  <header class="h-16 border-b border-[var(--border-subtle)] bg-[var(--bg-surface)] px-6 flex items-center justify-between z-30 shrink-0">
+    <div class="flex items-center gap-4">
+      <div class="flex items-center gap-3 cursor-pointer" @click="$store.app.activeTab = 'dashboard'">
+        <div class="w-9 h-9 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold text-lg shadow-sm">
+          TF
+        </div>
+        <div>
+          <h1 class="font-bold text-base tracking-tight leading-none text-[var(--text-primary)]">ThesisForge</h1>
+          <span class="text-xs text-[var(--text-muted)] font-mono">v0.5.0</span>
+        </div>
+      </div>
+
+      <!-- Active Project Indicator -->
+      <div class="hidden md:flex items-center gap-2 pl-4 border-l border-[var(--border-subtle)]" x-show="$store.app.activeProject">
+        <span class="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold">Proyecto:</span>
+        <span class="text-sm font-medium truncate max-w-xs text-[var(--text-primary)]" x-text="$store.app.activeProject?.title"></span>
+        <span :class="$store.app.getPhaseBadgeClass($store.app.activeProject?.phase)" x-text="$store.app.getPhaseLabel($store.app.activeProject?.phase)"></span>
+      </div>
+    </div>
+
+    <!-- Right Controls -->
+    <div class="flex items-center gap-3">
+      <!-- Quick Project Selector -->
+      <button class="btn btn-primary btn-sm" @click="$store.app.showCreateModal = true">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+        <span>Nuevo Proyecto</span>
+        <kbd class="hidden sm:inline-block px-1.5 py-0.5 text-[10px] bg-blue-700/50 rounded text-blue-100 font-mono">Ctrl+K</kbd>
+      </button>
+
+      <!-- Theme Switcher -->
+      <button class="btn btn-ghost btn-sm text-[var(--text-secondary)]" @click="$store.app.toggleTheme()" title="Cambiar tema">
+        <svg x-show="$store.app.theme === 'dark'" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+        <svg x-show="$store.app.theme === 'light'" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+      </button>
+
+      <!-- BYOK Settings -->
+      <button class="btn btn-outline btn-sm" @click="$store.app.showSettingsModal = true" title="Configurar proveedores BYOK">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        <span class="hidden sm:inline">Claves API</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- 2. Application Body with Workspace Sidebar -->
+  <div class="flex-1 flex overflow-hidden">
+    
+    <!-- Left Navigation Sidebar -->
+    <nav class="w-64 border-r border-[var(--border-subtle)] bg-[var(--bg-surface)] flex flex-col justify-between p-4 shrink-0 overflow-y-auto">
+      <div class="space-y-1">
+        
+        <!-- Dashboard / Proyectos -->
+        <button 
+          @click="$store.app.activeTab = 'dashboard'" 
+          :class="$store.app.activeTab === 'dashboard' ? 'bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-400 font-semibold' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)]'"
+          class="w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm transition-colors text-left">
+          <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
+          <span>Mis Proyectos</span>
+        </button>
+
+        <div class="pt-4 pb-1 px-3 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+          Fases Metodológicas
+        </div>
+
+        <!-- 1. Asesor Metodológico -->
+        <button 
+          @click="$store.app.activeTab = 'advisor'"
+          :disabled="!$store.app.activeProject"
+          :class="[
+            $store.app.activeTab === 'advisor' ? 'bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-400 font-semibold' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)]',
+            !$store.app.activeProject ? 'opacity-40 cursor-not-allowed' : ''
+          ]"
+          class="w-full flex items-center justify-between px-3 py-2.5 rounded-md text-sm transition-colors text-left">
+          <div class="flex items-center gap-3 truncate">
+            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <span class="truncate">1. Asesor Metodológico</span>
+          </div>
+        </button>
+
+        <!-- 2. Literatura & RAG -->
+        <button 
+          @click="$store.app.activeTab = 'literature'"
+          :disabled="!$store.app.activeProject"
+          :class="[
+            $store.app.activeTab === 'literature' ? 'bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-400 font-semibold' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)]',
+            !$store.app.activeProject ? 'opacity-40 cursor-not-allowed' : ''
+          ]"
+          class="w-full flex items-center justify-between px-3 py-2.5 rounded-md text-sm transition-colors text-left">
+          <div class="flex items-center gap-3 truncate">
+            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+            <span class="truncate">2. Literatura & RAG</span>
+          </div>
+        </button>
+
+        <!-- 3. Redacción Modular -->
+        <button 
+          @click="$store.app.activeTab = 'drafting'"
+          :disabled="!$store.app.activeProject"
+          :class="[
+            $store.app.activeTab === 'drafting' ? 'bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-400 font-semibold' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)]',
+            !$store.app.activeProject ? 'opacity-40 cursor-not-allowed' : ''
+          ]"
+          class="w-full flex items-center justify-between px-3 py-2.5 rounded-md text-sm transition-colors text-left">
+          <div class="flex items-center gap-3 truncate">
+            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+            <span class="truncate">3. Redacción Capitular</span>
+          </div>
+        </button>
+
+        <!-- 4. Compilación APA 7 -->
+        <button 
+          @click="$store.app.activeTab = 'export'"
+          :disabled="!$store.app.activeProject"
+          :class="[
+            $store.app.activeTab === 'export' ? 'bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-400 font-semibold' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)]',
+            !$store.app.activeProject ? 'opacity-40 cursor-not-allowed' : ''
+          ]"
+          class="w-full flex items-center justify-between px-3 py-2.5 rounded-md text-sm transition-colors text-left">
+          <div class="flex items-center gap-3 truncate">
+            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+            <span class="truncate">4. Exportar DOCX APA 7</span>
+          </div>
+        </button>
+
+        <div class="pt-4 pb-1 px-3 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+          Tribunal & Sustentación
+        </div>
+
+        <!-- 5. Tribunal de Jurados -->
+        <button 
+          @click="$store.app.activeTab = 'jury'"
+          :disabled="!$store.app.activeProject"
+          :class="[
+            $store.app.activeTab === 'jury' ? 'bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-400 font-semibold' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)]',
+            !$store.app.activeProject ? 'opacity-40 cursor-not-allowed' : ''
+          ]"
+          class="w-full flex items-center justify-between px-3 py-2.5 rounded-md text-sm transition-colors text-left">
+          <div class="flex items-center gap-3 truncate">
+            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+            <span class="truncate">5. Auditoría de Jurado</span>
+          </div>
+        </button>
+
+        <!-- 6. Defensa Oral Socrática -->
+        <button 
+          @click="$store.app.activeTab = 'defense'"
+          :disabled="!$store.app.activeProject"
+          :class="[
+            $store.app.activeTab === 'defense' ? 'bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-400 font-semibold' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)]',
+            !$store.app.activeProject ? 'opacity-40 cursor-not-allowed' : ''
+          ]"
+          class="w-full flex items-center justify-between px-3 py-2.5 rounded-md text-sm transition-colors text-left">
+          <div class="flex items-center gap-3 truncate">
+            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z"/></svg>
+            <span class="truncate">6. Defensa Oral</span>
+          </div>
+        </button>
+      </div>
+
+      <!-- Footer Info -->
+      <div class="pt-4 border-t border-[var(--border-subtle)] text-xs text-[var(--text-muted)] flex items-center justify-between">
+        <span>SQLite WAL + ChromaDB</span>
+        <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block" title="Servidor Local Activo"></span>
+      </div>
+    </nav>
+
+    <!-- Main Dynamic Content Canvas -->
+    <main class="flex-1 overflow-y-auto p-6 md:p-8">
+      
+      <!-- View 1: Projects Dashboard -->
+      <div x-show="$store.app.activeTab === 'dashboard'" x-data="dashboardComponent()">
+        <template x-if="$store.app.activeTab === 'dashboard'">
+          <div x-html="render()"></div>
+        </template>
+      </div>
+
+      <!-- View 2: Methodological Advisor -->
+      <div x-show="$store.app.activeTab === 'advisor'" x-data="advisorComponent()">
+        <template x-if="$store.app.activeTab === 'advisor'">
+          <div x-html="render()"></div>
+        </template>
+      </div>
+
+      <!-- View 3: Literature & RAG -->
+      <div x-show="$store.app.activeTab === 'literature'" x-data="literatureComponent()">
+        <template x-if="$store.app.activeTab === 'literature'">
+          <div x-html="render()"></div>
+        </template>
+      </div>
+
+      <!-- View 4: Modular Drafting -->
+      <div x-show="$store.app.activeTab === 'drafting'" x-data="draftingComponent()">
+        <template x-if="$store.app.activeTab === 'drafting'">
+          <div x-html="render()"></div>
+        </template>
+      </div>
+
+      <!-- View 5: Export DOCX APA 7 -->
+      <div x-show="$store.app.activeTab === 'export'" x-data="exportComponent()">
+        <template x-if="$store.app.activeTab === 'export'">
+          <div x-html="render()"></div>
+        </template>
+      </div>
+
+      <!-- View 6: Jury Evaluation -->
+      <div x-show="$store.app.activeTab === 'jury'" x-data="juryComponent()">
+        <template x-if="$store.app.activeTab === 'jury'">
+          <div x-html="render()"></div>
+        </template>
+      </div>
+
+      <!-- View 7: Defense Simulation -->
+      <div x-show="$store.app.activeTab === 'defense'" x-data="defenseComponent()">
+        <template x-if="$store.app.activeTab === 'defense'">
+          <div x-html="render()"></div>
+        </template>
+      </div>
+
+      <!-- View 8: BYOK Settings Modal / View -->
+      <div x-show="$store.app.activeTab === 'settings'" x-data="settingsComponent()">
+        <template x-if="$store.app.activeTab === 'settings'">
+          <div x-html="render()"></div>
+        </template>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- 3. Modals Container -->
+  <!-- Create Project Modal -->
+  <div class="modal-backdrop" x-show="$store.app.showCreateModal" x-transition.opacity @click.self="$store.app.showCreateModal = false" style="display: none;">
+    <div class="modal-content" x-data="createProjectModal()">
+      <div class="card-header">
+        <h3 class="font-bold text-base text-[var(--text-primary)]">Nuevo Proyecto de Investigación</h3>
+        <button class="btn btn-ghost btn-sm text-[var(--text-muted)]" @click="$store.app.showCreateModal = false">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <form @submit.prevent="submitCreate()">
+        <div class="card-body space-y-4">
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-1">Título del Proyecto *</label>
+            <input type="text" x-model="form.title" required placeholder="Ej. Análisis del impacto de LLMs en la educación médica" class="w-full">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-1">Nivel Académico *</label>
+            <select x-model="form.academic_level" class="w-full">
+              <option value="pregrado">Pregrado / Grado</option>
+              <option value="maestria">Maestría / Posgrado</option>
+              <option value="doctorado">Doctorado (Ph.D.)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-1">Área de Conocimiento</label>
+            <input type="text" x-model="form.area_of_study" placeholder="Ej. Informática Médica, Ciencias Sociales" class="w-full">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-1">Tema Específico</label>
+            <input type="text" x-model="form.topic" placeholder="Ej. Detección de sesgos en modelos clínicos" class="w-full">
+          </div>
+        </div>
+        <div class="card-footer flex justify-end gap-2">
+          <button type="button" class="btn btn-secondary btn-sm" @click="$store.app.showCreateModal = false">Cancelar</button>
+          <button type="submit" class="btn btn-primary btn-sm" :disabled="isSubmitting || !form.title.trim()">
+            <span x-show="!isSubmitting">Crear Proyecto</span>
+            <span x-show="isSubmitting">Creando...</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Global Settings Modal -->
+  <div class="modal-backdrop" x-show="$store.app.showSettingsModal" x-transition.opacity @click.self="$store.app.showSettingsModal = false" style="display: none;">
+    <div class="modal-content max-w-xl" x-data="settingsComponent()">
+      <div class="card-header">
+        <h3 class="font-bold text-base text-[var(--text-primary)]">Configuración de Proveedores BYOK</h3>
+        <button class="btn btn-ghost btn-sm text-[var(--text-muted)]" @click="$store.app.showSettingsModal = false">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="card-body" x-html="renderModal()"></div>
+    </div>
+  </div>
+
+  <!-- 4. Global Toast Notifications Hub -->
+  <div class="toast-container" aria-live="polite">
+    <template x-for="t in $store.app.toasts" :key="t.id">
+      <div class="toast">
+        <div class="shrink-0 mt-0.5">
+          <svg x-show="t.type === 'success'" class="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          <svg x-show="t.type === 'error'" class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          <svg x-show="t.type === 'info'" class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        </div>
+        <div class="flex-1 min-w-0">
+          <p class="font-semibold text-xs leading-tight text-[var(--text-primary)]" x-text="t.title"></p>
+          <p class="text-xs text-[var(--text-secondary)] mt-0.5 leading-snug" x-text="t.message"></p>
+        </div>
+        <button class="text-[var(--text-muted)] hover:text-[var(--text-primary)]" @click="$store.app.removeToast(t.id)">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+    </template>
+  </div>
+
+  <!-- Application Logic Modules -->
+  <script src="js/app.js"></script>
+  <script src="js/dashboard.js"></script>
+  <script src="js/advisor.js"></script>
+  <script src="js/literature.js"></script>
+  <script src="js/drafting.js"></script>
+  <script src="js/export.js"></script>
+  <script src="js/jury.js"></script>
+  <script src="js/defense.js"></script>
+  <script src="js/settings.js"></script>
+
+  <script>
+    function createProjectModal() {
+      return {
+        form: {
+          title: '',
+          academic_level: 'pregrado',
+          area_of_study: '',
+          topic: '',
+          language: 'es'
+        },
+        isSubmitting: false,
+        async submitCreate() {
+          if (!this.form.title.trim()) return;
+          this.isSubmitting = true;
+          try {
+            const project = await Alpine.store('app').api('/api/projects', {
+              method: 'POST',
+              body: JSON.stringify(this.form)
+            });
+            Alpine.store('app').toast('success', 'Proyecto creado', `El proyecto "${project.title}" ha sido inicializado.`);
+            await Alpine.store('app').fetchProjects();
+            await Alpine.store('app').selectProject(project.id);
+            Alpine.store('app').showCreateModal = false;
+            Alpine.store('app').activeTab = 'advisor';
+            this.form = { title: '', academic_level: 'pregrado', area_of_study: '', topic: '', language: 'es' };
+          } catch (err) {
+            // Toast already handled by api()
+          } finally {
+            this.isSubmitting = false;
+          }
+        }
+      };
+    }
+  </script>
+</body>
+</html>
