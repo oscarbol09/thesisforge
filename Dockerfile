@@ -28,7 +28,7 @@ COPY --from=builder /usr/local/bin/thesisforge /usr/local/bin/thesisforge
 COPY --from=builder /usr/local/bin/uvicorn /usr/local/bin/uvicorn
 
 COPY config.yaml.example ./config.yaml
-COPY .env.example ./.env
+COPY gui ./gui
 
 RUN mkdir -p /app/data && chown -R thesisforge:thesisforge /app
 

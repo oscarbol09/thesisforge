@@ -14,6 +14,10 @@ services:
       - PORT=8000
       - ENVIRONMENT=production
       - LOG_LEVEL=INFO
+      - CROSSREF_MAILTO=${CROSSREF_MAILTO:-thesisforge@academic.org}
+      - SEMANTIC_SCHOLAR_API_KEY=${SEMANTIC_SCHOLAR_API_KEY:-}
+    env_file:
+      - .env
     volumes:
       - thesisforge_data:/app/data
     healthcheck:
