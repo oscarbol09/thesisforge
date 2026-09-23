@@ -77,6 +77,16 @@ class AppSettings(BaseSettings):
     semantic_scholar_api_key: str | None = Field(default=None, alias="SEMANTIC_SCHOLAR_API_KEY")
     crossref_mailto: str = Field(default="thesisforge@academic.org", alias="CROSSREF_MAILTO")
 
+    # Web GUI & Static Assets
+    gui_dir: str = "gui"
+    cors_origins: list[str] = Field(
+        default_factory=lambda: [
+            "http://localhost:8000",
+            "http://127.0.0.1:8000",
+            "http://localhost:3000",
+        ]
+    )
+
     # Nested sub-configs
     rag: RAGSettings = Field(default_factory=RAGSettings)
     providers: dict[str, ProviderSettings] = Field(default_factory=dict)

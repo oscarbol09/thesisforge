@@ -2,10 +2,12 @@
 
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.responses import Response
 
@@ -49,7 +51,12 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             "camera=(), microphone=(), geolocation=(), payment=()"
         )
         response.headers["Content-Security-Policy"] = (
-            "default-src 'self'; img-src 'self' data: https:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';"
+            "default-src 'self'; "
+            "img-src 'self' data: https:; "
+            "script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; "
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+            "font-src 'self' https://fonts.gstatic.com; "
+            "connect-src 'self' ws: wss: https:;"
         )
         return response
 
@@ -82,7 +89,7 @@ def create_app() -> FastAPI:
     # CORS Configuration compliant with W3C Fetch / browser specs
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["http://localhost:8000", "http://127.0.0.1:8000", "http://localhost:3000"],
+        allow_origins=settings.cors_origins,
         allow_credentials=True,
         allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
         allow_headers=["Content-Type", "Authorization", "X-Request-ID", "Accept"],
@@ -221,6 +228,11 @@ def create_app() -> FastAPI:
     @app.get("/api/version", tags=["system"])
     async def get_version() -> dict[str, str]:
         return {"version": __version__}
+
+    # Web SPA Static Files Mounting
+    gui_path = Path(settings.gui_dir)
+    if gui_path.is_dir():
+        app.mount("/", StaticFiles(directory=str(gui_path), html=True), name="gui")
 
     return app
 
