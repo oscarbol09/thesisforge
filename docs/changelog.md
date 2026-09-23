@@ -16,12 +16,28 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/
 ## [0.5.1] - 2026-09-23
 
 ### Security & Hardening
+- **Límite de Tamaño en Subida de PDFs (`src/thesisforge/api/routes_literature.py`):**
+  - Establecimiento de un umbral máximo de 50 MB (`MAX_PDF_UPLOAD_BYTES`) en `POST /api/literature/index-pdf` para mitigar ataques de denegación de servicio (DoS) por agotamiento de memoria.
 - **Defensa contra DNS Rebinding (TOCTOU) en SSRFGuard:**
   - Implementación de `CustomAsyncHTTPTransport` que enlaza el socket directamente a la IP validada pre-resuelta, eliminando la ventana de vulnerabilidad entre validación DNS y petición HTTP.
 - **Bóveda de Claves con Derivación de Sal Criptográfica Única:**
   - Robustecimiento de `LocalKeyVault` para generar y persistir sales PBKDF2 únicas por secreto almacenado.
 
 ### Fixed & Improved
+- **Manejo Resiliente de WebSockets (`src/thesisforge/api/routes_defense.py`):**
+  - Captura defensiva de tipos en `turn_index` ante payloads malformados, retornando un frame de error JSON estructurado sin cerrar la conexión de sustentación oral.
+- **Compatibilidad y Migración de Esquemas (`src/thesisforge/models.py`):**
+  - Configuración de `extra="ignore"` en todos los DTOs de persistencia central (`ProjectStateDTO`, `CitationDTO`, etc.) para asegurar tolerancia ante migraciones de esquema futuras.
+- **Filtro Selectivo de Reintentos en LLMRouter (`src/thesisforge/llm/router.py`):**
+  - Introducción del predicado `_is_retryable_llm_error` para omitir reintentos inútiles ante errores 4xx del cliente (400, 401, 403, 404, 422).
+- **Higiene de Dependencias y Ciclo de Vida (`src/thesisforge/api/app.py`, `src/thesisforge/rag/clients/base.py`):**
+  - Purga automática de registros expirados en `LiteratureCache.prune_expired()` durante el inicio del `lifespan` de FastAPI.
+  - Generación dinámica del encabezado `User-Agent` utilizando `__version__` del paquete.
+  - Eliminación de chequeos redundantes de proyecto no encontrado en `routes_drafting.py`.
+- **Directiva de Idioma en Prompts (`src/thesisforge/llm/prompts.py`):**
+  - Prescripción explícita de idioma español en `SECTION_SUMMARY_PROMPT` para preservar la coherencia de la memoria jerárquica.
+- **Infraestructura Docker (`Dockerfile`, `docker-compose.yml`):**
+  - Empaquetado de la interfaz SPA `gui/` en la etapa de ejecución y gestión desacoplada de variables de entorno con `env_file: .env`.
 - **Compilador DOCX APA 7 (`src/thesisforge/export/docx_compiler.py`):**
   - Inserción de campo dinámico Word XML `TOC \o "1-3" \h \z \u` con instrucción explícita de actualización F9/Cmd+A.
   - Desduplicación estricta de referencias bibliográficas combinando normalización de DOIs y tuplas (primer autor, año, título).
@@ -30,9 +46,8 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/
   - Normalización robusta de roles contra diacríticos y variantes ortográficas.
   - Ponderaciones calibradas: Metodólogo 35%, Temático 25%, Estadístico 25%, Abogado del Diablo 15%.
   - Regla de veto y umbrales de dictamen alineados ($\ge 95, \ge 80, \ge 70, \ge 50, < 50$).
-- **SPA Frontend & Resiliencia WebSocket (`gui/js/`):**
-  - Manejo de reconexión con *exponential backoff* en sockets de redacción capitular y sustentación oral.
-  - Mejora de contraste tipográfico y accesibilidad WCAG 2.2 en componentes oscuros y modales.
+- **Suite de Pruebas Automatizadas:**
+  - 201 pruebas unitarias, de integración, seguridad y de propiedades 100% aprobadas, incluyendo suite completa de renderizado de plantillas de prompts (`test_prompts.py`).
 
 ---
 
