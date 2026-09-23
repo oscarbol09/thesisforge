@@ -156,3 +156,16 @@ async def test_citation_guard_custom_thresholds():
     assert len(verdict.supporting_chunks) == 0
 
     await crossref.close()
+
+
+def test_chroma_collection_name_sanitization():
+    """Verify _get_collection_name cleans special characters and bounds length."""
+    store = ChromaVectorStore(is_memory=True)
+    assert store._get_collection_name("project-uuid-1234") == "proj_project_uuid_1234"
+    assert store._get_collection_name("---!@#$---") == "proj_default"
+    assert store._get_collection_name("Proj#123@ABC!") == "proj_proj_123_abc"
+    long_name = "a" * 100
+    res = store._get_collection_name(long_name)
+    assert len(res) <= 55
+    assert res.startswith("proj_")
+

@@ -103,7 +103,7 @@ class CitationDTO(BaseModel):
     doi: str | None = Field(default=None, max_length=100)
     title: str = Field(min_length=3, max_length=500)
     authors: list[str] = Field(default_factory=list)
-    year: int = Field(ge=1900, le=2100)
+    year: int = Field(ge=1, le=2100)
     journal: str | None = Field(default=None, max_length=300)
     abstract: str | None = Field(default=None, max_length=5000)
     url: str | None = Field(default=None, max_length=1000)

@@ -229,6 +229,12 @@ class PDFDocumentParser:
 
         try:
             doc = fitz.open(stream=pdf_bytes, filetype="pdf")  # type: ignore[no-untyped-call]
+            if doc.is_encrypted:
+                raise DocumentProcessingError(
+                    "El archivo PDF está protegido con contraseña y no puede ser indexado."
+                )
+        except DocumentProcessingError:
+            raise
         except Exception as err:
             logger.warning("PyMuPDF failed to open PDF document.", extra={"error": str(err)})
             raise DocumentProcessingError(f"No se pudo procesar el PDF: {err}") from err

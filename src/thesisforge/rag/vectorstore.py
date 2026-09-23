@@ -81,9 +81,11 @@ class ChromaVectorStore:
             )
 
     def _get_collection_name(self, project_id: str) -> str:
-        """Sanitize project_id into a valid Chroma collection identifier."""
-        clean_id = project_id.replace("-", "_").lower()
-        return f"proj_{clean_id}"
+        """Sanitize project_id into a valid Chroma collection identifier (3-63 chars alphanumeric)."""
+        clean_id = re.sub(r"[^a-zA-Z0-9_]", "_", project_id).strip("_").lower()
+        if not clean_id:
+            clean_id = "default"
+        return f"proj_{clean_id[:50]}"
 
     def _get_or_create_collection(self, project_id: str) -> Any:
         """Obtain ChromaDB collection for the given project."""

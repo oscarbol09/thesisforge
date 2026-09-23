@@ -1,7 +1,7 @@
-"""Unit tests for PDF parsing, text sanitization, and sentence-aware chunking."""
-
 import pymupdf as fitz
+import pytest
 
+from thesisforge.exceptions import DocumentProcessingError
 from thesisforge.rag.parser import (
     PDFDocumentParser,
     SentenceAwareChunker,
@@ -90,3 +90,27 @@ def test_pdf_document_parser_in_memory():
     assert chunks[0].section_name == "Methodology"
     assert chunks[0].page_number == 1
     assert "40 participantes" in chunks[0].text
+
+
+def test_pdf_document_parser_encrypted_pdf():
+    """Verify that password protected PDFs raise DocumentProcessingError gracefully."""
+    doc = fitz.open()
+    page = doc.new_page()
+    page.insert_text((50, 50), "Documento protegido")
+    pdf_bytes = doc.write(
+        encryption=fitz.PDF_ENCRYPT_AES_256,
+        owner_pw="adminpass",
+        user_pw="secretpass",
+    )
+    doc.close()
+
+    parser = PDFDocumentParser()
+    with pytest.raises(DocumentProcessingError, match="protegido con contraseña"):
+        parser.parse_pdf_bytes(
+            pdf_bytes=pdf_bytes,
+            project_id="proj_rag_enc",
+            document_id="doc_rag_enc",
+            title="Encrypted doc",
+            year=2024,
+        )
+
