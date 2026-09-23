@@ -214,7 +214,7 @@ Refina el siguiente borrador académico incorporando con precisión las observac
 Redacta la versión refinada y completa del texto en Markdown limpio.
 """
 
-SECTION_SUMMARY_PROMPT = """Genera un resumen analítico denso de 2 a 3 oraciones de la siguiente sección de tesis recién aprobada.
+SECTION_SUMMARY_PROMPT = """Genera un resumen analítico denso de 2 a 3 oraciones redactado estrictamente en idioma español de la siguiente sección de tesis recién aprobada.
 Este resumen servirá como memoria jerárquica contextual para guiar la redacción de los capítulos y secciones posteriores.
 
 Título de la sección: {section_title}
@@ -223,7 +223,7 @@ Texto aprobado:
 {content}
 \"\"\"
 
-Responde ÚNICAMENTE con el párrafo de resumen analítico (sin introducciones ni etiquetas).
+Responde ÚNICAMENTE con el párrafo de resumen analítico en español (sin introducciones ni etiquetas).
 """
 
 JURY_PANEL_AUDIT_PROMPT = """Actúa como un Tribunal Académico Evaluador de Tesis de Nivel Internacional ({academic_level}).

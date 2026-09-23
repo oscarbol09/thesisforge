@@ -9,6 +9,7 @@ from typing import Any
 import litellm
 from tenacity import (
     AsyncRetrying,
+    retry_if_exception,
     retry_if_exception_type,
     stop_after_attempt,
     wait_none,
@@ -28,6 +29,26 @@ litellm.suppress_debug_info = True
 litellm.drop_params = True
 
 logger = get_logger(__name__)
+
+
+def _is_retryable_llm_error(exc: BaseException) -> bool:
+    """Determine whether an LLM exception is a transient failure worthy of retrying."""
+    non_retryable_types = (
+        getattr(litellm, "AuthenticationError", ()),
+        getattr(litellm, "BadRequestError", ()),
+        getattr(litellm, "NotFoundError", ()),
+        getattr(litellm, "PermissionDeniedError", ()),
+        getattr(litellm, "InvalidRequestError", ()),
+    )
+    non_retryable_tuple = tuple(t for t in non_retryable_types if isinstance(t, type))
+    if non_retryable_tuple and isinstance(exc, non_retryable_tuple):
+        return False
+
+    status_code = getattr(exc, "status_code", None)
+    if isinstance(status_code, int) and status_code in (400, 401, 403, 404, 422):
+        return False
+
+    return True
 
 
 class LLMRouter:
@@ -110,7 +131,7 @@ class LLMRouter:
         async for attempt in AsyncRetrying(
             stop=stop_after_attempt(attempts),
             wait=wait_strategy,
-            retry=retry_if_exception_type((Exception,)),
+            retry=retry_if_exception(_is_retryable_llm_error),
             reraise=True,
         ):
             with attempt:
