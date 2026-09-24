@@ -54,3 +54,14 @@ async def approve_project_methodology(
 ) -> ProjectStateDTO:
     """Approve methodology and transition project to Phase 2 (Context)."""
     return await service.approve_methodology(project_id)
+
+
+@router.get("/{project_id}/consistency-matrix")
+async def get_consistency_matrix(
+    project_id: str,
+    service: AdvisorService = Depends(get_advisor_service),
+) -> dict[str, Any]:
+    """Retrieve or construct the 6-pillar methodological consistency matrix and validity audit."""
+    matrix = await service.get_consistency_matrix(project_id)
+    return matrix.model_dump()
+

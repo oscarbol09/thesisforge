@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import contextlib
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel, ConfigDict, Field
@@ -138,6 +138,21 @@ async def approve_section(
         project_id=project_id,
         section_id=section_id,
     )
+
+
+@router.get("/projects/{project_id}/sections/{section_id}/quality-audit")
+async def audit_section_quality(
+    project_id: str,
+    section_id: str,
+    draft_service: DraftService = Depends(get_draft_service),
+) -> dict[str, Any]:
+    """Audit an individual draft for AI slop, syntactic cadence, and L3 citation anchors."""
+    result = await draft_service.audit_section_quality(
+        project_id=project_id,
+        section_id=section_id,
+    )
+    return result.model_dump()
+
 
 
 @router.websocket("/ws/{project_id}/{section_id}")

@@ -2,6 +2,10 @@
 
 from typing import Any
 
+from thesisforge.advisor.consistency_matrix import (
+    ConsistencyMatrixEngine,
+    ConsistencyMatrixReport,
+)
 from thesisforge.advisor.state_machine import AdvisorStateMachine, AdvisorStep
 from thesisforge.advisor.validators import MethodologyValidator
 from thesisforge.core.logging import get_logger
@@ -302,3 +306,20 @@ class AdvisorService:
             extra={"project_id": project.id},
         )
         return project
+
+    async def get_consistency_matrix(self, project_id: str) -> ConsistencyMatrixReport:
+        """Construct the 6-pillar methodological consistency matrix and validity threats audit."""
+        project = await self.repo.get_project(project_id)
+        matrix = ConsistencyMatrixEngine.build_matrix(project)
+        project.consistency_matrix = matrix.model_dump()
+        await self.repo.update_project(project)
+        logger.info(
+            "Generated methodological consistency matrix.",
+            extra={
+                "project_id": project_id,
+                "score": matrix.overall_alignment_score,
+                "is_consistent": matrix.is_fully_consistent,
+            },
+        )
+        return matrix
+

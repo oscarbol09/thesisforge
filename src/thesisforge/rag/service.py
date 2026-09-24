@@ -20,6 +20,7 @@ from thesisforge.rag.clients.arxiv import ArxivClient
 from thesisforge.rag.clients.crossref import CrossRefClient
 from thesisforge.rag.clients.semantic_scholar import SemanticScholarClient
 from thesisforge.rag.parser import PDFDocumentParser
+from thesisforge.rag.prisma import PRISMAFlowReport
 from thesisforge.rag.vectorstore import ChromaVectorStore
 from thesisforge.repository.database import DatabaseManager
 from thesisforge.repository.project_repository import ProjectRepository
@@ -229,3 +230,76 @@ class RAGService:
             claim=claim,
             retrieved_chunks=chunks,
         )
+
+    async def build_prisma_flow(
+        self,
+        project_id: str,
+        query: str = "",
+        search_results: list[AcademicSearchResultDTO] | None = None,
+        excluded_screening: int = 0,
+        screening_reasons: dict[str, int] | None = None,
+    ) -> PRISMAFlowReport:
+        """Construct a formal PRISMA 2020 Flow Report from academic searches and indexed documents."""
+        project = await self.repo.get_project(project_id)
+        report = PRISMAFlowReport(
+            project_id=project_id,
+            query_string=query or project.topic or "Revisión Sistemática",
+        )
+
+        # Count by source
+        if search_results:
+            source_breakdown: dict[str, int] = {}
+            for res in search_results:
+                src = res.source or "semantic_scholar"
+                source_breakdown[src] = source_breakdown.get(src, 0) + 1
+            for src_name, count in source_breakdown.items():
+                report.record_database_search(src_name, count)
+
+            total_found = len(search_results)
+            # Deduplicate by title/DOI
+            seen = set()
+            duplicates = 0
+            for r in search_results:
+                key = (r.doi or r.title).lower()
+                if key in seen:
+                    duplicates += 1
+                else:
+                    seen.add(key)
+            report.record_deduplication(duplicates)
+
+            screened = max(0, total_found - duplicates)
+            report.record_screening(
+                screened=screened,
+                excluded=excluded_screening,
+                reasons=screening_reasons or {"fuera_de_alcance": excluded_screening},
+            )
+        else:
+            # Derive from project's validated citations
+            val_cits = project.validated_citations
+            report.record_database_search("manual_o_rag", len(val_cits))
+            report.record_deduplication(0)
+            report.record_screening(len(val_cits), 0)
+
+        # Eligibility & Included from indexed literature
+        included_ids = [c.doi or c.title for c in project.validated_citations]
+        report.record_eligibility(
+            sought=len(project.validated_citations),
+            not_retrieved=0,
+            assessed=len(project.validated_citations),
+            excluded=0,
+            included_ids=included_ids,
+        )
+
+        # Persist in project state
+        project.prisma_flow = report.to_dict()
+        await self.repo.update_project(project)
+
+        logger.info(
+            "Built PRISMA 2020 flow report.",
+            extra={
+                "project_id": project_id,
+                "included_count": report.included.new_studies_included,
+            },
+        )
+        return report
+

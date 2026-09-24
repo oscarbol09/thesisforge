@@ -182,3 +182,20 @@ async def add_citation_to_project(
         abstract=citation.abstract,
         source=citation.source,
     )
+
+
+@router.post("/prisma-flow/{project_id}")
+async def build_prisma_flow(
+    project_id: str,
+    query: str = Query("", description="Consulta temática de búsqueda"),
+    excluded_screening: int = Query(0, ge=0),
+    rag: RAGService = Depends(get_rag_service),
+) -> dict[str, Any]:
+    """Generate or update the PRISMA 2020 Systematic Review Flow Report for the project."""
+    report = await rag.build_prisma_flow(
+        project_id=project_id,
+        query=query,
+        excluded_screening=excluded_screening,
+    )
+    return report.to_dict()
+

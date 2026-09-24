@@ -4,6 +4,7 @@ from typing import Any
 
 from thesisforge.core.logging import get_logger
 from thesisforge.core.time import utc_now
+from thesisforge.jury.ai_failure_gate import AIFailureGateAuditor, AIFailureGateReport
 from thesisforge.llm.prompts import JURY_PANEL_AUDIT_PROMPT
 from thesisforge.llm.router import LLMRouter
 from thesisforge.models import (
@@ -348,6 +349,7 @@ class MultiAgentJuryEngine:
     async def evaluate_project(self, project: ProjectStateDTO) -> JuryEvaluationReportDTO:
         """Perform full multi-agent jury evaluation combining deterministic checks with LLM inference."""
         rule_issues = self._run_rule_based_audit(project)
+        ai_gate_report = AIFailureGateAuditor.audit_project(project)
 
         if not self.llm:
             # Fallback to deterministic rule engine
@@ -369,6 +371,9 @@ class MultiAgentJuryEngine:
                 issues=rule_issues,
                 mandatory_fixes=mandatory,
                 recommended_improvements=recommended,
+                ai_failure_gate_passed=ai_gate_report.passed,
+                ai_failure_risk_score=ai_gate_report.risk_score,
+                ai_failure_findings=[f.model_dump() for f in ai_gate_report.findings],
                 created_at=utc_now(),
             )
 
@@ -417,7 +422,9 @@ class MultiAgentJuryEngine:
 
         try:
             parsed_json = await self.llm.complete_json(prompt=prompt, system_prompt="")
-            return self._build_report_from_llm_response(project.id, parsed_json, rule_issues)
+            return self._build_report_from_llm_response(
+                project.id, parsed_json, rule_issues, ai_gate_report
+            )
         except Exception as exc:
             logger.warning(
                 "LLM jury panel audit encountered an issue; falling back to rule-based evaluation.",
@@ -441,6 +448,9 @@ class MultiAgentJuryEngine:
                 issues=rule_issues,
                 mandatory_fixes=mandatory,
                 recommended_improvements=recommended,
+                ai_failure_gate_passed=ai_gate_report.passed,
+                ai_failure_risk_score=ai_gate_report.risk_score,
+                ai_failure_findings=[f.model_dump() for f in ai_gate_report.findings],
                 created_at=utc_now(),
             )
 
@@ -449,6 +459,7 @@ class MultiAgentJuryEngine:
         project_id: str,
         data: dict[str, Any],
         rule_issues: list[AuditIssueDTO],
+        ai_gate_report: AIFailureGateReport | None = None,
     ) -> JuryEvaluationReportDTO:
         """Parse structured LLM JSON and merge with deterministic rule-based issues."""
         llm_issues: list[AuditIssueDTO] = []
@@ -568,5 +579,8 @@ class MultiAgentJuryEngine:
             issues=combined_issues,
             mandatory_fixes=mandatory_fixes,
             recommended_improvements=recommended_improvements,
+            ai_failure_gate_passed=ai_gate_report.passed if ai_gate_report else True,
+            ai_failure_risk_score=ai_gate_report.risk_score if ai_gate_report else 0.0,
+            ai_failure_findings=[f.model_dump() for f in ai_gate_report.findings] if ai_gate_report else [],
             created_at=utc_now(),
         )

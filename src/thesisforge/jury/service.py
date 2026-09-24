@@ -1,6 +1,7 @@
 """High-level service facade for jury audit, evaluations, and interactive thesis defense."""
 
 from thesisforge.core.logging import get_logger
+from thesisforge.jury.ai_failure_gate import AIFailureGateAuditor, AIFailureGateReport
 from thesisforge.jury.defense import ThesisDefenseSimulator
 from thesisforge.jury.evaluator import MultiAgentJuryEngine
 from thesisforge.llm.router import LLMRouter
@@ -143,3 +144,23 @@ class JuryService:
     async def list_defense_sessions(self, project_id: str) -> list[DefenseSessionDTO]:
         """List all defense sessions for a project."""
         return await self.jury_repo.list_defense_sessions_for_project(project_id)
+
+    async def audit_ai_failure_modes(self, project_id: str) -> AIFailureGateReport:
+        """Run dedicated audit of the 7 AI Failure Modes on a project and persist findings."""
+        project = await self.project_repo.get_project(project_id)
+        report = AIFailureGateAuditor.audit_project(project)
+
+        project.ai_failure_audit = report.model_dump()
+        await self.project_repo.update_project(project)
+
+        logger.info(
+            "Executed 7 AI Failure Modes audit on project.",
+            extra={
+                "project_id": project_id,
+                "passed": report.passed,
+                "risk_score": report.risk_score,
+                "findings_count": len(report.findings),
+            },
+        )
+        return report
+

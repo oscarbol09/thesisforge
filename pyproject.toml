@@ -115,7 +115,6 @@ python_files = ["test_*.py"]
 filterwarnings = [
     "error",
     "ignore::DeprecationWarning",
-    "ignore::starlette.exceptions.StarletteDeprecationWarning",
     "ignore::UserWarning",
 ]
 

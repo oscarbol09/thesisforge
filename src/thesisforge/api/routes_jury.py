@@ -1,4 +1,4 @@
-"""REST API endpoints for thesis jury evaluation and automated scientific audit."""
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, ConfigDict
@@ -88,3 +88,18 @@ async def get_evaluation_by_id_endpoint(
 ) -> JuryEvaluationReportDTO:
     """Retrieve an exact jury evaluation report by its primary ID."""
     return await jury_service.get_evaluation(evaluation_id)
+
+
+@router.post(
+    "/projects/{project_id}/ai-failure-gate",
+    status_code=status.HTTP_200_OK,
+    summary="Ejecutar auditoría de compuerta de 7 modos de fallo de IA",
+)
+async def audit_ai_failure_gate_endpoint(
+    project_id: str,
+    jury_service: JuryService = Depends(get_jury_service),
+) -> dict[str, Any]:
+    """Execute dedicated 7 AI Failure Modes audit on a research project."""
+    report = await jury_service.audit_ai_failure_modes(project_id)
+    return report.model_dump()
+

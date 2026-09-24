@@ -5,6 +5,7 @@ from typing import Any
 
 from thesisforge.core.logging import get_logger
 from thesisforge.core.time import utc_now
+from thesisforge.drafting.detox import DraftQualityAuditResult, audit_scholarly_draft
 from thesisforge.drafting.memory import HierarchicalMemoryManager
 from thesisforge.drafting.sanitizer import clean_draft_markup
 from thesisforge.drafting.templates import get_default_thesis_sections
@@ -406,3 +407,14 @@ class DraftService:
             },
         )
         return section
+
+    async def audit_section_quality(
+        self,
+        project_id: str,
+        section_id: str,
+    ) -> DraftQualityAuditResult:
+        """Audit an individual thesis section for AI slop, syntactic cadence, and L3 citation anchors."""
+        project = await self.repo.get_project(project_id)
+        section = self._find_section(project, section_id)
+        return audit_scholarly_draft(section.content or "")
+

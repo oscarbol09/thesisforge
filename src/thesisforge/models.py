@@ -3,6 +3,7 @@
 import uuid
 from datetime import datetime
 from enum import Enum
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -385,6 +386,11 @@ class ProjectStateDTO(BaseModel):
     citation_style: str = Field(default="apa7", max_length=20)
     language: str = Field(default="es", max_length=10)
 
+    # Advanced Academic Integrity & Protocol Artifacts
+    prisma_flow: dict[str, Any] | None = None
+    consistency_matrix: dict[str, Any] | None = None
+    ai_failure_audit: dict[str, Any] | None = None
+
     def to_summary(self) -> ProjectSummaryDTO:
         """Derive a lightweight summary for UI dashboard."""
         approved = sum(1 for s in self.sections if s.status == SectionStatus.APPROVED)
@@ -444,6 +450,9 @@ class JuryEvaluationReportDTO(BaseModel):
     issues: list[AuditIssueDTO] = Field(default_factory=list)
     mandatory_fixes: list[str] = Field(default_factory=list)
     recommended_improvements: list[str] = Field(default_factory=list)
+    ai_failure_gate_passed: bool = True
+    ai_failure_risk_score: float = 0.0
+    ai_failure_findings: list[dict[str, Any]] = Field(default_factory=list)
     created_at: datetime = Field(default_factory=utc_now)
 
 
