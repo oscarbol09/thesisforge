@@ -63,11 +63,11 @@ class SecureKeyStoreRepository:
         async with self.db.get_connection() as conn:
             cursor = await conn.execute(query, (normalized_provider,))
             await conn.commit()
-            deleted = cursor.rowcount > 0
+            deleted = int(cursor.rowcount) > 0
 
         if deleted:
             logger.info("API key deleted.", extra={"provider": normalized_provider})
-        return deleted
+        return bool(deleted)
 
     async def list_configured_providers(self) -> list[str]:
         """List all provider names that have an encrypted key stored."""

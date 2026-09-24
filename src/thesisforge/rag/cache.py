@@ -85,7 +85,7 @@ class LiteratureCache:
         query = "DELETE FROM literature_cache WHERE expires_at <= ?"
         async with self.db.get_connection() as conn:
             cursor = await conn.execute(query, (now_iso,))
-            deleted = cursor.rowcount
+            deleted = int(cursor.rowcount)
             await conn.commit()
             if deleted > 0:
                 logger.info(
