@@ -177,7 +177,9 @@ def audit_scholarly_draft(text: str) -> DraftQualityAuditResult:
     # 2. Analyze Sentence Rhythm
     sentences = split_into_sentences(text)
     rhythm = compute_sentence_rhythm(sentences)
-    is_monotonous = rhythm.monotonous_clusters_count > 0 or (rhythm.total_sentences >= 5 and rhythm.std_dev < 4.0)
+    is_monotonous = rhythm.monotonous_clusters_count > 0 or (
+        rhythm.total_sentences >= 5 and rhythm.std_dev < 4.0
+    )
 
     # 3. Citation Depth (Standard vs L3 Locators)
     standard_cits = STANDARD_CITATION_PATTERN.findall(text)

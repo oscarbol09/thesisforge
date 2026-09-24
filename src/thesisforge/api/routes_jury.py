@@ -102,4 +102,3 @@ async def audit_ai_failure_gate_endpoint(
     """Execute dedicated 7 AI Failure Modes audit on a research project."""
     report = await jury_service.audit_ai_failure_modes(project_id)
     return report.model_dump()
-

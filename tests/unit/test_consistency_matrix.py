@@ -1,6 +1,5 @@
 """Unit tests for the Methodological Consistency Matrix and Validity Threats Engine."""
 
-
 from thesisforge.advisor.consistency_matrix import (
     ConsistencyMatrixEngine,
 )
@@ -78,7 +77,9 @@ def test_scale_compatibility_flags_incompatible_tests() -> None:
         )
     ]
     # Pearson requires Interval/Ratio, so Nominal should be flagged
-    is_compat, note = ConsistencyMatrixEngine.check_scale_compatibility(variables, "Correlación de Pearson")
+    is_compat, note = ConsistencyMatrixEngine.check_scale_compatibility(
+        variables, "Correlación de Pearson"
+    )
     assert is_compat is False
     assert "Incompatibilidad" in note
 
@@ -91,6 +92,8 @@ def test_scale_compatibility_accepts_compatible_tests() -> None:
             measurement_scale=MeasurementScale.ORDINAL,
         )
     ]
-    is_compat, note = ConsistencyMatrixEngine.check_scale_compatibility(variables, "Prueba de Mann Whitney")
+    is_compat, note = ConsistencyMatrixEngine.check_scale_compatibility(
+        variables, "Prueba de Mann Whitney"
+    )
     assert is_compat is True
     assert "Compatible" in note

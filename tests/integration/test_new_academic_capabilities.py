@@ -52,14 +52,22 @@ async def test_academic_capabilities_end_to_end(override_db: DatabaseManager) ->
         # 2. Setup project with detailed methodology and variables
         repo = ProjectRepository(override_db)
         proj = await repo.get_project(project_id)
-        proj.research_problem = "La evaluación del desempeño docente requiere métricas rigurosas y validez empírica."
-        proj.research_question = "¿Cómo se relaciona el desempeño docente con la satisfacción estudiantil?"
-        proj.general_objective = "Determinar la relación entre desempeño docente y satisfacción estudiantil."
+        proj.research_problem = (
+            "La evaluación del desempeño docente requiere métricas rigurosas y validez empírica."
+        )
+        proj.research_question = (
+            "¿Cómo se relaciona el desempeño docente con la satisfacción estudiantil?"
+        )
+        proj.general_objective = (
+            "Determinar la relación entre desempeño docente y satisfacción estudiantil."
+        )
         proj.specific_objectives = [
             "Medir el desempeño docente según la rúbrica institucional.",
             "Evaluar el nivel de satisfacción de los estudiantes.",
         ]
-        proj.hypothesis = "Existe una correlación positiva y significativa entre desempeño y satisfacción."
+        proj.hypothesis = (
+            "Existe una correlación positiva y significativa entre desempeño y satisfacción."
+        )
         proj.operationalized_variables = [
             VariableOperationalizationDTO(
                 name="Desempeño Docente",

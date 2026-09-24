@@ -64,4 +64,3 @@ async def get_consistency_matrix(
     """Retrieve or construct the 6-pillar methodological consistency matrix and validity audit."""
     matrix = await service.get_consistency_matrix(project_id)
     return matrix.model_dump()
-

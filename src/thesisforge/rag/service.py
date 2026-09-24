@@ -302,4 +302,3 @@ class RAGService:
             },
         )
         return report
-

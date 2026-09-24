@@ -154,7 +154,6 @@ async def audit_section_quality(
     return result.model_dump()
 
 
-
 @router.websocket("/ws/{project_id}/{section_id}")
 async def websocket_draft_stream(
     websocket: WebSocket,

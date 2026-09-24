@@ -1,6 +1,5 @@
 """Unit tests for PRISMA 2020 systematic review flow generator."""
 
-
 from thesisforge.rag.prisma import PRISMAFlowReport
 
 

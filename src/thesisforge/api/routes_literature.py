@@ -198,4 +198,3 @@ async def build_prisma_flow(
         excluded_screening=excluded_screening,
     )
     return report.to_dict()
-

@@ -322,4 +322,3 @@ class AdvisorService:
             },
         )
         return matrix
-

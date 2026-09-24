@@ -22,12 +22,21 @@ STATISTICAL_TEST_SCALE_MAP: dict[str, list[MeasurementScale]] = {
     # Non-parametric tests for Nominal
     "chi_cuadrado": [MeasurementScale.NOMINAL, MeasurementScale.ORDINAL],
     "fisher": [MeasurementScale.NOMINAL],
-    "regresion_logistica": [MeasurementScale.NOMINAL, MeasurementScale.ORDINAL, MeasurementScale.INTERVALO, MeasurementScale.RAZON],
+    "regresion_logistica": [
+        MeasurementScale.NOMINAL,
+        MeasurementScale.ORDINAL,
+        MeasurementScale.INTERVALO,
+        MeasurementScale.RAZON,
+    ],
     # Non-parametric tests for Ordinal
     "spearman": [MeasurementScale.ORDINAL, MeasurementScale.INTERVALO, MeasurementScale.RAZON],
     "mann_whitney": [MeasurementScale.ORDINAL, MeasurementScale.INTERVALO, MeasurementScale.RAZON],
     "wilcoxon": [MeasurementScale.ORDINAL, MeasurementScale.INTERVALO, MeasurementScale.RAZON],
-    "kruskal_wallis": [MeasurementScale.ORDINAL, MeasurementScale.INTERVALO, MeasurementScale.RAZON],
+    "kruskal_wallis": [
+        MeasurementScale.ORDINAL,
+        MeasurementScale.INTERVALO,
+        MeasurementScale.RAZON,
+    ],
     "kendall": [MeasurementScale.ORDINAL],
     # Parametric tests requiring Interval or Ratio
     "pearson": [MeasurementScale.INTERVALO, MeasurementScale.RAZON],
@@ -129,9 +138,21 @@ class ConsistencyMatrixEngine:
         # Match row count by specific objectives
         target_count = max(len(specific_objs), 1)
         for idx in range(target_count):
-            obj = specific_objs[idx] if idx < len(specific_objs) else f"Objetivo específico {idx + 1} pendiente"
-            q = questions[idx] if idx < len(questions) else (questions[0] if questions else "Pregunta no definida")
-            h = hypotheses[idx] if idx < len(hypotheses) else (hypotheses[0] if hypotheses else None)
+            obj = (
+                specific_objs[idx]
+                if idx < len(specific_objs)
+                else f"Objetivo específico {idx + 1} pendiente"
+            )
+            q = (
+                questions[idx]
+                if idx < len(questions)
+                else (questions[0] if questions else "Pregunta no definida")
+            )
+            h = (
+                hypotheses[idx]
+                if idx < len(hypotheses)
+                else (hypotheses[0] if hypotheses else None)
+            )
 
             # Check scale compatibility with test if quantitative
             is_compat = True
@@ -161,13 +182,19 @@ class ConsistencyMatrixEngine:
         if not specific_objs:
             alignment_issues.append("No se han formulado objetivos específicos.")
         elif len(specific_objs) < 2:
-            alignment_issues.append("Se recomiendan al menos 2 objetivos específicos para dar cobertura al problema.")
+            alignment_issues.append(
+                "Se recomiendan al menos 2 objetivos específicos para dar cobertura al problema."
+            )
 
         if approach == ResearchApproach.CUANTITATIVO:
             if not project.hypothesis and "correlacional" in (meth.design if meth else "").lower():
-                alignment_issues.append("Un diseño correlacional o explicativo exige formular hipótesis contrastables.")
+                alignment_issues.append(
+                    "Un diseño correlacional o explicativo exige formular hipótesis contrastables."
+                )
             if not op_vars:
-                alignment_issues.append("Se requiere la matriz de operacionalización de variables para investigación cuantitativa.")
+                alignment_issues.append(
+                    "Se requiere la matriz de operacionalización de variables para investigación cuantitativa."
+                )
 
         # 3. Assess Validity Threats
         validity_threats = cls.audit_validity_threats(project)

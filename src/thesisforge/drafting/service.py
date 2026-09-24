@@ -417,4 +417,3 @@ class DraftService:
         project = await self.repo.get_project(project_id)
         section = self._find_section(project, section_id)
         return audit_scholarly_draft(section.content or "")
-

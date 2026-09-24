@@ -581,6 +581,8 @@ class MultiAgentJuryEngine:
             recommended_improvements=recommended_improvements,
             ai_failure_gate_passed=ai_gate_report.passed if ai_gate_report else True,
             ai_failure_risk_score=ai_gate_report.risk_score if ai_gate_report else 0.0,
-            ai_failure_findings=[f.model_dump() for f in ai_gate_report.findings] if ai_gate_report else [],
+            ai_failure_findings=[f.model_dump() for f in ai_gate_report.findings]
+            if ai_gate_report
+            else [],
             created_at=utc_now(),
         )

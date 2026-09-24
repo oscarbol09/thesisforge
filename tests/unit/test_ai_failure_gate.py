@@ -1,6 +1,5 @@
 """Unit tests for the 7 AI Failure Modes Academic Audit Gate."""
 
-
 from thesisforge.jury.ai_failure_gate import AIFailureGateAuditor, AIFailureMode
 from thesisforge.models import (
     AcademicLevel,

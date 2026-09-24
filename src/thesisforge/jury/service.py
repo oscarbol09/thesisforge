@@ -163,4 +163,3 @@ class JuryService:
             },
         )
         return report
-

@@ -124,9 +124,17 @@ class PRISMAFlowReport(BaseModel):
         el_phase = self.eligibility
         inc_phase = self.included
 
-        db_breakdown = ", ".join(f"{k}: {v}" for k, v in id_phase.database_counts.items()) or "Ninguna"
-        scr_exclusions = ", ".join(f"{k}: {v}" for k, v in sc_phase.exclusion_reasons.items()) or "No especificado"
-        el_exclusions = ", ".join(f"{k}: {v}" for k, v in el_phase.eligibility_exclusion_reasons.items()) or "No especificado"
+        db_breakdown = (
+            ", ".join(f"{k}: {v}" for k, v in id_phase.database_counts.items()) or "Ninguna"
+        )
+        scr_exclusions = (
+            ", ".join(f"{k}: {v}" for k, v in sc_phase.exclusion_reasons.items())
+            or "No especificado"
+        )
+        el_exclusions = (
+            ", ".join(f"{k}: {v}" for k, v in el_phase.eligibility_exclusion_reasons.items())
+            or "No especificado"
+        )
 
         return f"""# Diagrama de Flujo PRISMA 2020
 

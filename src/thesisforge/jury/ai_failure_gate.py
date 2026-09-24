@@ -47,7 +47,9 @@ class AIFailureGateReport(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
     passed: bool
-    risk_score: float = Field(ge=0.0, le=100.0, description="Failure risk score (0=clean, 100=extreme risk)")
+    risk_score: float = Field(
+        ge=0.0, le=100.0, description="Failure risk score (0=clean, 100=extreme risk)"
+    )
     evaluated_modes_count: int = 7
     findings: list[FailureFinding] = Field(default_factory=list)
     passed_modes: list[AIFailureMode] = Field(default_factory=list)
@@ -169,12 +171,18 @@ class AIFailureGateAuditor:
     def _audit_literature_fabrication(cls, project: ProjectStateDTO) -> list[FailureFinding]:
         """Check for ungrounded citations in sections not present in validated literature registry."""
         findings: list[FailureFinding] = []
-        known_authors = {author.lower() for cit in project.validated_citations for author in cit.authors}
+        known_authors = {
+            author.lower() for cit in project.validated_citations for author in cit.authors
+        }
         all_content = " ".join(s.content for s in project.sections if s.content)
 
         # Look for explicit (Author, Year) in text
-        in_text_authors = re.findall(r"\(([A-ZÁÉÍÓÚÑ][a-záéíóúñ]+)(?:\s+et\s+al\.)?,\s*\d{4}\)", all_content)
-        unmatched_authors = [a for a in in_text_authors if known_authors and a.lower() not in known_authors]
+        in_text_authors = re.findall(
+            r"\(([A-ZÁÉÍÓÚÑ][a-záéíóúñ]+)(?:\s+et\s+al\.)?,\s*\d{4}\)", all_content
+        )
+        unmatched_authors = [
+            a for a in in_text_authors if known_authors and a.lower() not in known_authors
+        ]
         if in_text_authors and not project.validated_citations:
             findings.append(
                 FailureFinding(
@@ -234,7 +242,9 @@ class AIFailureGateAuditor:
     def _audit_epistemic_frame_lock(cls, project: ProjectStateDTO) -> list[FailureFinding]:
         """Verify that the project explicitly discusses limitations and boundary conditions."""
         findings: list[FailureFinding] = []
-        has_scope_lim = bool(project.scope_limitations and len(project.scope_limitations.strip()) >= 50)
+        has_scope_lim = bool(
+            project.scope_limitations and len(project.scope_limitations.strip()) >= 50
+        )
         if not has_scope_lim:
             findings.append(
                 FailureFinding(

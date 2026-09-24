@@ -1,6 +1,5 @@
 """Unit tests for scholarly drafting detox, AI-slop auditor, and L3 locator anchor checks."""
 
-
 from thesisforge.drafting.detox import (
     audit_scholarly_draft,
     compute_sentence_rhythm,
