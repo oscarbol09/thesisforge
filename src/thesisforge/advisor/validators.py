@@ -175,6 +175,74 @@ class MethodologyValidator:
         return issues
 
     @classmethod
+    def validate_epistemological_alignment(
+        cls,
+        paradigm: str | None,
+        approach: ResearchApproach | None,
+        design: str = "",
+    ) -> list[str]:
+        """Validate philosophical and methodological alignment between paradigm, approach and design."""
+        issues: list[str] = []
+        if not paradigm and not design:
+            return issues
+
+        if paradigm:
+            para_lower = str(paradigm).lower()
+            if "positivista" in para_lower and approach == ResearchApproach.CUALITATIVO:
+                issues.append(
+                    "Inconsistencia epistemológica: El paradigma positivista es eminentemente cuantitativo y contradice un enfoque cualitativo puro."
+                )
+            elif "interpretativ" in para_lower and approach == ResearchApproach.CUANTITATIVO:
+                issues.append(
+                    "Inconsistencia epistemológica: El paradigma interpretativo/hermenéutico se fundamenta en la comprensión cualitativa y contradice un enfoque cuantitativo puro."
+                )
+
+        if design:
+            design_lower = design.lower()
+            if "experimental" in design_lower and approach == ResearchApproach.CUALITATIVO:
+                issues.append(
+                    "El diseño experimental implica manipulación de variables y medición cuantitativa, incompatible con un enfoque cualitativo puro."
+                )
+
+        return issues
+
+    @classmethod
+    def validate_operationalization(
+        cls,
+        variables: list[Any],
+        approach: ResearchApproach | None,
+    ) -> list[str]:
+        """Validate variable operationalization matrix completeness."""
+        issues: list[str] = []
+        if approach == ResearchApproach.CUANTITATIVO and variables:
+            for v in variables:
+                v_name = getattr(v, "name", str(v))
+                indicators = getattr(v, "indicators", [])
+                if hasattr(v, "indicators") and not indicators:
+                    issues.append(
+                        f"La variable '{v_name}' carece de indicadores operacionales medibles."
+                    )
+        return issues
+
+    @classmethod
+    def validate_qualitative_categories(
+        cls,
+        categories: list[Any],
+        approach: ResearchApproach | None,
+    ) -> list[str]:
+        """Validate qualitative categorical matrix and coding definitions."""
+        issues: list[str] = []
+        if approach == ResearchApproach.CUALITATIVO and categories:
+            for cat in categories:
+                cat_name = getattr(cat, "name", str(cat))
+                cat_def = getattr(cat, "definition", "")
+                if hasattr(cat, "definition") and not cat_def:
+                    issues.append(
+                        f"La categoría cualitativa '{cat_name}' no cuenta con definición conceptual o criterios de codificación."
+                    )
+        return issues
+
+    @classmethod
     def audit_project(cls, project: ProjectStateDTO) -> dict[str, Any]:
         """Run a full consistency matrix audit across the project's methodological fields."""
         problem_issues = cls.validate_problem_statement(project.research_problem)
@@ -184,9 +252,27 @@ class MethodologyValidator:
         )
         spec_obj_issues = cls.validate_specific_objectives(project.specific_objectives)
         hypo_issues = cls.validate_hypothesis(project.hypothesis, project.methodology.approach)
+        epistem_issues = cls.validate_epistemological_alignment(
+            project.methodology.paradigm.value if project.methodology.paradigm else None,
+            project.methodology.approach,
+            project.methodology.design,
+        )
+        op_issues = cls.validate_operationalization(
+            project.operationalized_variables, project.methodology.approach
+        )
+        cat_issues = cls.validate_qualitative_categories(
+            project.qualitative_categories, project.methodology.approach
+        )
 
         all_issues: list[str] = (
-            problem_issues + question_issues + general_obj_issues + spec_obj_issues + hypo_issues
+            problem_issues
+            + question_issues
+            + general_obj_issues
+            + spec_obj_issues
+            + hypo_issues
+            + epistem_issues
+            + op_issues
+            + cat_issues
         )
 
         # Severity-weighted penalty calculation
@@ -202,6 +288,12 @@ class MethodologyValidator:
                 penalty += 15 if "al menos 2" in iss else 5
         if hypo_issues:
             penalty += 15 * len(hypo_issues)
+        if epistem_issues:
+            penalty += 20 * len(epistem_issues)
+        if op_issues:
+            penalty += 10 * len(op_issues)
+        if cat_issues:
+            penalty += 10 * len(cat_issues)
 
         score = max(0, 100 - penalty)
         is_consistent = len(all_issues) == 0

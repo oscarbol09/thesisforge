@@ -11,6 +11,7 @@ from thesisforge.config import get_settings
 from thesisforge.core.time import utc_now
 from thesisforge.drafting.service import DraftService
 from thesisforge.exceptions import ThesisForgeError
+from thesisforge.export.bundle import ProjectBundleService
 from thesisforge.export.service import ExportService
 from thesisforge.models import CitationDTO, ExportOptionsDTO
 from thesisforge.rag.apa_formatter import APA7Formatter
@@ -88,6 +89,44 @@ async def _run_export_docx_cli(
         saved = await export_service.save_project_docx(project_id, output_path, opts)
         size_kb = saved.stat().st_size / 1024
         print(f"Documento APA 7 compilado exitosamente: {saved} ({size_kb:.1f} KB)")
+    finally:
+        await db.close()
+
+
+async def _run_export_bundle_cli(
+    project_id: str,
+    output_path: str,
+) -> None:
+    """Export self-contained .thesisforge project archive."""
+    settings = get_settings()
+    db = DatabaseManager(settings.database_url)
+    await db.initialize()
+    try:
+        repo = ProjectRepository(db)
+        bundle_service = ProjectBundleService(project_repo=repo)
+        saved = await bundle_service.export_bundle_file(project_id, output_path)
+        size_kb = saved.stat().st_size / 1024
+        print(f"Paquete .thesisforge exportado exitosamente: {saved} ({size_kb:.1f} KB)")
+    finally:
+        await db.close()
+
+
+async def _run_import_bundle_cli(
+    file_path: str,
+    new_project_id: str | None = None,
+) -> None:
+    """Import self-contained .thesisforge project archive."""
+    settings = get_settings()
+    db = DatabaseManager(settings.database_url)
+    await db.initialize()
+    try:
+        repo = ProjectRepository(db)
+        bundle_service = ProjectBundleService(project_repo=repo)
+        project = await bundle_service.import_bundle_file(file_path, new_project_id=new_project_id)
+        print("Proyecto importado exitosamente:")
+        print(f"  ID:     {project.id}")
+        print(f"  Título: {project.title}")
+        print(f"  Nivel:  {project.academic_level.value}")
     finally:
         await db.close()
 
@@ -335,6 +374,41 @@ def main() -> None:
     export_parser.add_argument("--institution", type=str, default="", help="Institution name")
     export_parser.add_argument("--advisor", type=str, default="", help="Advisor name")
 
+    # export-bundle command
+    export_bundle_parser = subparsers.add_parser(
+        "export-bundle",
+        help="Export a full project backup bundle as a .thesisforge file",
+    )
+    export_bundle_parser.add_argument(
+        "project_id", nargs="?", default=None, help="ID of the research project"
+    )
+    export_bundle_parser.add_argument(
+        "--project-id",
+        dest="project_id_flag",
+        type=str,
+        default=None,
+        help="ID of the research project",
+    )
+    export_bundle_parser.add_argument(
+        "--output", type=str, required=True, help="Target .thesisforge file path"
+    )
+
+    # import-bundle command
+    import_bundle_parser = subparsers.add_parser(
+        "import-bundle",
+        help="Import a project from a .thesisforge backup bundle",
+    )
+    import_bundle_parser.add_argument(
+        "bundle_file", type=str, help="Path to .thesisforge archive"
+    )
+    import_bundle_parser.add_argument(
+        "--new-id",
+        dest="new_project_id",
+        type=str,
+        default=None,
+        help="Optional new project ID to assign during import",
+    )
+
     # draft-init command
     init_parser = subparsers.add_parser(
         "draft-init",
@@ -438,6 +512,21 @@ def main() -> None:
                     author=args.author,
                     institution=args.institution,
                     advisor=args.advisor,
+                )
+            )
+        elif args.command == "export-bundle":
+            pid = resolve_pid(args)
+            asyncio.run(
+                _run_export_bundle_cli(
+                    project_id=pid,
+                    output_path=args.output,
+                )
+            )
+        elif args.command == "import-bundle":
+            asyncio.run(
+                _run_import_bundle_cli(
+                    file_path=args.bundle_file,
+                    new_project_id=args.new_project_id,
                 )
             )
         elif args.command == "draft-init":

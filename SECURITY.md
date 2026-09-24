@@ -10,7 +10,8 @@ Ofrecemos actualizaciones y parches de seguridad para las siguientes versiones:
 
 | Versión | Estado de Soporte |
 | :--- | :---: |
-| 0.1.x | Soportada |
+| 0.5.x | Soportada (Actual) |
+| 0.1.x - 0.4.x | Obsoleta (Solo parches críticos) |
 | < 0.1.0 | Sin soporte |
 
 ---
@@ -47,4 +48,6 @@ ThesisForge implementa defensas en profundidad:
    - El logger estructurado JSON sanitiza retornos de carro (`\r`, `\n`) de las entradas del usuario y enmascara tokens sensibles.
 4. **Sanitización contra Inyección de Fórmulas:**
    - La capa de exportación prefija con un apóstrofe (`'`) cualquier celda de tabla que inicie con `=`, `+`, `-`, `@` o tabulaciones para proteger la apertura en Microsoft Word o Excel.
+5. **Integridad Criptográfica de Paquetes (`thesisforge.export.bundle.ProjectBundleService`):**
+   - Validación estricta de sumas de verificación SHA-256 y esquemas de manifiesto en archivos `.thesisforge` para prevenir la manipulación o importación de paquetes corruptos.
 

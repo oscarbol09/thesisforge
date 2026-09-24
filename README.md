@@ -115,11 +115,17 @@ thesisforge draft-list --project-id "proj-123"
 # Compilar proyecto a Microsoft Word (.docx) APA 7ª edición
 thesisforge export-docx --project-id "proj-123" --output "./tesis_final.docx" --author "Valeria Mendoza"
 
+# Exportar copia de seguridad portable y autocontenida (.thesisforge)
+thesisforge export-bundle --project-id "proj-123" --output "./backup_tesis.thesisforge"
+
+# Importar copia de seguridad portable (.thesisforge) con verificación SHA-256
+thesisforge import-bundle "./backup_tesis.thesisforge"
+
 # Auditar proyecto con tribunal multi-agente (Metodólogo, Especialista, Estadístico, Abogado del Diablo)
-thesisforge jury-audit --project-id "proj-123" --save
+thesisforge jury-audit --project-id "proj-123"
 
 # Iniciar simulador socrático interactivo de defensa oral en consola
-thesisforge defense-start --project-id "proj-123" --turns 4
+thesisforge defense-start --project-id "proj-123"
 ```
 
 ---

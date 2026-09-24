@@ -134,8 +134,9 @@ class DatabaseManager:
             self._keepalive_conn = await aiosqlite.connect(self.connection_string, uri=self._is_uri)
 
         async with self.get_connection() as db:
-            await db.executescript(INIT_SCHEMA_SQL)
-            await db.commit()
+            from thesisforge.repository.migrations import DatabaseMigrator
+
+            await DatabaseMigrator.apply_all(db)
             logger.info(
                 "Database schema initialized successfully.", extra={"db_path": self.db_path}
             )

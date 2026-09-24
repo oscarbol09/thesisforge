@@ -34,6 +34,7 @@ from thesisforge.exceptions import (
     SectionNotFoundError,
     SecurityError,
     ThesisForgeError,
+    ValidationError,
 )
 from thesisforge.rag.cache import LiteratureCache
 
@@ -129,6 +130,13 @@ def create_app() -> FastAPI:
         return JSONResponse(
             status_code=status.HTTP_404_NOT_FOUND,
             content={"error": "SECTION_NOT_FOUND", "message": exc.message, "details": exc.details},
+        )
+
+    @app.exception_handler(ValidationError)
+    async def validation_error_handler(request: Request, exc: ValidationError) -> JSONResponse:
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content={"error": "VALIDATION_ERROR", "message": exc.message, "details": exc.details},
         )
 
     @app.exception_handler(ExportError)

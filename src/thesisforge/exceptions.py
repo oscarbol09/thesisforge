@@ -14,6 +14,10 @@ class SecurityError(ThesisForgeError):
     """Raised on security policy or AppSec validation failures."""
 
 
+class ValidationError(ThesisForgeError):
+    """Raised on data validation or integrity verification failures."""
+
+
 class SSRFBlockedError(SecurityError):
     """Raised when an outbound URL violates SSRF boundaries."""
 

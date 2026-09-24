@@ -186,3 +186,71 @@ def test_cli_draft_list_command(capsys: pytest.CaptureFixture[str]):
         captured = capsys.readouterr()
         assert "Secciones de tesis para el proyecto" in captured.out
         assert "450 palabras" in captured.out
+
+
+def test_cli_export_bundle_command(capsys: pytest.CaptureFixture[str], tmp_path: Path):
+    """Test CLI export-bundle subcommand."""
+    fake_bundle = tmp_path / "backup.thesisforge"
+    fake_bundle.write_bytes(b"PK0000fakebundle")
+
+    with (
+        patch(
+            "sys.argv",
+            [
+                "thesisforge",
+                "export-bundle",
+                "--project-id",
+                "proj-bundle-01",
+                "--output",
+                str(fake_bundle),
+            ],
+        ),
+        patch(
+            "thesisforge.export.bundle.ProjectBundleService.export_bundle_file",
+            new_callable=AsyncMock,
+        ) as mock_export,
+        patch("thesisforge.repository.database.DatabaseManager.initialize", new_callable=AsyncMock),
+        patch("thesisforge.repository.database.DatabaseManager.close", new_callable=AsyncMock),
+    ):
+        mock_export.return_value = fake_bundle
+        main()
+
+        captured = capsys.readouterr()
+        assert "Paquete .thesisforge exportado exitosamente" in captured.out
+
+
+def test_cli_import_bundle_command(capsys: pytest.CaptureFixture[str], tmp_path: Path):
+    """Test CLI import-bundle subcommand."""
+    fake_bundle = tmp_path / "backup.thesisforge"
+    fake_bundle.write_bytes(b"PK0000fakebundle")
+    from thesisforge.models import AcademicLevel, ProjectStateDTO
+
+    with (
+        patch(
+            "sys.argv",
+            [
+                "thesisforge",
+                "import-bundle",
+                str(fake_bundle),
+                "--new-id",
+                "proj-restored-cli",
+            ],
+        ),
+        patch(
+            "thesisforge.export.bundle.ProjectBundleService.import_bundle_file",
+            new_callable=AsyncMock,
+        ) as mock_import,
+        patch("thesisforge.repository.database.DatabaseManager.initialize", new_callable=AsyncMock),
+        patch("thesisforge.repository.database.DatabaseManager.close", new_callable=AsyncMock),
+    ):
+        mock_import.return_value = ProjectStateDTO(
+            id="proj-restored-cli",
+            title="Proyecto Restaurado",
+            academic_level=AcademicLevel.MAESTRIA,
+        )
+        main()
+
+        captured = capsys.readouterr()
+        assert "Proyecto importado exitosamente:" in captured.out
+        assert "proj-restored-cli" in captured.out
+

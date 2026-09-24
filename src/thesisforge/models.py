@@ -25,6 +25,48 @@ class ResearchApproach(str, Enum):
     MIXTO = "mixto"
 
 
+class EpistemologicalParadigm(str, Enum):
+    """Epistemological and philosophical research paradigm."""
+
+    POSITIVISTA = "positivista"
+    POSTPOSITIVISTA = "postpositivista"
+    INTERPRETATIVO = "interpretativo"
+    SOCIOCRITICO = "sociocritico"
+    PRAGMATICO = "pragmatico"
+
+
+class SamplingTechnique(str, Enum):
+    """Scientific sampling strategy and selection technique."""
+
+    PROBABILISTICO_ALEATORIO = "probabilistico_aleatorio"
+    PROBABILISTICO_ESTRATIFICADO = "probabilistico_estratificado"
+    PROBABILISTICO_CONGLOMERADOS = "probabilistico_conglomerados"
+    NO_PROBABILISTICO_INTENCIONAL = "no_probabilistico_intencional"
+    NO_PROBABILISTICO_BOLA_NIEVE = "no_probabilistico_bola_nieve"
+    NO_PROBABILISTICO_POR_CUOTAS = "no_probabilistico_por_cuotas"
+    CENSO_COMPLETO = "censo_completo"
+
+
+class VariableType(str, Enum):
+    """Classification of empirical research variables."""
+
+    INDEPENDIENTE = "independiente"
+    DEPENDIENTE = "dependiente"
+    INTERVINIENTE = "interviniente"
+    MODERADORA = "moderadora"
+    CONTROL = "control"
+    CATEGORIA_CUALITATIVA = "categoria_cualitativa"
+
+
+class MeasurementScale(str, Enum):
+    """Statistical scale of measurement for variable operationalization."""
+
+    NOMINAL = "nominal"
+    ORDINAL = "ordinal"
+    INTERVALO = "intervalo"
+    RAZON = "razon"
+
+
 class ProjectPhase(str, Enum):
     """Current milestone/phase in the thesis construction pipeline."""
 
@@ -177,17 +219,56 @@ class AcademicSearchResultDTO(BaseModel):
     source: str = "semantic_scholar"
 
 
+class VariableOperationalizationDTO(BaseModel):
+    """Operationalization matrix entry for quantitative or mixed variables."""
+
+    model_config = ConfigDict(str_strip_whitespace=True, extra="ignore")
+
+    id: str = Field(default_factory=lambda: uuid.uuid4().hex[:10])
+    name: str = Field(min_length=1, max_length=200)
+    variable_type: VariableType = VariableType.INDEPENDIENTE
+    conceptual_definition: str = Field(default="", max_length=2000)
+    operational_definition: str = Field(default="", max_length=2000)
+    dimensions: list[str] = Field(default_factory=list)
+    indicators: list[str] = Field(default_factory=list)
+    measurement_scale: MeasurementScale = MeasurementScale.ORDINAL
+    instrument_name: str = Field(default="", max_length=300)
+
+
+class QualitativeCategoryDTO(BaseModel):
+    """Categorical and axial coding structure for qualitative investigations."""
+
+    model_config = ConfigDict(str_strip_whitespace=True, extra="ignore")
+
+    id: str = Field(default_factory=lambda: uuid.uuid4().hex[:10])
+    name: str = Field(min_length=1, max_length=200)
+    category_type: str = Field(default="central", max_length=100)
+    definition: str = Field(default="", max_length=2000)
+    subcategories: list[str] = Field(default_factory=list)
+    coding_criteria: str = Field(default="", max_length=2000)
+    saturation_indicator: str = Field(default="", max_length=1000)
+
+
 class MethodologyDTO(BaseModel):
     """Validated methodological data sheet created during Phase 1."""
 
     model_config = ConfigDict(str_strip_whitespace=True, extra="ignore")
 
     approach: ResearchApproach | None = None
+    paradigm: EpistemologicalParadigm | None = None
     design: str = Field(default="", max_length=500)
     population: str = Field(default="", max_length=500)
     sample: str = Field(default="", max_length=500)
+    sampling_technique: SamplingTechnique | None = None
+    unit_of_analysis: str = Field(default="", max_length=300)
     instruments: list[str] = Field(default_factory=list)
     analysis_technique: str = Field(default="", max_length=500)
+    inclusion_criteria: list[str] = Field(default_factory=list)
+    exclusion_criteria: list[str] = Field(default_factory=list)
+    ethical_considerations: list[str] = Field(default_factory=list)
+    data_collection_procedure: str = Field(default="", max_length=3000)
+    temporal_scope: str = Field(default="transversal", max_length=100)
+    spatial_setting: str = Field(default="", max_length=300)
 
 
 class SectionDraftDTO(BaseModel):
@@ -288,7 +369,10 @@ class ProjectStateDTO(BaseModel):
     justification: str = Field(default="", max_length=5000)
     scope_limitations: str = Field(default="", max_length=3000)
     variables: list[str] = Field(default_factory=list)
+    operationalized_variables: list[VariableOperationalizationDTO] = Field(default_factory=list)
+    qualitative_categories: list[QualitativeCategoryDTO] = Field(default_factory=list)
     methodology: MethodologyDTO = Field(default_factory=MethodologyDTO)
+    ethical_approval_status: str = Field(default="not_required", max_length=100)
 
     # Phase 2: Context & Academic Literature
     validated_citations: list[CitationDTO] = Field(default_factory=list)

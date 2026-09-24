@@ -42,23 +42,49 @@ class HierarchicalMemoryManager:
         variables_formatted = (
             ", ".join(project.variables) if project.variables else "No especificadas"
         )
+        if project.operationalized_variables:
+            op_vars_lines = [
+                f"  * {v.name} ({v.variable_type.value}): Indicadores=[{', '.join(v.indicators) or 'N/A'}] | Escala={v.measurement_scale.value}"
+                for v in project.operationalized_variables
+            ]
+            variables_formatted += "\n" + "\n".join(op_vars_lines)
+
+        if project.qualitative_categories:
+            cat_lines = [
+                f"  * Categoría: {c.name} ({c.category_type}) - Subcategorías=[{', '.join(c.subcategories) or 'N/A'}]"
+                for c in project.qualitative_categories
+            ]
+            variables_formatted += "\n" + "\n".join(cat_lines)
+
         instruments_formatted = (
             ", ".join(methodology.instruments) if methodology.instruments else "No especificados"
+        )
+        paradigm_str = (
+            methodology.paradigm.value.upper() if methodology.paradigm else "NO DECLARADO"
+        )
+        approach_str = (
+            methodology.approach.value.upper() if methodology.approach else "NO DEFINIDO"
+        )
+        sampling_str = (
+            methodology.sampling_technique.value if methodology.sampling_technique else "No definida"
         )
 
         layer_0_methodology = f"""[FUNDACIÓN METODOLÓGICA DEL PROYECTO]
 - Título: {project.title or "Sin título"}
 - Nivel Académico: {project.academic_level.value.upper()}
-- Enfoque: {methodology.approach.value.upper() if methodology.approach else "CUANTITATIVO"}
+- Paradigma Epistemológico: {paradigm_str}
+- Enfoque Metodológico: {approach_str}
 - Diseño: {methodology.design or "No especificado"}
 - Problema Principal: {project.research_problem or "No especificado"}
 - Pregunta Principal: {project.research_question or "No especificada"}
 - Objetivo General: {project.general_objective or "No especificado"}
 - Objetivos Específicos:
 {specific_objs_formatted}
-- Hipótesis: {project.hypothesis or "No aplica"}
-- Variables / Categorías: {variables_formatted}
-- Población y Muestra: {methodology.population or "No especificada"} | Muestra: {methodology.sample or "No especificada"}
+- Hipótesis: {project.hypothesis or "No aplica / No formulada"}
+- Variables / Categorías de Análisis:
+{variables_formatted}
+- Población y Muestra: {methodology.population or "No especificada"} | Muestra: {methodology.sample or "No especificada"} (Muestreo: {sampling_str})
+- Unidad de Análisis: {methodology.unit_of_analysis or "No especificada"}
 - Instrumentos: {instruments_formatted}"""
 
         # 2. Layer 1: Preceding Chapters Memory (Cumulative)

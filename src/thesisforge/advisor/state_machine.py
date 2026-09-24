@@ -8,28 +8,36 @@ from thesisforge.exceptions import InvalidPhaseTransitionError
 
 
 class AdvisorStep(str, Enum):
-    """Sequential steps of the methodological advisory interview."""
+    """Sequential and approach-aware steps of the methodological advisory interview."""
 
     SETUP = "setup"
     TOPIC_AND_AREA = "topic_and_area"
+    PARADIGM_AND_APPROACH = "paradigm_and_approach"
     PROBLEM_STATEMENT = "problem_statement"
     RESEARCH_QUESTION = "research_question"
     OBJECTIVES = "objectives"
     HYPOTHESIS = "hypothesis"
+    OPERATIONALIZATION = "operationalization"
+    CATEGORIES = "categories"
     METHODOLOGY_DESIGN = "methodology_design"
+    ETHICS_AND_SAMPLING = "ethics_and_sampling"
     CONSISTENCY_AUDIT = "consistency_audit"
     APPROVED = "approved"
 
 
-# Linear transition order
+# Global canonical sequence
 ADVISOR_STEP_ORDER: list[AdvisorStep] = [
     AdvisorStep.SETUP,
     AdvisorStep.TOPIC_AND_AREA,
+    AdvisorStep.PARADIGM_AND_APPROACH,
     AdvisorStep.PROBLEM_STATEMENT,
     AdvisorStep.RESEARCH_QUESTION,
     AdvisorStep.OBJECTIVES,
     AdvisorStep.HYPOTHESIS,
+    AdvisorStep.OPERATIONALIZATION,
+    AdvisorStep.CATEGORIES,
     AdvisorStep.METHODOLOGY_DESIGN,
+    AdvisorStep.ETHICS_AND_SAMPLING,
     AdvisorStep.CONSISTENCY_AUDIT,
     AdvisorStep.APPROVED,
 ]
@@ -49,55 +57,117 @@ class AdvisorStateDTO(BaseModel):
 
 
 class AdvisorStateMachine:
-    """Controls and validates step progression during the interview."""
+    """Controls, validates, and routes step progression during the methodological interview."""
 
-    @staticmethod
+    @classmethod
+    def get_step_sequence_for_approach(
+        cls, approach: str | None = None
+    ) -> list[AdvisorStep]:
+        """Derive specialized linear sequence tailored to Quantitative, Qualitative, or Mixed paradigm."""
+        if not approach:
+            return list(ADVISOR_STEP_ORDER)
+
+        normalized = str(approach).lower().strip()
+        if "cualitativ" in normalized:
+            # Qualitative research: omit quantitative hypothesis and numerical operationalization
+            return [
+                AdvisorStep.SETUP,
+                AdvisorStep.TOPIC_AND_AREA,
+                AdvisorStep.PARADIGM_AND_APPROACH,
+                AdvisorStep.PROBLEM_STATEMENT,
+                AdvisorStep.RESEARCH_QUESTION,
+                AdvisorStep.OBJECTIVES,
+                AdvisorStep.CATEGORIES,
+                AdvisorStep.METHODOLOGY_DESIGN,
+                AdvisorStep.ETHICS_AND_SAMPLING,
+                AdvisorStep.CONSISTENCY_AUDIT,
+                AdvisorStep.APPROVED,
+            ]
+        elif "cuantitativ" in normalized:
+            # Quantitative research: omit qualitative emerging categories
+            return [
+                AdvisorStep.SETUP,
+                AdvisorStep.TOPIC_AND_AREA,
+                AdvisorStep.PARADIGM_AND_APPROACH,
+                AdvisorStep.PROBLEM_STATEMENT,
+                AdvisorStep.RESEARCH_QUESTION,
+                AdvisorStep.OBJECTIVES,
+                AdvisorStep.HYPOTHESIS,
+                AdvisorStep.OPERATIONALIZATION,
+                AdvisorStep.METHODOLOGY_DESIGN,
+                AdvisorStep.ETHICS_AND_SAMPLING,
+                AdvisorStep.CONSISTENCY_AUDIT,
+                AdvisorStep.APPROVED,
+            ]
+        elif "mixt" in normalized:
+            # Mixed methods: include both hypothesis and categorical matrix
+            return list(ADVISOR_STEP_ORDER)
+
+        return list(ADVISOR_STEP_ORDER)
+
+    @classmethod
     def calculate_progress(
-        step: AdvisorStep, skipped_steps: list[AdvisorStep] | None = None
+        cls,
+        step: AdvisorStep,
+        skipped_steps: list[AdvisorStep] | None = None,
+        step_order: list[AdvisorStep] | None = None,
     ) -> int:
-        """Calculate percentage completion based on step and optional skipped steps."""
+        """Calculate percentage completion based on step, approach-specific sequence, and skipped steps."""
+        base_order = step_order or ADVISOR_STEP_ORDER
+        skipped = skipped_steps or []
+        effective_steps = [s for s in base_order if s not in skipped]
+
+        if not effective_steps:
+            return 0
+
+        if step == AdvisorStep.APPROVED:
+            return 100
+
         try:
-            skipped = skipped_steps or []
-            effective_steps = [s for s in ADVISOR_STEP_ORDER if s not in skipped]
-            if not effective_steps:
-                return 0
             if step not in effective_steps:
-                curr_idx = ADVISOR_STEP_ORDER.index(step)
-                passed = len(
-                    [s for s in effective_steps if ADVISOR_STEP_ORDER.index(s) <= curr_idx]
-                )
+                curr_idx = base_order.index(step)
+                passed = len([s for s in effective_steps if base_order.index(s) <= curr_idx])
                 total = len(effective_steps) - 1
                 return int((passed / total) * 100) if total > 0 else 100
+
             index = effective_steps.index(step)
             total = len(effective_steps) - 1
             return int((index / total) * 100) if total > 0 else 100
         except ValueError:
             return 0
 
-    @staticmethod
+    @classmethod
     def get_next_step(
-        current_step: AdvisorStep, skipped_steps: list[AdvisorStep] | None = None
+        cls,
+        current_step: AdvisorStep,
+        skipped_steps: list[AdvisorStep] | None = None,
+        step_order: list[AdvisorStep] | None = None,
     ) -> AdvisorStep:
-        """Get the immediate next active step in the pipeline."""
+        """Get immediate next active step in the approach-specific pipeline."""
+        base_order = step_order or ADVISOR_STEP_ORDER
+        skipped = skipped_steps or []
         try:
-            skipped = skipped_steps or []
-            curr_idx = ADVISOR_STEP_ORDER.index(current_step)
-            for step in ADVISOR_STEP_ORDER[curr_idx + 1 :]:
+            curr_idx = base_order.index(current_step)
+            for step in base_order[curr_idx + 1 :]:
                 if step not in skipped:
                     return step
             return current_step
         except ValueError as err:
             raise InvalidPhaseTransitionError(f"Paso '{current_step}' desconocido.") from err
 
-    @staticmethod
+    @classmethod
     def get_previous_step(
-        current_step: AdvisorStep, skipped_steps: list[AdvisorStep] | None = None
+        cls,
+        current_step: AdvisorStep,
+        skipped_steps: list[AdvisorStep] | None = None,
+        step_order: list[AdvisorStep] | None = None,
     ) -> AdvisorStep:
-        """Get the immediate previous active step for review/rollback."""
+        """Get immediate previous active step for review/rollback."""
+        base_order = step_order or ADVISOR_STEP_ORDER
+        skipped = skipped_steps or []
         try:
-            skipped = skipped_steps or []
-            curr_idx = ADVISOR_STEP_ORDER.index(current_step)
-            for step in reversed(ADVISOR_STEP_ORDER[:curr_idx]):
+            curr_idx = base_order.index(current_step)
+            for step in reversed(base_order[:curr_idx]):
                 if step not in skipped:
                     return step
             return current_step
@@ -110,24 +180,32 @@ class AdvisorStateMachine:
         from_step: AdvisorStep,
         to_step: AdvisorStep,
         skipped_steps: list[AdvisorStep] | None = None,
+        step_order: list[AdvisorStep] | None = None,
     ) -> bool:
         """Ensure transitions only go forward sequentially (skipping bypassed steps) or backward for revision."""
         if from_step == to_step:
             return True
 
+        base_order = step_order or ADVISOR_STEP_ORDER
         skipped = skipped_steps or []
-        from_idx = ADVISOR_STEP_ORDER.index(from_step)
-        to_idx = ADVISOR_STEP_ORDER.index(to_step)
+        try:
+            from_idx = base_order.index(from_step)
+            to_idx = base_order.index(to_step)
+        except ValueError as err:
+            raise InvalidPhaseTransitionError(f"Paso inválido en transición: {err}") from err
 
         # Allow moving backward anytime
         if to_idx < from_idx:
             return True
 
         # Allow advancing if all intermediate steps between from_idx and to_idx are skipped
-        intermediates = ADVISOR_STEP_ORDER[from_idx + 1 : to_idx]
+        intermediates = base_order[from_idx + 1 : to_idx]
         if all(s in skipped for s in intermediates):
             return True
 
         raise InvalidPhaseTransitionError(
             f"Transición no permitida desde '{from_step.value}' hasta '{to_step.value}'. Debe completarse el paso intermedio."
         )
+
+
+get_step_sequence_for_approach = AdvisorStateMachine.get_step_sequence_for_approach

@@ -8,6 +8,7 @@ from thesisforge.advisor.service import AdvisorService
 from thesisforge.config import AppSettings, get_settings
 from thesisforge.core.security import LocalKeyVault
 from thesisforge.drafting.service import DraftService
+from thesisforge.export.bundle import ProjectBundleService
 from thesisforge.export.service import ExportService
 from thesisforge.jury.service import JuryService
 from thesisforge.llm.router import LLMRouter
@@ -123,3 +124,12 @@ def get_jury_service(
         jury_repo=jury_repo,
         llm_router=llm_router,
     )
+
+
+def get_project_bundle_service(
+    project_repo: ProjectRepository = Depends(get_project_repository),
+) -> ProjectBundleService:
+    """Project bundle service dependency for .thesisforge archives."""
+    return ProjectBundleService(project_repo=project_repo)
+
+

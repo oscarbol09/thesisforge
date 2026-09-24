@@ -13,22 +13,15 @@ def test_calculate_progress():
     """Test progress percentage calculations."""
     assert AdvisorStateMachine.calculate_progress(AdvisorStep.SETUP) == 0
     assert AdvisorStateMachine.calculate_progress(AdvisorStep.APPROVED) == 100
-    assert AdvisorStateMachine.calculate_progress(AdvisorStep.OBJECTIVES) == 50
+    assert AdvisorStateMachine.calculate_progress(AdvisorStep.OBJECTIVES) == 41
 
 
 def test_calculate_progress_with_skipped_steps():
-    """Test progress calculation when qualitative/mixed methodologies skip hypothesis."""
-    skipped = [AdvisorStep.HYPOTHESIS]
-    # Total active steps = 8 (SETUP, TOPIC, PROBLEM, QUESTION, OBJECTIVES, METHODOLOGY, AUDIT, APPROVED)
+    """Test progress calculation when qualitative methodologies skip hypothesis and operationalization."""
+    skipped = [AdvisorStep.HYPOTHESIS, AdvisorStep.OPERATIONALIZATION]
     assert AdvisorStateMachine.calculate_progress(AdvisorStep.SETUP, skipped_steps=skipped) == 0
     assert (
-        AdvisorStateMachine.calculate_progress(AdvisorStep.OBJECTIVES, skipped_steps=skipped) == 57
-    )
-    assert (
-        AdvisorStateMachine.calculate_progress(
-            AdvisorStep.METHODOLOGY_DESIGN, skipped_steps=skipped
-        )
-        == 71
+        AdvisorStateMachine.calculate_progress(AdvisorStep.OBJECTIVES, skipped_steps=skipped) == 50
     )
     assert (
         AdvisorStateMachine.calculate_progress(AdvisorStep.APPROVED, skipped_steps=skipped) == 100
@@ -45,8 +38,12 @@ def test_next_and_previous_steps():
 
 
 def test_next_and_previous_steps_with_skipped():
-    """Test navigating steps when HYPOTHESIS is skipped."""
-    skipped = [AdvisorStep.HYPOTHESIS]
+    """Test navigating steps when intermediate steps are skipped."""
+    skipped = [
+        AdvisorStep.HYPOTHESIS,
+        AdvisorStep.OPERATIONALIZATION,
+        AdvisorStep.CATEGORIES,
+    ]
     next_step = AdvisorStateMachine.get_next_step(AdvisorStep.OBJECTIVES, skipped_steps=skipped)
     assert next_step == AdvisorStep.METHODOLOGY_DESIGN
 
@@ -68,12 +65,16 @@ def test_validate_transition_allowed():
 
 
 def test_validate_transition_allowed_with_skipped_steps():
-    """Test transition from OBJECTIVES to METHODOLOGY_DESIGN when HYPOTHESIS is skipped."""
+    """Test transition from OBJECTIVES to METHODOLOGY_DESIGN when intermediate steps are skipped."""
     assert (
         AdvisorStateMachine.validate_transition(
             AdvisorStep.OBJECTIVES,
             AdvisorStep.METHODOLOGY_DESIGN,
-            skipped_steps=[AdvisorStep.HYPOTHESIS],
+            skipped_steps=[
+                AdvisorStep.HYPOTHESIS,
+                AdvisorStep.OPERATIONALIZATION,
+                AdvisorStep.CATEGORIES,
+            ],
         )
         is True
     )

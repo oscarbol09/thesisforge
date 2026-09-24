@@ -35,9 +35,14 @@ class AdvisorService:
     async def get_interview_status(self, project_id: str) -> dict[str, Any]:
         """Fetch current interview progression for a given project."""
         project = await self.repo.get_project(project_id)
+        step_sequence = AdvisorStateMachine.get_step_sequence_for_approach(
+            project.methodology.approach.value if project.methodology.approach else None
+        )
         current_step = self._determine_current_step(project)
         skipped_steps = self._determine_skipped_steps(project)
-        progress = AdvisorStateMachine.calculate_progress(current_step, skipped_steps=skipped_steps)
+        progress = AdvisorStateMachine.calculate_progress(
+            current_step, skipped_steps=skipped_steps, step_order=step_sequence
+        )
         audit = MethodologyValidator.audit_project(project)
 
         return {
@@ -54,8 +59,11 @@ class AdvisorService:
     def _determine_skipped_steps(self, project: ProjectStateDTO) -> list[AdvisorStep]:
         """Determine intentionally skipped steps based on research approach."""
         skipped: list[AdvisorStep] = []
-        if project.methodology.approach in (ResearchApproach.CUALITATIVO, ResearchApproach.MIXTO):
+        if project.methodology.approach == ResearchApproach.CUALITATIVO:
             skipped.append(AdvisorStep.HYPOTHESIS)
+            skipped.append(AdvisorStep.OPERATIONALIZATION)
+        elif project.methodology.approach == ResearchApproach.CUANTITATIVO:
+            skipped.append(AdvisorStep.CATEGORIES)
         return skipped
 
     def _determine_current_step(self, project: ProjectStateDTO) -> AdvisorStep:
