@@ -131,5 +131,3 @@ def get_project_bundle_service(
 ) -> ProjectBundleService:
     """Project bundle service dependency for .thesisforge archives."""
     return ProjectBundleService(project_repo=project_repo)
-
-

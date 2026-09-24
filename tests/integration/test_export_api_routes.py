@@ -111,7 +111,10 @@ async def test_api_export_and_import_project_bundle(override_db: DatabaseManager
         get_resp = await client.get("/api/export/projects/proj-bundle-api-01/bundle")
         assert get_resp.status_code == 200
         assert get_resp.headers["content-type"] == "application/zip"
-        assert 'filename="proyecto_proj-bundle-api-01.thesisforge"' in get_resp.headers["content-disposition"]
+        assert (
+            'filename="proyecto_proj-bundle-api-01.thesisforge"'
+            in get_resp.headers["content-disposition"]
+        )
         bundle_content = get_resp.content
 
         # 2. Import bundle with a new project ID
@@ -142,4 +145,3 @@ async def test_api_import_bundle_invalid_file(override_db: DatabaseManager):
         resp = await client.post("/api/export/bundle/import", files=files)
         assert resp.status_code == 400
         assert resp.json()["error"] == "EXPORT_ERROR"
-

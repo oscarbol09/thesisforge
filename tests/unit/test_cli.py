@@ -253,4 +253,3 @@ def test_cli_import_bundle_command(capsys: pytest.CaptureFixture[str], tmp_path:
         captured = capsys.readouterr()
         assert "Proyecto importado exitosamente:" in captured.out
         assert "proj-restored-cli" in captured.out
-

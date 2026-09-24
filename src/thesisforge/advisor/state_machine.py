@@ -60,9 +60,7 @@ class AdvisorStateMachine:
     """Controls, validates, and routes step progression during the methodological interview."""
 
     @classmethod
-    def get_step_sequence_for_approach(
-        cls, approach: str | None = None
-    ) -> list[AdvisorStep]:
+    def get_step_sequence_for_approach(cls, approach: str | None = None) -> list[AdvisorStep]:
         """Derive specialized linear sequence tailored to Quantitative, Qualitative, or Mixed paradigm."""
         if not approach:
             return list(ADVISOR_STEP_ORDER)

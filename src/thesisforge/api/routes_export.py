@@ -55,4 +55,3 @@ async def import_project_bundle(
     """Validate and restore a project from an uploaded .thesisforge archive."""
     content = await file.read()
     return await bundle_service.import_bundle_bytes(content)
-

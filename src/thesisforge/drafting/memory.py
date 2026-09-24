@@ -62,11 +62,11 @@ class HierarchicalMemoryManager:
         paradigm_str = (
             methodology.paradigm.value.upper() if methodology.paradigm else "NO DECLARADO"
         )
-        approach_str = (
-            methodology.approach.value.upper() if methodology.approach else "NO DEFINIDO"
-        )
+        approach_str = methodology.approach.value.upper() if methodology.approach else "NO DEFINIDO"
         sampling_str = (
-            methodology.sampling_technique.value if methodology.sampling_technique else "No definida"
+            methodology.sampling_technique.value
+            if methodology.sampling_technique
+            else "No definida"
         )
 
         layer_0_methodology = f"""[FUNDACIÓN METODOLÓGICA DEL PROYECTO]

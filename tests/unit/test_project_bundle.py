@@ -124,7 +124,9 @@ async def test_export_and_import_bundle_file(
     assert saved_path.exists()
     assert saved_path.stat().st_size > 0
 
-    imported = await bundle_service.import_bundle_file(str(saved_path), new_project_id="proj-imported-file")
+    imported = await bundle_service.import_bundle_file(
+        str(saved_path), new_project_id="proj-imported-file"
+    )
     assert imported.id == "proj-imported-file"
     assert imported.academic_level.value == "doctorado"
 
@@ -146,7 +148,9 @@ async def test_import_corrupted_bundle_rejected(
     corrupted_data = b"This is not a valid zip archive."
     with pytest.raises(ExportError) as exc_info:
         await bundle_service.import_bundle_bytes(corrupted_data)
-    assert "no tiene un formato ZIP válido" in str(exc_info.value) or "no es un archivo ZIP" in str(exc_info.value)
+    assert "no tiene un formato ZIP válido" in str(exc_info.value) or "no es un archivo ZIP" in str(
+        exc_info.value
+    )
 
 
 @pytest.mark.asyncio

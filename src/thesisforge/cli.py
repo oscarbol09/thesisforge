@@ -398,9 +398,7 @@ def main() -> None:
         "import-bundle",
         help="Import a project from a .thesisforge backup bundle",
     )
-    import_bundle_parser.add_argument(
-        "bundle_file", type=str, help="Path to .thesisforge archive"
-    )
+    import_bundle_parser.add_argument("bundle_file", type=str, help="Path to .thesisforge archive")
     import_bundle_parser.add_argument(
         "--new-id",
         dest="new_project_id",

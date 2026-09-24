@@ -144,7 +144,10 @@ class DatabaseMigrator:
             if migration.version > current_version:
                 logger.info(
                     "Applying database migration.",
-                    extra={"migration_version": migration.version, "migration_name": migration.name},
+                    extra={
+                        "migration_version": migration.version,
+                        "migration_name": migration.name,
+                    },
                 )
                 if migration.up_sql:
                     await db.executescript(migration.up_sql)
