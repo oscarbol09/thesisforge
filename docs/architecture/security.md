@@ -52,3 +52,39 @@ Al compilar documentos a Microsoft Word (`.docx`) u hojas de cálculo con datos 
 - `sanitize_cell_value` (`src/thesisforge/drafting/sanitizer.py`) depura primero los caracteres de control (`\r`, `\n`, `\t`).
 - Si una celda comienza con caracteres ejecutables (`=`, `+`, `-`, `@`, `|`), el sistema antepone un apóstrofe de escape (`'`).
 - Preserva de forma transparente literales numéricos legítimos (por ejemplo, `-15.4` o `+3.2`) sin corromper el análisis estadístico ni las tablas del marco empírico.
+
+---
+
+## 5. Autenticación Local-First (Instance Token & Conexiones Universales)
+
+ThesisForge protege todos los endpoints HTTP y WebSockets mediante un modelo de autenticación *Local-First* basado en tokens de instancia (`src/thesisforge/core/auth.py`):
+
+- **Generación y Resolución:** En el arranque, si no se especifica `THESISFORGE_INSTANCE_TOKEN` en el entorno, el sistema genera automáticamente un token seguro mediante `secrets.token_urlsafe(32)`.
+- **Compatibilidad Universal HTTP/WS:** Starlette WebSockets no heredan de `Request`, por lo que el validador opera sobre `starlette.requests.HTTPConnection`, extrayendo el token tanto de cabeceras `Authorization: Bearer <token>` como de parámetros de consulta (`?token=<token>`).
+- **Aislamiento Multi-Proyecto:** Los proyectos están asociados a un `owner_id` en `ProjectStateDTO` para garantizar la segregación de datos en entornos monousuario o multi-sesión.
+- **Rutas Públicas y Bypass de Test:** Endpoints de infraestructura (`/health`, `/favicon.ico`, `/assets/...`) están exentos, y es posible desactivar la autenticación en suites de pruebas unitarias mediante `THESISFORGE_AUTH_DISABLED=true`.
+
+---
+
+## 6. Endurecimiento de Cabeceras HTTP y Content Security Policy (CSP)
+
+El middleware de seguridad (`src/thesisforge/api/security_middleware.py`) inyecta defensas estándar de la industria en cada respuesta HTTP:
+
+- **Política CSP Estricta:** `default-src 'self'`, `script-src 'self' 'nonce-...' https://cdn.tailwindcss.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net`, `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com`, `font-src 'self' https://fonts.gstatic.com`.
+- **Eliminación de `'unsafe-inline'` en Scripts:** Las configuraciones de Tailwind y librerías dinámicas se externalizan en módulos estáticos dedicados (`gui/js/tailwind-config.js`) validados por nonce criptográfico por petición.
+- **Cabeceras Anti-Clickjacking y MIME Sniffing:**
+  - `X-Content-Type-Options: nosniff`
+  - `X-Frame-Options: DENY`
+  - `Referrer-Policy: strict-origin-when-cross-origin`
+  - `X-XSS-Protection: 1; mode=block`
+
+---
+
+## 7. Control de Concurrencia Optimista (OCC)
+
+Para prevenir condiciones de carrera y sobrescritura accidental de borradores de tesis entre múltiples pestañas o clientes concurrentes:
+
+- La base de datos gestiona un contador monotónico `version` en la tabla `projects`.
+- Las peticiones de mutación (`PUT /api/projects/{id}`, `POST /api/advisor/...`, etc.) verifican la cabecera `X-Project-Version`.
+- Si la versión enviada no coincide con el estado actual en la base de datos SQLite, el servidor rechaza la operación con `HTTP 409 Conflict`, obligando al cliente a recargar el estado más reciente antes de aplicar cambios.
+

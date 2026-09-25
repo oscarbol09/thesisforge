@@ -37,3 +37,29 @@ ollama run llama3.1:8b
 Tus claves privadas nunca viajan a ningún servidor central:
 - Se cifran localmente con el algoritmo simétrico **Fernet (AES-128-CBC + HMAC-SHA256)**.
 - La llave maestra de descifrado reside únicamente en tu entorno de ejecución local (`.env` o variable de entorno del sistema).
+
+---
+
+## Normalización de Modelos en OpenRouter
+
+ThesisForge gestiona de forma transparente identificadores con prefijo de organización en OpenRouter (`src/thesisforge/llm/router.py`):
+- Los modelos como `anthropic/claude-3.5-sonnet`, `meta-llama/llama-3.1-70b-instruct` u `openai/gpt-4o` son normalizados automáticamente con el prefijo `openrouter/` sin alterar el nombre del proveedor en la petición.
+
+---
+
+## Configuración de Embeddings Semánticos
+
+Para la indexación y recuperación vectorial con ChromaDB:
+- **FastLocal (Por defecto):** Algoritmo hash de 384 dimensiones sin consumo de memoria extra ni descargas de modelos pesados, ideal para arranque instantáneo.
+- **Sentence Transformers (Opcional):** Configura `embedding_provider: sentence-transformers` en `config.yaml` o mediante la variable `THESISFORGE_EMBEDDING_PROVIDER` para usar modelos como `all-MiniLM-L6-v2` o `paraphrase-multilingual-MiniLM-L12-v2`.
+
+---
+
+## Variables de Entorno de Seguridad
+
+| Variable | Descripción | Valor por Defecto |
+|:---|:---|:---|
+| `THESISFORGE_INSTANCE_TOKEN` | Token secreto para proteger peticiones HTTP y WebSockets | Generado automáticamente |
+| `THESISFORGE_AUTH_DISABLED` | Desactiva autenticación (solo para desarrollo local/tests) | `false` |
+| `THESISFORGE_KEYVAULT_SECRET` | Clave maestra para el cifrado Fernet de las API keys | Clave de desarrollo |
+

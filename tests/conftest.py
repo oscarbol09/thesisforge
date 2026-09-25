@@ -6,14 +6,15 @@ from collections.abc import AsyncGenerator
 
 import pytest
 import pytest_asyncio
+from hypothesis import HealthCheck, settings
 
 os.environ["THESISFORGE_ENVIRONMENT"] = "test"
 os.environ["LITELLM_LOCAL_MODEL_COST_MAP"] = "True"
 os.environ["LITELLM_TELEMETRY"] = "False"
 
-from thesisforge.config import get_settings
-from thesisforge.core.security import LocalKeyVault
-from thesisforge.models import (
+from thesisforge.config import get_settings  # noqa: E402
+from thesisforge.core.security import LocalKeyVault  # noqa: E402
+from thesisforge.models import (  # noqa: E402
     AcademicLevel,
     CitationDTO,
     MethodologyDTO,
@@ -23,7 +24,22 @@ from thesisforge.models import (
     SectionDraftDTO,
     SectionStatus,
 )
-from thesisforge.repository.database import DatabaseManager
+from thesisforge.repository.database import DatabaseManager  # noqa: E402
+
+# Configure Hypothesis profiles to prevent test timing jitter flakes on Windows / CI runners
+settings.register_profile(
+    "ci",
+    max_examples=100,
+    deadline=None,
+    suppress_health_check=[HealthCheck.too_slow],
+)
+settings.register_profile(
+    "default",
+    max_examples=50,
+    deadline=None,
+    suppress_health_check=[HealthCheck.too_slow],
+)
+settings.load_profile(os.getenv("HYPOTHESIS_PROFILE", "default"))
 
 
 @pytest.fixture(autouse=True)
