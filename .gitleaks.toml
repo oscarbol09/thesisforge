@@ -1,0 +1,10 @@
+# Gitleaks configuration file for ThesisForge
+[allowlist]
+description = "Global allowlists for test files, examples, mock data, and documentation"
+paths = [
+    '''tests/.*''',
+    '''docs/.*''',
+    '''gui/.*''',
+    '''\.env\.example''',
+    '''config\.yaml\.example''',
+]

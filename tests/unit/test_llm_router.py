@@ -26,13 +26,13 @@ def test_normalize_model_name():
 async def test_resolve_api_key_from_settings():
     """Test resolving API key from AppSettings."""
     settings = AppSettings(
-        OPENROUTER_API_KEY="sk-or-env-key-12345",
-        GEMINI_API_KEY="AIzaSyEnvKey-67890",
+        OPENROUTER_API_KEY="mock-openrouter-env-key",
+        GEMINI_API_KEY="mock-gemini-env-key",
     )
     router = LLMRouter(settings=settings)
 
-    assert await router.resolve_api_key("openrouter") == "sk-or-env-key-12345"
-    assert await router.resolve_api_key("gemini") == "AIzaSyEnvKey-67890"
+    assert await router.resolve_api_key("openrouter") == "mock-openrouter-env-key"
+    assert await router.resolve_api_key("gemini") == "mock-gemini-env-key"
     assert await router.resolve_api_key("unknown_provider") is None
 
 
@@ -42,13 +42,13 @@ async def test_resolve_api_key_from_keystore_priority(
 ):
     """Test that keystore repository takes priority over static settings."""
     keystore = SecureKeyStoreRepository(in_memory_db, vault)
-    await keystore.store_key("openrouter", "sk-or-database-key-priority")
+    await keystore.store_key("openrouter", "mock-openrouter-database-key")
 
-    settings = AppSettings(OPENROUTER_API_KEY="sk-or-env-fallback")
+    settings = AppSettings(OPENROUTER_API_KEY="mock-openrouter-env-fallback")
     router = LLMRouter(settings=settings, keystore_repo=keystore)
 
     resolved = await router.resolve_api_key("openrouter")
-    assert resolved == "sk-or-database-key-priority"
+    assert resolved == "mock-openrouter-database-key"
 
 
 @pytest.mark.asyncio

@@ -68,14 +68,14 @@ async def test_keystore_repository(in_memory_db: DatabaseManager, vault: LocalKe
     """Test storing, reading, listing, and deleting encrypted API keys."""
     repo = SecureKeyStoreRepository(in_memory_db, vault)
 
-    await repo.store_key("openrouter", "sk-or-v1-abcdef1234567890")
-    await repo.store_key("GEMINI", "AIzaSyDummyGeminiKey9876543210")
+    await repo.store_key("openrouter", "mock-openrouter-key-test")
+    await repo.store_key("GEMINI", "mock-gemini-key-test")
 
     or_key = await repo.get_key("OpenRouter")
-    assert or_key == "sk-or-v1-abcdef1234567890"
+    assert or_key == "mock-openrouter-key-test"
 
     gemini_key = await repo.get_key("gemini")
-    assert gemini_key == "AIzaSyDummyGeminiKey9876543210"
+    assert gemini_key == "mock-gemini-key-test"
 
     assert await repo.get_key("anthropic") is None
 
