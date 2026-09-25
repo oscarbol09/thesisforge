@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "thesisforge"
-version = "0.5.0"
+version = "0.6.0"
 description = "Asistente y forjador de proyectos de investigación académica con IA, RAG y BYOK."
 readme = "README.md"
 license = { text = "Apache-2.0" }
@@ -18,7 +18,7 @@ dependencies = [
     "cryptography>=42.0.0",
     "pyyaml>=6.0.1",
     "aiosqlite>=0.20.0",
-    "sqlalchemy>=2.0.29",
+    # sqlalchemy removed: ThesisForge uses aiosqlite directly; no ORM layer exists.
     "httpx>=0.27.0",
     "fastapi>=0.111.0",
     "uvicorn>=0.30.0",
@@ -53,6 +53,7 @@ dev = [
     "mypy>=1.10.0",
     "hypothesis>=6.100.0",
     "bandit>=1.7.8",
+    "pip-audit>=2.7.0",
     "types-PyYAML>=6.0.12",
 ]
 docs = [

@@ -5,7 +5,6 @@ WORKDIR /app
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
-    curl \
     && rm -rf /var/lib/apt/lists/*
 
 RUN pip install --no-cache-dir uv
@@ -34,13 +33,13 @@ RUN mkdir -p /app/data && chown -R thesisforge:thesisforge /app
 
 USER thesisforge
 
-ENV PORT=8000
-ENV HOST=0.0.0.0
-ENV ENVIRONMENT=production
+ENV THESISFORGE_PORT=8000
+ENV THESISFORGE_HOST=0.0.0.0
+ENV THESISFORGE_ENVIRONMENT=production
 
 EXPOSE 8000
 
-HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8000/health || exit 1
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD python3 -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')" || exit 1
 
 CMD ["thesisforge", "run", "--host", "0.0.0.0", "--port", "8000"]

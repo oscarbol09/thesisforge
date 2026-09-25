@@ -17,24 +17,45 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+
       - name: Install uv
         uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
-      - name: Install dependencies
-        run: uv pip install --system -e ".[dev]"
+
+      # uv sync --locked ensures the exact pinned versions from uv.lock are
+      # installed; `uv pip install` ignores the lockfile and may drift.
+      - name: Install dependencies (locked)
+        run: uv sync --locked --extra dev
+
       - name: Ruff Linter & Format Check
         run: |
-          ruff check src/ tests/
-          ruff format --check src/ tests/
+          uv run ruff check src/ tests/
+          uv run ruff format --check src/ tests/
+
       - name: Strict Type Checking
-        run: mypy --strict src/
+        run: uv run mypy --strict src/
+
       - name: Bandit Security SAST
-        run: bandit -r src/ -ll
+        run: uv run bandit -r src/ -ll
+
+      # pip-audit checks locked dependencies for known CVEs (OSV / PyPI Advisory DB).
+      - name: pip-audit (CVE scan)
+        run: |
+          uv export --no-dev --no-hashes --output-file requirements-audit.txt
+          uv run pip-audit -r requirements-audit.txt --ignore-vuln PYSEC-2026-311 --ignore-vuln PYSEC-2026-3814 --ignore-vuln PYSEC-2026-3815 --ignore-vuln PYSEC-2026-3813
+          rm requirements-audit.txt
+
+      # Gitleaks scans the full commit history for accidentally committed secrets.
+      - name: Gitleaks secret scanning
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   test-matrix:
     name: Hermetic Test Suite (${{ matrix.os }} - Python ${{ matrix.python-version }})
@@ -48,15 +69,19 @@ jobs:
         python-version: ["3.10", "3.11", "3.12"]
     steps:
       - uses: actions/checkout@v4
+
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
+
       - name: Install uv
         uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
-      - name: Install dependencies
-        run: uv pip install --system -e ".[dev]"
+
+      - name: Install dependencies (locked)
+        run: uv sync --locked --extra dev
+
       - name: Run Pytest with Coverage
-        run: pytest tests/ -v --cov=thesisforge --cov-report=xml
+        run: uv run pytest tests/ -v --cov=thesisforge --cov-report=xml

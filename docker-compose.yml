@@ -10,10 +10,10 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - HOST=0.0.0.0
-      - PORT=8000
-      - ENVIRONMENT=production
-      - LOG_LEVEL=INFO
+      - THESISFORGE_HOST=0.0.0.0
+      - THESISFORGE_PORT=8000
+      - THESISFORGE_ENVIRONMENT=production
+      - THESISFORGE_LOG_LEVEL=INFO
       - CROSSREF_MAILTO=${CROSSREF_MAILTO:-thesisforge@academic.org}
       - SEMANTIC_SCHOLAR_API_KEY=${SEMANTIC_SCHOLAR_API_KEY:-}
     env_file:

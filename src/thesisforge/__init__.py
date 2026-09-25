@@ -1,6 +1,6 @@
 """ThesisForge - Asistente y Forjador de Investigación Académica con IA."""
 
-__version__ = "0.5.0"
+__version__ = "0.6.0"
 __author__ = "Oscar Madera"
 __license__ = "Apache-2.0"
 
