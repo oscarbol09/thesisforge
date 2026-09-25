@@ -19,12 +19,14 @@ CREATE TABLE IF NOT EXISTS projects (
     academic_level TEXT NOT NULL,
     phase TEXT NOT NULL,
     state_json TEXT NOT NULL,
+    version INTEGER NOT NULL DEFAULT 1,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_projects_phase ON projects(phase);
 CREATE INDEX IF NOT EXISTS idx_projects_updated_at ON projects(updated_at DESC);
+CREATE INDEX IF NOT EXISTS idx_projects_academic_level ON projects(academic_level);
 
 CREATE TABLE IF NOT EXISTS keystore (
     provider TEXT PRIMARY KEY,
@@ -58,6 +60,30 @@ CREATE TABLE IF NOT EXISTS document_chunks (
 
 CREATE INDEX IF NOT EXISTS idx_document_chunks_project ON document_chunks(project_id);
 CREATE INDEX IF NOT EXISTS idx_document_chunks_doc ON document_chunks(document_id);
+CREATE INDEX IF NOT EXISTS idx_document_chunks_section ON document_chunks(section_name);
+
+-- document_index_status tracks the Chroma vector-index lifecycle for each document.
+-- It allows rebuilding ChromaDB from SQLite and surfacing PENDING/INDEXED/FAILED
+-- state to the UI without polling ChromaDB directly.
+CREATE TABLE IF NOT EXISTS document_index_status (
+    document_id  TEXT NOT NULL,
+    project_id   TEXT NOT NULL,
+    status       TEXT NOT NULL DEFAULT 'pending',   -- pending | indexed | failed
+    chunk_count  INTEGER NOT NULL DEFAULT 0,
+    title        TEXT NOT NULL DEFAULT '',
+    doi          TEXT,
+    error_msg    TEXT,
+    created_at   TEXT NOT NULL,
+    updated_at   TEXT NOT NULL,
+    PRIMARY KEY (document_id, project_id),
+    FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_doc_index_status_project
+    ON document_index_status(project_id);
+
+CREATE INDEX IF NOT EXISTS idx_doc_index_status_status
+    ON document_index_status(project_id, status);
 
 CREATE TABLE IF NOT EXISTS jury_evaluations (
     id TEXT PRIMARY KEY,

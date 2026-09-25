@@ -30,6 +30,33 @@ class ProjectNotFoundError(ThesisForgeError):
     """Raised when a requested project ID does not exist in the repository."""
 
 
+class ProjectVersionConflictError(ThesisForgeError):
+    """Raised when an optimistic-lock version mismatch is detected on project update.
+
+    Maps to HTTP 409 Conflict. The caller should re-read the project, merge
+    their changes, and retry with the new version number.
+    """
+
+    def __init__(self, project_id: str, expected_version: int, actual_version: int) -> None:
+        message = (
+            f"Conflicto de versión en proyecto '{project_id}': "
+            f"se esperaba versión {expected_version}, "
+            f"pero la versión actual es {actual_version}. "
+            "Vuelva a cargar el proyecto y reintente."
+        )
+        super().__init__(
+            message,
+            details={
+                "project_id": project_id,
+                "expected_version": str(expected_version),
+                "actual_version": str(actual_version),
+            },
+        )
+        self.project_id = project_id
+        self.expected_version = expected_version
+        self.actual_version = actual_version
+
+
 class InvalidPhaseTransitionError(ThesisForgeError):
     """Raised when a state transition is not allowed by the methodology flow."""
 

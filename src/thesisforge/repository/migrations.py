@@ -104,9 +104,71 @@ CREATE INDEX IF NOT EXISTS idx_projects_academic_level ON projects(academic_leve
 CREATE INDEX IF NOT EXISTS idx_document_chunks_section ON document_chunks(section_name);
 """
 
+V3_OPTIMISTIC_CONCURRENCY = """
+-- Migration v3: Optimistic concurrency control column for projects
+-- SQLite does not support ADD COLUMN IF NOT EXISTS, so we use a safe guard.
+CREATE TABLE IF NOT EXISTS _migration_v3_guard (id INTEGER PRIMARY KEY);
+"""
+
+V4_DOCUMENT_INDEX_STATUS = """
+-- Migration v4: Document-level vector-index lifecycle tracking.
+--
+-- Rationale: previously, once a PDF was indexed in ChromaDB there was no
+-- SQLite record of *which* documents were indexed for a given project.
+-- This meant:
+--   1. There was no way to detect partially-indexed documents (PENDING/FAILED).
+--   2. ChromaDB could not be rebuilt from SQLite after a data loss event.
+--
+-- The new table `document_index_status` stores one row per document_id / project_id
+-- pair with its indexing state and chunk count.  The RAGService writes a PENDING row
+-- before calling ChromaDB, transitions to INDEXED on success, and FAILED on error.
+-- A future rebuild command can scan INDEXED rows and re-call add_chunks() using the
+-- existing `document_chunks` SQLite data — making ChromaDB fully reconstructible.
+CREATE TABLE IF NOT EXISTS document_index_status (
+    document_id  TEXT NOT NULL,
+    project_id   TEXT NOT NULL,
+    status       TEXT NOT NULL DEFAULT 'pending',   -- pending | indexed | failed
+    chunk_count  INTEGER NOT NULL DEFAULT 0,
+    title        TEXT NOT NULL DEFAULT '',
+    doi          TEXT,
+    error_msg    TEXT,
+    created_at   TEXT NOT NULL,
+    updated_at   TEXT NOT NULL,
+    PRIMARY KEY (document_id, project_id),
+    FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_doc_index_status_project
+    ON document_index_status(project_id);
+
+CREATE INDEX IF NOT EXISTS idx_doc_index_status_status
+    ON document_index_status(project_id, status);
+"""
+
+
+async def _v3_add_version_column(db: aiosqlite.Connection) -> None:
+    """Safely add the version column to projects if it does not already exist."""
+    async with db.execute("PRAGMA table_info(projects);") as cursor:
+        cols = [row[1] async for row in cursor]
+    if "version" not in cols:
+        await db.execute("ALTER TABLE projects ADD COLUMN version INTEGER NOT NULL DEFAULT 1;")
+        logger.info("Migration v3: added 'version' column to projects table.")
+
+
 ALL_MIGRATIONS: list[Migration] = [
     Migration(version=1, name="v1_initial_schema", up_sql=V1_INITIAL_SCHEMA),
     Migration(version=2, name="v2_schema_extensions", up_sql=V2_SCHEMA_EXTENSIONS),
+    Migration(
+        version=3,
+        name="v3_optimistic_concurrency",
+        up_sql=V3_OPTIMISTIC_CONCURRENCY,
+        up_callable=_v3_add_version_column,
+    ),
+    Migration(
+        version=4,
+        name="v4_document_index_status",
+        up_sql=V4_DOCUMENT_INDEX_STATUS,
+    ),
 ]
 
 CURRENT_SCHEMA_VERSION: int = max((m.version for m in ALL_MIGRATIONS), default=0)

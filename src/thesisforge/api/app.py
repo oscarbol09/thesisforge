@@ -4,7 +4,7 @@ from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI, Request, status
+from fastapi import Depends, FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -25,12 +25,14 @@ from thesisforge.core.logging import get_logger
 from thesisforge.exceptions import (
     DefenseSessionError,
     DefenseTurnNotFoundError,
+    DocumentProcessingError,
     ExportError,
     InvalidPhaseTransitionError,
     JuryEvaluationError,
     LLMProviderError,
     MethodologyValidationError,
     ProjectNotFoundError,
+    ProjectVersionConflictError,
     SectionNotFoundError,
     SecurityError,
     ThesisForgeError,
@@ -42,7 +44,17 @@ logger = get_logger(__name__)
 
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
-    """Inject strict security headers into all HTTP responses."""
+    """Inject strict security headers into all HTTP responses.
+
+    CSP rationale
+    -------------
+    - script-src: 'self' + the three trusted CDNs used in gui/index.html.
+      No 'unsafe-inline': all JS is in external files under gui/js/.
+    - style-src: 'unsafe-inline' is kept for now because Tailwind CDN injects
+      dynamic <style> tags at runtime.  A future build step (tailwindcss CLI)
+      would eliminate this.
+    - connect-src includes ws:/wss: for potential WebSocket support.
+    """
 
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         response = await call_next(request)
@@ -55,7 +67,13 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["Content-Security-Policy"] = (
             "default-src 'self'; "
             "img-src 'self' data: https:; "
-            "script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; "
+            # No 'unsafe-inline' — all scripts are in external files under gui/js/.
+            "script-src 'self' "
+            "https://cdn.tailwindcss.com "
+            "https://cdnjs.cloudflare.com "
+            "https://cdn.jsdelivr.net; "
+            # 'unsafe-inline' kept only for style-src: Tailwind CDN injects <style> tags.
+            # Remove once the project migrates to a proper CSS build pipeline.
             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
             "font-src 'self' https://fonts.gstatic.com; "
             "connect-src 'self' ws: wss: https:;"
@@ -114,6 +132,19 @@ def create_app() -> FastAPI:
     )
 
     # Exception Handlers
+    @app.exception_handler(ProjectVersionConflictError)
+    async def version_conflict_handler(
+        request: Request, exc: ProjectVersionConflictError
+    ) -> JSONResponse:
+        return JSONResponse(
+            status_code=status.HTTP_409_CONFLICT,
+            content={
+                "error": "VERSION_CONFLICT",
+                "message": exc.message,
+                "details": exc.details,
+            },
+        )
+
     @app.exception_handler(ProjectNotFoundError)
     async def project_not_found_handler(
         request: Request, exc: ProjectNotFoundError
@@ -144,6 +175,19 @@ def create_app() -> FastAPI:
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
             content={"error": "EXPORT_ERROR", "message": exc.message, "details": exc.details},
+        )
+
+    @app.exception_handler(DocumentProcessingError)
+    async def document_processing_handler(
+        request: Request, exc: DocumentProcessingError
+    ) -> JSONResponse:
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content={
+                "error": "DOCUMENT_PROCESSING_ERROR",
+                "message": exc.message,
+                "details": exc.details,
+            },
         )
 
     @app.exception_handler(MethodologyValidationError)
@@ -236,16 +280,19 @@ def create_app() -> FastAPI:
             content={"error": "DOMAIN_ERROR", "message": exc.message, "details": exc.details},
         )
 
-    # Routers
-    app.include_router(project_router)
-    app.include_router(advisor_router)
-    app.include_router(literature_router)
-    app.include_router(drafting_router)
-    app.include_router(export_router)
-    app.include_router(jury_router)
-    app.include_router(defense_router)
+    # Routers — all protected by instance-token auth via get_current_owner dependency.
+    from thesisforge.core.auth import get_current_owner as _auth
 
-    # Health check & system metadata
+    _auth_dep = [Depends(_auth)]
+    app.include_router(project_router)  # dependency declared on the router itself
+    app.include_router(advisor_router, dependencies=_auth_dep)
+    app.include_router(literature_router, dependencies=_auth_dep)
+    app.include_router(drafting_router, dependencies=_auth_dep)
+    app.include_router(export_router, dependencies=_auth_dep)
+    app.include_router(jury_router, dependencies=_auth_dep)
+    app.include_router(defense_router, dependencies=_auth_dep)
+
+    # Health check & system metadata (public — no auth)
     @app.get("/health", tags=["system"])
     async def health_check() -> dict[str, str]:
         return {"status": "ok", "app": settings.app_name, "version": __version__}

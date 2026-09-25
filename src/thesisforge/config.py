@@ -77,6 +77,12 @@ class AppSettings(BaseSettings):
     semantic_scholar_api_key: str | None = Field(default=None, alias="SEMANTIC_SCHOLAR_API_KEY")
     crossref_mailto: str = Field(default="thesisforge@academic.org", alias="CROSSREF_MAILTO")
 
+    # Instance authentication (local-first)
+    # Set THESISFORGE_INSTANCE_TOKEN to a secret string to require Bearer auth on all API routes.
+    # Leave empty to disable auth (default: dev mode only; always set in Docker/network deployments).
+    instance_token: str | None = Field(default=None, alias="THESISFORGE_INSTANCE_TOKEN")
+    auth_disabled: bool = False  # Only honoured when environment == "development"
+
     # Web GUI & Static Assets
     gui_dir: str = "gui"
     cors_origins: list[str] = Field(

@@ -144,9 +144,9 @@ class CitationDTO(BaseModel):
 
     id: str = Field(default_factory=lambda: uuid.uuid4().hex[:10])
     doi: str | None = Field(default=None, max_length=100)
-    title: str = Field(min_length=3, max_length=500)
+    title: str | None = Field(default=None, max_length=500)
     authors: list[str] = Field(default_factory=list)
-    year: int = Field(ge=1, le=2100)
+    year: int | None = Field(default=None, ge=1, le=2100)
     journal: str | None = Field(default=None, max_length=300)
     abstract: str | None = Field(default=None, max_length=5000)
     url: str | None = Field(default=None, max_length=1000)
@@ -353,6 +353,9 @@ class ProjectStateDTO(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
     id: str = Field(default_factory=lambda: uuid.uuid4().hex[:12])
+    # owner_id scopes the project to an owner. In local-first single-user mode this
+    # is always "local". Reserved for future multi-tenant / OAuth2 upgrade.
+    owner_id: str = Field(default="local", max_length=128)
     created_at: datetime = Field(default_factory=utc_now)
     updated_at: datetime = Field(default_factory=utc_now)
     phase: ProjectPhase = ProjectPhase.SETUP
