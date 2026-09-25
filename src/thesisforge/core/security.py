@@ -162,9 +162,15 @@ def resolve_or_create_master_key(
         # Attempt secure permission on POSIX systems
         if os.name != "nt":
             target_path.chmod(0o600)
-    except OSError:
-        # Fallback to in-memory key if disk write is not permitted
-        pass
+    except OSError as err:
+        # Hard failure: a silent in-memory fallback would cause all encrypted secrets
+        # to become permanently unrecoverable after a process restart.
+        raise KeyVaultError(
+            f"No fue posible persistir la clave maestra en '{target_path}'. "
+            "El arranque de ThesisForge se ha cancelado para proteger los secretos cifrados. "
+            "Verifique los permisos del directorio o configure THESISFORGE_MASTER_KEY "
+            f"en las variables de entorno. Causa: {err}"
+        ) from err
 
     return new_key
 

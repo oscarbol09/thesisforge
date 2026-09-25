@@ -559,7 +559,7 @@ class APA7DocxCompiler:
 
         for c in citations:
             first_auth = c.authors[0].strip().lower() if c.authors else ""
-            clean_title = re.sub(r"[^\w\s]", "", c.title.strip().lower())
+            clean_title = re.sub(r"[^\w\s]", "", (c.title or "").strip().lower())
             meta_key = f"{first_auth}:{clean_title}:{c.year}"
 
             clean_doi: str | None = None
@@ -578,7 +578,7 @@ class APA7DocxCompiler:
         def sort_key(c: CitationDTO) -> str:
             if c.authors:
                 return c.authors[0].lower()
-            return c.title.lower()
+            return (c.title or "").lower()
 
         sorted_citations = sorted(unique_citations, key=sort_key)
 

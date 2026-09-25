@@ -1,9 +1,10 @@
 """High-level RAG orchestrator integrating literature search, parsing, vector index, and citation validation."""
 
+import asyncio
 import json
 
 from thesisforge.core.logging import get_logger
-from thesisforge.core.time import format_iso_utc
+from thesisforge.core.time import format_iso_utc, utc_now
 from thesisforge.exceptions import DocumentProcessingError
 from thesisforge.llm.router import LLMRouter
 from thesisforge.models import (
@@ -70,6 +71,137 @@ class RAGService:
             support_threshold=support_threshold,
         )
 
+    # ------------------------------------------------------------------
+    # Internal helpers: document_index_status lifecycle
+    # ------------------------------------------------------------------
+
+    async def _upsert_index_status(
+        self,
+        project_id: str,
+        document_id: str,
+        status: str,
+        chunk_count: int = 0,
+        title: str = "",
+        doi: str | None = None,
+        error_msg: str | None = None,
+    ) -> None:
+        """Write or update a row in document_index_status.
+
+        Allowed status values: 'pending' | 'indexed' | 'failed'.
+        Keeps ChromaDB state auditable and reconstructible from SQLite.
+        """
+        now_str = format_iso_utc(utc_now())
+        async with self.db.get_connection() as conn:
+            await conn.execute(
+                """
+                INSERT INTO document_index_status
+                    (document_id, project_id, status, chunk_count, title, doi, error_msg,
+                     created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(document_id, project_id) DO UPDATE SET
+                    status      = excluded.status,
+                    chunk_count = excluded.chunk_count,
+                    title       = excluded.title,
+                    doi         = excluded.doi,
+                    error_msg   = excluded.error_msg,
+                    updated_at  = excluded.updated_at
+                """,
+                (
+                    document_id,
+                    project_id,
+                    status,
+                    chunk_count,
+                    title,
+                    doi,
+                    error_msg,
+                    now_str,
+                    now_str,
+                ),
+            )
+            await conn.commit()
+
+    async def get_document_index_statuses(self, project_id: str) -> list[dict[str, object]]:
+        """Return indexing status for every document in a project.
+
+        Useful for the UI to show PENDING / INDEXED / FAILED badges per document.
+        """
+        async with self.db.get_connection() as conn:
+            cursor = await conn.execute(
+                """
+                SELECT document_id, status, chunk_count, title, doi, error_msg,
+                       created_at, updated_at
+                FROM document_index_status
+                WHERE project_id = ?
+                ORDER BY created_at DESC
+                """,
+                (project_id,),
+            )
+            rows = await cursor.fetchall()
+        return [dict(row) for row in rows]
+
+    async def rebuild_chroma_from_sqlite(self, project_id: str) -> int:
+        """Re-index all INDEXED documents for a project from SQLite into ChromaDB.
+
+        Use after a Chroma data-loss event.  Returns the total number of chunks
+        re-indexed.  Documents whose status is PENDING or FAILED are skipped.
+        """
+        # Fetch all chunk rows for this project from SQLite
+        async with self.db.get_connection() as conn:
+            cursor = await conn.execute(
+                """
+                SELECT dc.id, dc.project_id, dc.document_id, dc.chunk_index,
+                       dc.page_number, dc.section_name, dc.text, dc.metadata_json,
+                       dc.created_at
+                FROM document_chunks dc
+                INNER JOIN document_index_status dis
+                    ON dc.document_id = dis.document_id
+                    AND dc.project_id = dis.project_id
+                WHERE dc.project_id = ? AND dis.status = 'indexed'
+                ORDER BY dc.document_id, dc.chunk_index
+                """,
+                (project_id,),
+            )
+            rows = await cursor.fetchall()
+
+        if not rows:
+            logger.info(
+                "No indexed documents found in SQLite for Chroma rebuild.",
+                extra={"project_id": project_id},
+            )
+            return 0
+
+        chunks: list[DocumentChunkDTO] = []
+        for row in rows:
+            meta = json.loads(str(row["metadata_json"]))
+            chunks.append(
+                DocumentChunkDTO(
+                    id=str(row["id"]),
+                    project_id=str(row["project_id"]),
+                    document_id=str(row["document_id"]),
+                    chunk_index=int(row["chunk_index"]),
+                    page_number=int(row["page_number"]),
+                    section_name=str(row["section_name"]),
+                    text=str(row["text"]),
+                    title=meta.get("title", ""),
+                    doi=meta.get("doi"),
+                    authors=meta.get("authors", []),
+                    year=meta.get("year"),
+                    char_start=meta.get("char_start", 0),
+                    char_end=meta.get("char_end", 0),
+                )
+            )
+
+        indexed_count = await self.vector_store.add_chunks(project_id=project_id, chunks=chunks)
+        logger.info(
+            "ChromaDB rebuilt from SQLite.",
+            extra={"project_id": project_id, "chunk_count": indexed_count},
+        )
+        return indexed_count
+
+    # ------------------------------------------------------------------
+    # Core API
+    # ------------------------------------------------------------------
+
     async def search_literature(
         self,
         query: str,
@@ -97,60 +229,138 @@ class RAGService:
         authors: list[str] | None = None,
         year: int | None = None,
     ) -> list[DocumentChunkDTO]:
-        """Extract text from PDF, chunk into sentence-aware units, and index into SQLite and ChromaDB."""
+        """Extract text from PDF, chunk into sentence-aware units, and index into SQLite and ChromaDB.
+
+        Lifecycle written to document_index_status:
+            PENDING  → set before any I/O (survives crashes)
+            INDEXED  → set after both SQLite and Chroma succeed
+            FAILED   → set on any error, with error_msg populated
+        """
         # Ensure project exists
         await self.repo.get_project(project_id)
 
-        chunks = self.parser.parse_pdf_bytes(
-            pdf_bytes=pdf_bytes,
+        # Mark as PENDING so the UI knows indexing is in progress
+        await self._upsert_index_status(
             project_id=project_id,
             document_id=document_id,
+            status="pending",
             title=title,
             doi=doi,
-            authors=authors,
-            year=year,
         )
 
+        try:
+            chunks = await asyncio.to_thread(
+                self.parser.parse_pdf_bytes,
+                pdf_bytes=pdf_bytes,
+                project_id=project_id,
+                document_id=document_id,
+                title=title,
+                doi=doi,
+                authors=authors,
+                year=year,
+            )
+        except Exception as err:
+            await self._upsert_index_status(
+                project_id=project_id,
+                document_id=document_id,
+                status="failed",
+                title=title,
+                doi=doi,
+                error_msg=f"PDF parsing failed: {err}",
+            )
+            raise DocumentProcessingError(
+                f"No se pudo procesar el documento PDF '{document_id}': {err}"
+            ) from err
+
         if not chunks:
+            await self._upsert_index_status(
+                project_id=project_id,
+                document_id=document_id,
+                status="failed",
+                title=title,
+                doi=doi,
+                error_msg="PDF yielded zero extractable text chunks.",
+            )
             raise DocumentProcessingError(
                 "No se pudieron extraer fragmentos de texto válidos del documento PDF."
             )
 
         # 1. Persist chunks in SQLite
-        query = """
+        sql_insert = """
             INSERT OR REPLACE INTO document_chunks (
                 id, project_id, document_id, chunk_index, page_number,
                 section_name, text, metadata_json, created_at
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         """
-        async with self.db.get_connection() as conn:
-            for chunk in chunks:
-                meta = {
-                    "title": chunk.title,
-                    "doi": chunk.doi,
-                    "authors": chunk.authors,
-                    "year": chunk.year,
-                    "char_start": chunk.char_start,
-                    "char_end": chunk.char_end,
-                }
-                await conn.execute(
-                    query,
-                    (
-                        chunk.id,
-                        chunk.project_id,
-                        chunk.document_id,
-                        chunk.chunk_index,
-                        chunk.page_number,
-                        chunk.section_name,
-                        chunk.text,
-                        json.dumps(meta, ensure_ascii=False),
-                        format_iso_utc(chunk.created_at),
-                    ),
-                )
-            await conn.commit()
+        try:
+            async with self.db.get_connection() as conn:
+                for chunk in chunks:
+                    meta = {
+                        "title": chunk.title,
+                        "doi": chunk.doi,
+                        "authors": chunk.authors,
+                        "year": chunk.year,
+                        "char_start": chunk.char_start,
+                        "char_end": chunk.char_end,
+                    }
+                    await conn.execute(
+                        sql_insert,
+                        (
+                            chunk.id,
+                            chunk.project_id,
+                            chunk.document_id,
+                            chunk.chunk_index,
+                            chunk.page_number,
+                            chunk.section_name,
+                            chunk.text,
+                            json.dumps(meta, ensure_ascii=False),
+                            format_iso_utc(chunk.created_at),
+                        ),
+                    )
+                await conn.commit()
+        except Exception as err:
+            await self._upsert_index_status(
+                project_id=project_id,
+                document_id=document_id,
+                status="failed",
+                chunk_count=len(chunks),
+                title=title,
+                doi=doi,
+                error_msg=f"SQLite persist failed: {err}",
+            )
+            raise DocumentProcessingError(
+                f"Error almacenando fragmentos en SQLite para '{document_id}': {err}"
+            ) from err
 
         # 2. Add to ChromaDB vector store
-        await self.vector_store.add_chunks(project_id=project_id, chunks=chunks)
+        try:
+            await self.vector_store.add_chunks(project_id=project_id, chunks=chunks)
+        except Exception as err:
+            # SQLite chunks are persisted; mark FAILED so rebuild_chroma_from_sqlite
+            # can recover by re-indexing the already-stored chunks.
+            await self._upsert_index_status(
+                project_id=project_id,
+                document_id=document_id,
+                status="failed",
+                chunk_count=len(chunks),
+                title=title,
+                doi=doi,
+                error_msg=f"ChromaDB indexing failed (SQLite chunks intact): {err}",
+            )
+            raise DocumentProcessingError(
+                f"Error indexando fragmentos en ChromaDB para '{document_id}': {err}"
+            ) from err
+
+        # Both SQLite and ChromaDB succeeded → mark INDEXED
+        await self._upsert_index_status(
+            project_id=project_id,
+            document_id=document_id,
+            status="indexed",
+            chunk_count=len(chunks),
+            title=title,
+            doi=doi,
+        )
+
         return chunks
 
     async def query_relevant_chunks(
@@ -174,7 +384,7 @@ class RAGService:
         self,
         project_id: str,
         doi: str | None = None,
-        title: str = "",
+        title: str | None = None,
         authors: list[str] | None = None,
         year: int | None = None,
         journal: str | None = None,
@@ -197,9 +407,9 @@ class RAGService:
 
         cit = CitationDTO(
             doi=doi,
-            title=title or "Sin título",
-            authors=authors or ["Anónimo"],
-            year=year or 2024,
+            title=title or None,
+            authors=authors or [],
+            year=year or None,
             journal=journal,
             abstract=abstract,
             source=source,
@@ -281,7 +491,9 @@ class RAGService:
             report.record_screening(len(val_cits), 0)
 
         # Eligibility & Included from indexed literature
-        included_ids = [c.doi or c.title for c in project.validated_citations]
+        included_ids = [
+            id_val for c in project.validated_citations if (id_val := c.doi or c.title or c.id)
+        ]
         report.record_eligibility(
             sought=len(project.validated_citations),
             not_retrieved=0,

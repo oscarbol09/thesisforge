@@ -205,7 +205,8 @@ class IEEEFormatter:
         """Format narrative in-text citation in IEEE style: Author [1] or Author et al. [1]."""
         authors = citation.authors
         if not authors:
-            lead = citation.title[:30] + ("..." if len(citation.title) > 30 else "")
+            title_str = citation.title or "Sin título"
+            lead = title_str[:30] + ("..." if len(title_str) > 30 else "")
             return f'"{lead}" [{number}]'
 
         if len(authors) == 1:
@@ -246,7 +247,7 @@ class IEEEFormatter:
             author_text = f"{first_author} et al."
 
         # 2. Title formatting (in quotes with comma inside)
-        raw_title = citation.title.strip()
+        raw_title = (citation.title or "").strip()
         title_core = raw_title.rstrip("., ")
         title_part = f'"{title_core},"' if title_core else ""
 
@@ -291,7 +292,7 @@ class IEEEFormatter:
         seen: set[str] = set()
         result: list[CitationDTO] = []
         for cit in citations:
-            key = cit.doi or cit.id or cit.title
+            key = cit.doi or cit.title or cit.id
             if key not in seen:
                 seen.add(key)
                 result.append(cit)

@@ -85,17 +85,19 @@ class LLMRouter:
     def _normalize_model_name(self, model: str, provider: str) -> str:
         """Normalize model identifier for LiteLLM routing."""
         normalized_provider = provider.strip().lower()
-        if "/" in model:
-            return model
 
         if normalized_provider == "openrouter":
-            return f"openrouter/{model}"
+            prefix = "openrouter/"
+            return model if model.startswith(prefix) else f"{prefix}{model}"
         if normalized_provider == "gemini":
-            return f"gemini/{model}"
+            prefix = "gemini/"
+            return model if model.startswith(prefix) else f"{prefix}{model}"
         if normalized_provider == "groq":
-            return f"groq/{model}"
+            prefix = "groq/"
+            return model if model.startswith(prefix) else f"{prefix}{model}"
         if normalized_provider == "ollama":
-            return f"ollama/{model}"
+            prefix = "ollama/"
+            return model if model.startswith(prefix) else f"{prefix}{model}"
         return model
 
     async def _execute_completion(
@@ -224,7 +226,6 @@ class LLMRouter:
             except json.JSONDecodeError as err:
                 logger.warning(
                     "JSON decode failed on LLM response, attempting fallback extraction.",
-                    extra={"raw_text": raw_text},
                 )
                 raise LLMProviderError(f"El modelo no retornó un JSON válido: {err}") from err
 
@@ -237,7 +238,12 @@ class LLMRouter:
         temperature: float = 0.3,
         **kwargs: Any,
     ) -> AsyncGenerator[str, None]:
-        """Stream completion tokens asynchronously."""
+        """Stream completion tokens asynchronously.
+
+        Retries are only attempted before the first token is yielded.
+        Once streaming has started, a mid-stream failure raises LLMProviderError
+        immediately — retrying after partial output would produce duplicate content.
+        """
         target_provider = provider or self.settings.default_provider
         raw_model = model or self.settings.default_model
         resolved_model = self._normalize_model_name(raw_model, target_provider)
@@ -248,22 +254,54 @@ class LLMRouter:
             messages.append({"role": "system", "content": system_prompt})
         messages.append({"role": "user", "content": prompt})
 
+        is_test = self.settings.environment == "test"
+        wait_strategy = wait_none() if is_test else wait_random_exponential(min=1, max=8)
+        attempts = 1 if is_test else self.settings.max_retries
+
+        # Retry loop covers only the connection / first-token phase.
+        response = None
+        last_err: Exception | None = None
+        async for attempt in AsyncRetrying(
+            stop=stop_after_attempt(attempts),
+            wait=wait_strategy,
+            retry=retry_if_exception(_is_retryable_llm_error),
+            reraise=False,
+        ):
+            with attempt:
+                try:
+                    response = await litellm.acompletion(
+                        model=resolved_model,
+                        messages=messages,
+                        temperature=temperature,
+                        api_key=api_key,
+                        stream=True,
+                        timeout=self.settings.timeout_seconds,
+                        **kwargs,
+                    )
+                except Exception as err:
+                    last_err = err
+                    logger.warning(
+                        "LLM stream connection failed, retrying.",
+                        extra={"model": resolved_model, "error": str(err)},
+                    )
+                    raise
+
+        if response is None:
+            raise LLMProviderError(
+                f"Error en streaming LLM ({resolved_model}): {last_err}"
+            ) from last_err
+
+        # Streaming phase — no retries after the first token.
         try:
-            response = await litellm.acompletion(
-                model=resolved_model,
-                messages=messages,
-                temperature=temperature,
-                api_key=api_key,
-                stream=True,
-                timeout=self.settings.timeout_seconds,
-                **kwargs,
-            )
             async for chunk in response:
                 delta = chunk.choices[0].delta.content or ""
                 if delta:
                     yield delta
         except Exception as err:
             logger.exception(
-                "LLM streaming failed.", extra={"model": resolved_model, "error": str(err)}
+                "LLM stream interrupted after first token.",
+                extra={"model": resolved_model, "error": str(err)},
             )
-            raise LLMProviderError(f"Error en streaming LLM ({resolved_model}): {err}") from err
+            raise LLMProviderError(
+                f"Stream interrumpido en proveedor LLM ({resolved_model}): {err}"
+            ) from err

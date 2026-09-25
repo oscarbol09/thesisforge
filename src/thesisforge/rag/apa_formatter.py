@@ -45,7 +45,8 @@ class APA7Formatter:
         year_str = str(citation.year) if citation.year else "s.f."
 
         if not authors:
-            lead = citation.title[:30] + ("..." if len(citation.title) > 30 else "")
+            title_str = citation.title or "Sin título"
+            lead = title_str[:30] + ("..." if len(title_str) > 30 else "")
             core = f'"{lead}", {year_str}'
         elif len(authors) == 1:
             family, _ = _parse_author_name(authors[0])
@@ -73,7 +74,8 @@ class APA7Formatter:
         and_conj = "y" if language == "es" else "and"
 
         if not authors:
-            lead = citation.title[:30] + ("..." if len(citation.title) > 30 else "")
+            title_str = citation.title or "Sin título"
+            lead = title_str[:30] + ("..." if len(title_str) > 30 else "")
             return f'"{lead}" ({year_str})'
         elif len(authors) == 1:
             family, _ = _parse_author_name(authors[0])
@@ -94,7 +96,7 @@ class APA7Formatter:
 
         # 1. Author list formatting
         if not authors:
-            author_text = citation.title.strip()
+            author_text = (citation.title or "Sin título").strip()
         elif len(authors) == 1:
             fam, init = _parse_author_name(authors[0])
             author_text = f"{fam}, {init}" if init else fam
@@ -115,9 +117,9 @@ class APA7Formatter:
             author_text = ", ".join(formatted_authors) + ", ... " + last_author
 
         # 2. Title formatting (Sentence case for article titles)
-        raw_title = citation.title.strip()
-        title_formatted = raw_title[0].upper() + raw_title[1:] if raw_title else ""
-        if not title_formatted.endswith("."):
+        raw_title = (citation.title or "").strip()
+        title_formatted = raw_title[0].upper() + raw_title[1:] if raw_title else "Sin título."
+        if raw_title and not title_formatted.endswith("."):
             title_formatted += "."
 
         # 3. Source / Journal / Publisher formatting
