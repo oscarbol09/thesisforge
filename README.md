@@ -18,7 +18,7 @@
   <a href="https://github.com/astral-sh/ruff"><img src="https://img.shields.io/badge/code%20style-ruff-000000.svg" alt="Code style: ruff"></a>
   <a href="https://mypy.readthedocs.io/"><img src="https://img.shields.io/badge/type_checked-mypy_strict-brightgreen.svg" alt="Type Checked: mypy"></a>
   <a href="https://github.com/PyCQA/bandit"><img src="https://img.shields.io/badge/security-bandit-yellow.svg" alt="Security: Bandit"></a>
-  <a href="https://github.com/oscarbol09/thesisforge/releases"><img src="https://img.shields.io/badge/release-v0.5.0-indigo.svg" alt="Release v0.5.0"></a>
+  <a href="https://github.com/oscarbol09/thesisforge/releases"><img src="https://img.shields.io/badge/release-v0.6.0-indigo.svg" alt="Release v0.6.0"></a>
 </p>
 
 ---

@@ -8,8 +8,45 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/
 
 ## [Unreleased]
 
+### Fixed
+- **[CRITICAL] Concurrencia optimista en proyectos**: Añadida columna `version` a la tabla `projects` (migración v3). `PUT /api/projects/{id}` ahora acepta el header `X-Project-Version`; si la versión no coincide, devuelve HTTP 409 en lugar de sobrescribir silenciosamente cambios concurrentes de la GUI o los WebSockets (`project_repository.update_project_versioned`, `ProjectVersionConflictError`).
+- **[HIGH] KeyVault: eliminado fallback silencioso a clave en RAM**: `resolve_or_create_master_key()` ahora lanza `KeyVaultError` en lugar de continuar con una clave efímera cuando falla la escritura en disco. Esto evita que todos los secretos cifrados se vuelvan irrecuperables tras un reinicio.
+- **[HIGH] Streaming LLM: retry pre-primer-token**: `stream_completion()` ahora reintenta la conexión con la misma política de backoff exponencial que `complete()`, pero solo antes del primer token. Una vez iniciado el stream, los fallos se propagan inmediatamente como `LLMProviderError` para evitar contenido duplicado.
+- **[MEDIUM] Limpieza de ChromaDB al eliminar proyectos**: `DELETE /api/projects/{id}` ya limpiaba la colección Chroma; se clarificó el contrato en el docstring y se verificó la cadena completa de borrado.
+- **[MEDIUM] Versión del schema de la base de datos**: Añadida migración v3 (`_v3_add_version_column`) compatible con bases de datos existentes (usa `PRAGMA table_info` para no fallar en upgrades).
+
 ### Planned
 - Empaquetado ejecutable autónomo standalone (.exe, .dmg, AppImage) y distribución en PyPI (Sprint 6 / v1.0.0).
+
+---
+
+## [0.6.0] - 2026-09-25
+
+### Added
+- **Local-First Instance Authentication (`src/thesisforge/core/auth.py`):** Static instance token persisted securely to `~/.thesisforge/instance.token` (or `THESISFORGE_INSTANCE_TOKEN`), securing exposed Docker/network ports; supports Bearer headers and query parameter `?token=` for WebSockets.
+- **Project Multi-User / Ownership Foundation (`src/thesisforge/models.py`):** Added `owner_id: str = "local"` to `ProjectStateDTO` for seamless future multi-user migrations.
+- **Embedding Provider Abstraction (`src/thesisforge/rag/vectorstore.py`):** Introduced `EmbeddingProvider` protocol with pluggable `FastLocalEmbeddingFunction` (feature hashing) and `SentenceTransformerEmbeddingFunction` (`all-MiniLM-L6-v2`) via `build_embedding_function()`.
+- **SQLite Document Indexing Status & Chroma Recovery (`src/thesisforge/repository/migrations.py`, `src/thesisforge/rag/service.py`):** Added `document_index_status` table (`pending`, `indexed`, `failed`) and `rebuild_chroma_from_sqlite()` for total recovery after vector index loss.
+- **Optimistic Concurrency Control (`src/thesisforge/repository/project_repository.py`):** Added `version` column to projects table (migration v3) with `update_project_versioned()` to prevent lost updates from concurrent UI and WebSocket writes.
+- **PRISMA 2020 Systematic Review Flow (`src/thesisforge/rag/prisma.py`):** Full 4-stage protocol (identification, screening, eligibility, inclusion) with Markdown flowchart export and bias-risk tracking.
+- **Anti-AI Writing Detox (`src/thesisforge/drafting/detox.py`):** Sentence rhythm variance, hedging-soup detection, L3 citation anchor locator, and `detoxify_text()` rewrites.
+- **AI Failure Gate (`src/thesisforge/jury/ai_failure_gate.py`):** 7-mode audit gate (Literature Fabrication, Bug-as-Insight, Survivorship Bias, etc.) wired into the jury evaluation pipeline.
+- **Consistency Matrix (`src/thesisforge/advisor/consistency_matrix.py`):** 6-pillar alignment matrix (RQ ↔ methodology ↔ analysis ↔ conclusion) + validity threats audit.
+- **New REST endpoints:** `GET /api/advisor/{id}/consistency-matrix`, `POST /api/literature/prisma-flow/{id}`, `GET /api/drafting/projects/{id}/sections/{sid}/quality-audit`, `POST /api/jury/projects/{id}/ai-failure-gate`.
+
+### Security & CI/CD
+- **CSP Hardening (`src/thesisforge/api/app.py`, `gui/js/tailwind-config.js`):** Extracted Tailwind configuration to external JS file; eliminated `'unsafe-inline'` from `script-src`.
+- **CI Locked Installation & SAST (`.github/workflows/ci.yml`):** Enforced `uv sync --locked --extra dev`, integrated `pip-audit` CVE scanning and `gitleaks` secret detection.
+- **Dependency Hygiene (`pyproject.toml`):** Removed unused `sqlalchemy` dependency (system uses `aiosqlite` directly).
+
+### Fixed
+- **Bibliographic metadata fabrication:** `add_citation_to_project()` no longer fabricates `year=2024` or `authors=["Anónimo"]` — unknown fields stored as `None`/`[]`; `CitationDTO.title` and `CitationDTO.year` are now optional (`str | None`, `int | None`); APA, IEEE, and Vancouver formatters handle `None` gracefully.
+- **Vector index cleanup:** `DELETE /api/projects/{id}` now deletes the Chroma collection to eliminate orphaned embeddings.
+- **Event loop non-blocking hygiene:** PyMuPDF PDF parsing wrapped in `asyncio.to_thread()`.
+- **LLM model normalization bug:** `_normalize_model_name()` now correctly handles OpenRouter model prefixes.
+- **LLM response data leakage:** Removed `raw_text` from `logger.warning()` in `complete_json()`.
+- **Dockerfile healthcheck:** Replaced `curl` with `python3 urllib` check; added `THESISFORGE_` prefix to Docker environment variables.
+- **Version synchronization:** Aligned version to `0.6.0` across `pyproject.toml`, `__init__.py`, and `CHANGELOG.md`.
 
 ---
 

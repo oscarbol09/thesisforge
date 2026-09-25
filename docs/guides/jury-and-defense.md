@@ -63,7 +63,78 @@ La conexión bidireccional `/api/defense/ws/{session_id}` permite interactuar en
 
 ---
 
-## 4. Comandos de Consola (CLI)
+## 4. Compuerta de 7 Modos de Fallo de IA (`AIFailureGateAuditor`)
+
+Introducida en v0.6.0, esta compuerta audita el proyecto contra los siete modos de fallo críticos identificados en investigación científica asistida por IA automónoma.
+
+### Los 7 Modos Auditados
+
+| # | Modo | Severidad por defecto | Descripción |
+| :--- | :--- | :---: | :--- |
+| 1 | **Bug-as-Insight** | MAJOR | Reinterpretación de anomalías o artefactos metodológicos como hallazgos teóricos. |
+| 2 | **Literature Fabrication** | CRITICAL | Citas en el texto sin respaldo en la bibliografía validada del proyecto. |
+| 3 | **Sample Overgeneralization** | MAJOR | Muestra < 30 en estudios causales cuantitativos con inferencias universales. |
+| 4 | **Epistemic Frame-Lock** | MAJOR | Ausencia de delimitación explícita de limitaciones del estudio (< 50 caracteres). |
+| 5 | **Survivorship Bias** | MINOR | Falta de criterios formales de inclusión y exclusión de participantes. |
+| 6 | **Proxy Fallacy** | MAJOR | Variables declaradas sin matriz de operacionalización (dimensiones e indicadores). |
+| 7 | **Hedging Fog** | MINOR | Densidad ≥ 4 expresiones evasivas/condicionales en el planteamiento del problema. |
+
+### Cálculo del Puntaje de Riesgo
+
+Cada hallazgo suma penalización al puntaje de riesgo (0 = limpio, 100 = riesgo extremo):
+
+- Fallo **CRITICAL** → +35 puntos (y activa el flag `has_critical`, forzando `passed = False`)
+- Fallo **MAJOR** → +20 puntos
+- Fallo **MINOR** → +10 puntos
+- Fallo **NOTE** → +4 puntos
+
+El proyecto aprueba la compuerta si `risk_score < 40.0` **y** no hay ningún fallo CRITICAL.
+
+### Uso vía API REST
+
+```bash
+# Ejecutar la compuerta de 7 modos de fallo sobre un proyecto
+POST /api/jury/projects/{project_id}/ai-failure-gate
+```
+
+Respuesta de ejemplo:
+
+```json
+{
+  "passed": false,
+  "risk_score": 55.0,
+  "evaluated_modes_count": 7,
+  "passed_modes": ["bug_as_insight", "survivorship_bias", "hedging_fog"],
+  "findings": [
+    {
+      "mode": "literature_fabrication",
+      "severity": "CRITICAL",
+      "chapter_or_field": "Citas y Referencias",
+      "summary": "Citas en el texto sin bibliografía validada en el proyecto.",
+      "mitigation_strategy": "Indexe las fuentes primarias en el módulo RAG y valide los DOIs."
+    }
+  ]
+}
+```
+
+### Uso Programmático
+
+```python
+from thesisforge.jury.ai_failure_gate import AIFailureGateAuditor
+from thesisforge.models import ProjectStateDTO
+
+project: ProjectStateDTO = ...  # Proyecto cargado desde la BD
+report = AIFailureGateAuditor.audit_project(project)
+
+if not report.passed:
+    for finding in report.findings:
+        print(f"[{finding.severity}] {finding.mode}: {finding.summary}")
+        print(f"  Mitigación: {finding.mitigation_strategy}")
+```
+
+---
+
+## 5. Comandos de Consola (CLI)
 
 ```bash
 # Auditar proyecto y generar acta formal

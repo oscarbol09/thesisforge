@@ -11,7 +11,7 @@ ThesisForge es una plataforma de software diseñada para asistir a tesistas, inv
 1. **Garantía Metodológica**: Validación taxonómica basada en taxonomía de Bloom y matrices de consistencia científica.
 2. **Trazabilidad Probatoria (RAG Real)**: Cada afirmación fáctica puede contrastarse contra literatura indexada en tiempo real (Semantic Scholar, ArXiv, CrossRef y PDFs propios).
 3. **Memoria Contextual Jerárquica**: Los capítulos se redactan conservando la memoria viva de la metodología aprobada y los resúmenes de las secciones precedentes.
-4. **Privacidad Estricta (BYOK + AppSec)**: Claves API cifradas localmente con AES-256-GCM y defensas perimetrales contra SSRF y Formula Injection (CWE-1236).
+4. **Privacidad Estricta (BYOK + AppSec)**: Claves API cifradas localmente con Fernet (AES-128-CBC + HMAC-SHA256) y derivación de clave PBKDF2-SHA256, con defensas perimetrales contra SSRF y Formula Injection (CWE-1236).
 5. **Formateo Editorial APA 7ª Edición**: Generación automatizada de archivos Microsoft Word (`.docx`) respetando tipografía, sangría francesa, márgenes y estilos de tablas.
 
 ---

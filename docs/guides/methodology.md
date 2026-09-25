@@ -6,13 +6,60 @@ El **Asesor Metodológico** de ThesisForge actúa como un tutor de tesis virtual
 
 ## 1. Matriz de Consistencia Metodológica
 
-ThesisForge evalúa de manera continua la alineación epistemológica y lógica entre los componentes del proyecto:
+ThesisForge evalúa de manera continua la alineación epistemológica y lógica entre los componentes del proyecto a través del `ConsistencyMatrixEngine` (`src/thesisforge/advisor/consistency_matrix.py`).
+
+El motor construye una **matriz de 6 pilares** que verifica la coherencia columna a columna para cada pregunta/objetivo específico:
+
+| Pilar | Campo evaluado | Descripción |
+| :--- | :--- | :--- |
+| **1. Pregunta Específica** | `research_question` + derivadas | Delimita el fenómeno observado |
+| **2. Objetivo Específico** | `specific_objectives[]` | Debe reflejar la pregunta punto a punto |
+| **3. Hipótesis** | `hypothesis` (si aplica) | Obligatoria en diseños correlacionales/causales |
+| **4. Variables (VI / VD / Control)** | `operationalized_variables[]` | Con escala de medición declarada |
+| **5. Instrumento** | `methodology.instruments[]` | Ligado a la escala de la variable |
+| **6. Análisis / Prueba Estadística** | `methodology.analysis_technique` | Compatible con la escala (ver tabla de compatibilidad) |
+
+### Compatibilidad de Escala con Prueba Estadística
+
+El motor verifica automáticamente que la técnica de análisis sea compatible con la escala de medición de las variables operacionalizadas:
+
+| Escala | Pruebas compatibles |
+| :--- | :--- |
+| **Nominal** | Chi-cuadrado, Fisher, Regresión logística |
+| **Ordinal** | Spearman, Mann-Whitney, Wilcoxon, Kruskal-Wallis, Kendall |
+| **Intervalo / Razón** | Pearson, t-Student, ANOVA, ANCOVA, SEM, Regresión lineal |
+
+Si hay incompatibilidad (p. ej., usar ANOVA con variables nominales), el sistema emite un issue de alineación con nota explicativa.
+
+### Amenazas a la Validez Auditadas
+
+Además de la alineación, el engine audita cuatro dominios de validez científica:
+
+| Dominio | Amenaza detectada | Condición de disparo |
+| :--- | :--- | :--- |
+| **Interna** | Mortalidad experimental / Atrición | Diseño longitudinal declarado |
+| **Externa** | Sesgo de muestreo no probabilístico | Técnica de muestreo no probabilística |
+| **Constructo** | Sub-representación del constructo | Variable con < 2 indicadores |
+| **Estadística** | Incompatibilidad de escala con prueba | Ver tabla anterior |
+
+### Acceso vía API REST
+
+```bash
+# Obtener la matriz de consistencia de un proyecto
+GET /api/advisor/{project_id}/consistency-matrix
+```
+
+La respuesta incluye las filas de la matriz en JSON y la tabla renderizada en Markdown (campo `markdown_table`), lista para insertar en cualquier informe.
+
+### Vista simplificada (diagrama de coherencia central)
 
 ```mermaid
 graph LR
     P["Problema General\n¿Cuál es el efecto de X en Y?"] <--> O["Objetivo General\nDeterminar el efecto de X en Y"]
     O <--> H["Hipótesis General\nExiste un efecto significativo de X en Y"]
     H <--> V["Variables / Categorías\nX (Independiente), Y (Dependiente)"]
+    V <--> I["Instrumento\nEscala de Likert / Test psicométrico"]
+    I <--> A["Análisis\nPrueba t-Student / ANOVA"]
 ```
 
 ---
