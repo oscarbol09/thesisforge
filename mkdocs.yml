@@ -77,3 +77,8 @@ nav:
       - Postulaciones Awesome: guides/AWESOME_SUBMISSIONS.md
       - Roadmap: roadmap.md
       - Changelog: changelog.md
+  - Legal & Ética:
+      - Política de Privacidad: legal/privacy.md
+      - Política de Cookies: legal/cookies.md
+      - Términos & Deslinde Académico: legal/terms.md
+
