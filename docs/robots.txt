@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /data/
+Disallow: /tests/
+
+Sitemap: https://oscarbol09.github.io/thesisforge/sitemap.xml

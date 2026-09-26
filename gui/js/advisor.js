@@ -281,12 +281,12 @@ function advisorComponent() {
                   ${this.currentStep === 'setup' ? `
                     <div class="space-y-4">
                       <div>
-                        <label class="block text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-1">Título Tentativo de la Tesis *</label>
-                        <input type="text" x-model="formData.title" class="w-full" placeholder="Título del proyecto">
+                        <label for="adv-title" class="block text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-1">Título Tentativo de la Tesis *</label>
+                        <input id="adv-title" type="text" x-model="formData.title" class="w-full" placeholder="Título del proyecto">
                       </div>
                       <div>
-                        <label class="block text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-1">Nivel Académico *</label>
-                        <select x-model="formData.academic_level" class="w-full">
+                        <label for="adv-level" class="block text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-1">Nivel Académico *</label>
+                        <select id="adv-level" x-model="formData.academic_level" class="w-full">
                           <option value="pregrado">Pregrado (Licenciatura / Ingeniería)</option>
                           <option value="maestria">Maestría (Magíster / M.Sc.)</option>
                           <option value="doctorado">Doctorado (Ph.D.)</option>
@@ -299,12 +299,12 @@ function advisorComponent() {
                   ${this.currentStep === 'topic_and_area' ? `
                     <div class="space-y-4">
                       <div>
-                        <label class="block text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-1">Área o Campo de Conocimiento *</label>
-                        <input type="text" x-model="formData.area_of_study" class="w-full" placeholder="Ej. Inteligencia Artificial, Educación Superior">
+                        <label for="adv-area" class="block text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-1">Área o Campo de Conocimiento *</label>
+                        <input id="adv-area" type="text" x-model="formData.area_of_study" class="w-full" placeholder="Ej. Inteligencia Artificial, Educación Superior">
                       </div>
                       <div>
-                        <label class="block text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-1">Tema Delimitado *</label>
-                        <input type="text" x-model="formData.topic" class="w-full" placeholder="Ej. Integración de RAG para reducción de alucinaciones">
+                        <label for="adv-topic" class="block text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-1">Tema Delimitado *</label>
+                        <input id="adv-topic" type="text" x-model="formData.topic" class="w-full" placeholder="Ej. Integración de RAG para reducción de alucinaciones">
                       </div>
                     </div>
                   ` : ''}
@@ -313,16 +313,16 @@ function advisorComponent() {
                   ${this.currentStep === 'problem_statement' ? `
                     <div class="space-y-4">
                       <div>
-                        <label class="block text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-1">Planteamiento del Problema *</label>
-                        <textarea x-model="formData.research_problem" rows="4" class="w-full text-sm" placeholder="Describe los síntomas, causas y consecuencias de la problemática..."></textarea>
+                        <label for="adv-problem" class="block text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-1">Planteamiento del Problema *</label>
+                        <textarea id="adv-problem" x-model="formData.research_problem" rows="4" class="w-full text-sm" placeholder="Describe los síntomas, causas y consecuencias de la problemática..."></textarea>
                       </div>
                       <div>
-                        <label class="block text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-1">Justificación del Estudio</label>
-                        <textarea x-model="formData.justification" rows="3" class="w-full text-sm" placeholder="Relevancia teórica, metodológica y práctica..."></textarea>
+                        <label for="adv-justification" class="block text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-1">Justificación del Estudio</label>
+                        <textarea id="adv-justification" x-model="formData.justification" rows="3" class="w-full text-sm" placeholder="Relevancia teórica, metodológica y práctica..."></textarea>
                       </div>
                       <div>
-                        <label class="block text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-1">Alcance y Delimitación</label>
-                        <input type="text" x-model="formData.scope_limitations" class="w-full" placeholder="Delimitación temporal, espacial y conceptual">
+                        <label for="adv-scope" class="block text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-1">Alcance y Delimitación</label>
+                        <input id="adv-scope" type="text" x-model="formData.scope_limitations" class="w-full" placeholder="Delimitación temporal, espacial y conceptual">
                       </div>
                     </div>
                   ` : ''}
@@ -331,8 +331,8 @@ function advisorComponent() {
                   ${this.currentStep === 'research_question' ? `
                     <div class="space-y-4">
                       <div>
-                        <label class="block text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-1">Pregunta Principal de Investigación *</label>
-                        <input type="text" x-model="formData.research_question" class="w-full font-medium" placeholder="¿En qué medida la arquitectura RAG impacta la tasa de alucinaciones en...?">
+                        <label for="adv-question" class="block text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-1">Pregunta Principal de Investigación *</label>
+                        <input id="adv-question" type="text" x-model="formData.research_question" class="w-full font-medium" placeholder="¿En qué medida la arquitectura RAG impacta la tasa de alucinaciones en...?">
                         <p class="text-xs text-[var(--text-muted)] mt-1">La pregunta debe ser precisa, delimitada y vinculada a las variables del estudio.</p>
                       </div>
                     </div>
@@ -342,21 +342,21 @@ function advisorComponent() {
                   ${this.currentStep === 'objectives' ? `
                     <div class="space-y-4">
                       <div>
-                        <label class="block text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-1">Objetivo General *</label>
-                        <input type="text" x-model="formData.general_objective" class="w-full font-medium" placeholder="Evaluar el impacto de la arquitectura RAG mediante...">
+                        <label for="adv-gen-obj" class="block text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-1">Objetivo General *</label>
+                        <input id="adv-gen-obj" type="text" x-model="formData.general_objective" class="w-full font-medium" placeholder="Evaluar el impacto de la arquitectura RAG mediante...">
                         <p class="text-xs text-[var(--text-muted)] mt-1">Debe iniciar con un verbo en infinitivo (Taxonomía de Bloom/Investigación).</p>
                       </div>
                       <div class="space-y-2">
                         <div class="flex items-center justify-between">
-                          <label class="block text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">Objetivos Específicos</label>
+                          <span class="block text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">Objetivos Específicos</span>
                           <button type="button" class="btn btn-secondary btn-sm" @click="addSpecificObjective()">+ Agregar Objetivo</button>
                         </div>
                         <template x-for="(obj, idx) in formData.specific_objectives" :key="idx">
                           <div class="flex items-center gap-2">
                             <span class="text-xs font-mono text-[var(--text-muted)] w-6" x-text="idx + 1 + '.'"></span>
-                            <input type="text" x-model="formData.specific_objectives[idx]" class="flex-1" placeholder="Objetivo específico...">
-                            <button type="button" class="btn btn-ghost btn-sm text-red-500" @click="removeSpecificObjective(idx)" x-show="formData.specific_objectives.length > 1">
-                              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                            <input type="text" x-model="formData.specific_objectives[idx]" :aria-label="'Objetivo específico ' + (idx + 1)" class="flex-1" placeholder="Objetivo específico...">
+                            <button type="button" class="btn btn-ghost btn-sm text-red-500" @click="removeSpecificObjective(idx)" :aria-label="'Eliminar objetivo ' + (idx + 1)" x-show="formData.specific_objectives.length > 1">
+                              <svg class="w-4 h-4" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                             </button>
                           </div>
                         </template>
@@ -368,20 +368,20 @@ function advisorComponent() {
                   ${this.currentStep === 'hypothesis' ? `
                     <div class="space-y-4">
                       <div>
-                        <label class="block text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-1">Hipótesis Central (si aplica)</label>
-                        <textarea x-model="formData.hypothesis" rows="3" class="w-full text-sm" placeholder="Existe una correlación estadísticamente significativa entre..."></textarea>
+                        <label for="adv-hypothesis" class="block text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-1">Hipótesis Central (si aplica)</label>
+                        <textarea id="adv-hypothesis" x-model="formData.hypothesis" rows="3" class="w-full text-sm" placeholder="Existe una correlación estadísticamente significativa entre..."></textarea>
                       </div>
                       <div class="space-y-2">
                         <div class="flex items-center justify-between">
-                          <label class="block text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">Variables de Estudio</label>
+                          <span class="block text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">Variables de Estudio</span>
                           <button type="button" class="btn btn-secondary btn-sm" @click="addVariable()">+ Variable</button>
                         </div>
                         <template x-for="(v, idx) in formData.variables" :key="idx">
                           <div class="flex items-center gap-2">
                             <span class="text-xs font-mono text-[var(--text-muted)] w-6" x-text="'V' + (idx + 1)"></span>
-                            <input type="text" x-model="formData.variables[idx]" class="flex-1" placeholder="Variable independiente / dependiente...">
-                            <button type="button" class="btn btn-ghost btn-sm text-red-500" @click="removeVariable(idx)" x-show="formData.variables.length > 1">
-                              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                            <input type="text" x-model="formData.variables[idx]" :aria-label="'Variable de estudio ' + (idx + 1)" class="flex-1" placeholder="Variable independiente / dependiente...">
+                            <button type="button" class="btn btn-ghost btn-sm text-red-500" @click="removeVariable(idx)" :aria-label="'Eliminar variable ' + (idx + 1)" x-show="formData.variables.length > 1">
+                              <svg class="w-4 h-4" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                             </button>
                           </div>
                         </template>
@@ -394,31 +394,31 @@ function advisorComponent() {
                     <div class="space-y-4">
                       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                          <label class="block text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-1">Enfoque *</label>
-                          <select x-model="formData.methodology.approach" class="w-full">
+                          <label for="adv-approach" class="block text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-1">Enfoque *</label>
+                          <select id="adv-approach" x-model="formData.methodology.approach" class="w-full">
                             <option value="cuantitativo">Cuantitativo (Hipotético-Deductivo)</option>
                             <option value="cualitativo">Cualitativo (Inductivo-Fenomenológico)</option>
                             <option value="mixto">Mixto (Integrado Triangulado)</option>
                           </select>
                         </div>
                         <div>
-                          <label class="block text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-1">Diseño de Investigación</label>
-                          <input type="text" x-model="formData.methodology.design" class="w-full" placeholder="Ej. Cuasiexperimental pretest-postest">
+                          <label for="adv-design" class="block text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-1">Diseño de Investigación</label>
+                          <input id="adv-design" type="text" x-model="formData.methodology.design" class="w-full" placeholder="Ej. Cuasiexperimental pretest-postest">
                         </div>
                       </div>
                       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                          <label class="block text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-1">Población</label>
-                          <input type="text" x-model="formData.methodology.population" class="w-full" placeholder="Ej. 120 estudiantes de medicina">
+                          <label for="adv-population" class="block text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-1">Población</label>
+                          <input id="adv-population" type="text" x-model="formData.methodology.population" class="w-full" placeholder="Ej. 120 estudiantes de medicina">
                         </div>
                         <div>
-                          <label class="block text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-1">Muestra y Muestreo</label>
-                          <input type="text" x-model="formData.methodology.sample" class="w-full" placeholder="Ej. Muestra probabilística n=64">
+                          <label for="adv-sample" class="block text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-1">Muestra y Muestreo</label>
+                          <input id="adv-sample" type="text" x-model="formData.methodology.sample" class="w-full" placeholder="Ej. Muestra probabilística n=64">
                         </div>
                       </div>
                       <div>
-                        <label class="block text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-1">Técnica de Análisis</label>
-                        <input type="text" x-model="formData.methodology.analysis_technique" class="w-full" placeholder="Ej. Prueba t de Student para muestras relacionadas, ANOVA">
+                        <label for="adv-tech" class="block text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-1">Técnica de Análisis</label>
+                        <input id="adv-tech" type="text" x-model="formData.methodology.analysis_technique" class="w-full" placeholder="Ej. Prueba t de Student para muestras relacionadas, ANOVA">
                       </div>
                     </div>
                   ` : ''}

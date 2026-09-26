@@ -19,25 +19,33 @@ document.addEventListener('alpine:init', () => {
     loadingText: '',
     toasts: [],
     
-    // Modals visibility
+    // Modals & Navigation visibility
     showCreateModal: false,
     showSettingsModal: false,
+    sidebarOpen: false,
+
+    // Cookie & Storage Consent
+    cookieConsent: localStorage.getItem('tf_cookie_consent') || null,
     
-    // BYOK Config State
+    // Non-sensitive BYOK Preferences State
     settings: {
       default_provider: 'openrouter',
       default_model: 'anthropic/claude-3.5-sonnet',
-      openrouter_api_key: '',
-      gemini_api_key: '',
-      openai_api_key: '',
-      groq_api_key: '',
-      nvidia_nim_api_key: '',
-      semantic_scholar_api_key: '',
     },
 
     // Initialization lifecycle
     async init() {
       this.applyTheme(this.theme);
+      
+      // Load stored provider preferences if available
+      try {
+        const savedSettings = JSON.parse(localStorage.getItem('tf_byok_settings') || '{}');
+        if (savedSettings.default_provider) this.settings.default_provider = savedSettings.default_provider;
+        if (savedSettings.default_model) this.settings.default_model = savedSettings.default_model;
+      } catch (e) {
+        // ignore JSON parse errors
+      }
+
       await this.fetchProjects();
       
       if (this.activeProjectId) {
@@ -51,6 +59,17 @@ document.addEventListener('alpine:init', () => {
           this.showCreateModal = true;
         }
       });
+    },
+
+    // Cookie Consent Handlers
+    acceptCookieConsent() {
+      localStorage.setItem('tf_cookie_consent', 'accepted');
+      this.cookieConsent = 'accepted';
+    },
+
+    dismissCookieConsent() {
+      localStorage.setItem('tf_cookie_consent', 'dismissed');
+      this.cookieConsent = 'dismissed';
     },
 
     // Theme Management

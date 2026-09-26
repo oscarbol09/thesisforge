@@ -125,28 +125,28 @@ function exportComponent() {
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label class="block text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-1">Institución / Universidad</label>
-                <input type="text" x-model="options.institution_name" placeholder="Ej. Universidad Nacional" class="w-full text-xs">
+                <label for="export-institution" class="block text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-1">Institución / Universidad</label>
+                <input id="export-institution" type="text" x-model="options.institution_name" placeholder="Ej. Universidad Nacional" class="w-full text-xs">
               </div>
               <div>
-                <label class="block text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-1">Facultad / Programa Académico</label>
-                <input type="text" x-model="options.faculty_or_program" placeholder="Ej. Facultad de Ingeniería" class="w-full text-xs">
+                <label for="export-faculty" class="block text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-1">Facultad / Programa Académico</label>
+                <input id="export-faculty" type="text" x-model="options.faculty_or_program" placeholder="Ej. Facultad de Ingeniería" class="w-full text-xs">
               </div>
               <div>
-                <label class="block text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-1">Nombre del Autor / Estudiante</label>
-                <input type="text" x-model="options.author_name" placeholder="Nombre completo" class="w-full text-xs">
+                <label for="export-author" class="block text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-1">Nombre del Autor / Estudiante</label>
+                <input id="export-author" type="text" x-model="options.author_name" placeholder="Nombre completo" class="w-full text-xs">
               </div>
               <div>
-                <label class="block text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-1">Nombre del Asesor / Director</label>
-                <input type="text" x-model="options.advisor_name" placeholder="Director de tesis" class="w-full text-xs">
+                <label for="export-advisor" class="block text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-1">Nombre del Asesor / Director</label>
+                <input id="export-advisor" type="text" x-model="options.advisor_name" placeholder="Director de tesis" class="w-full text-xs">
               </div>
               <div>
-                <label class="block text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-1">Ciudad y País</label>
-                <input type="text" x-model="options.city_and_country" placeholder="Ej. Bogotá, Colombia" class="w-full text-xs">
+                <label for="export-city" class="block text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-1">Ciudad y País</label>
+                <input id="export-city" type="text" x-model="options.city_and_country" placeholder="Ej. Bogotá, Colombia" class="w-full text-xs">
               </div>
               <div>
-                <label class="block text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-1">Año de Presentación</label>
-                <input type="number" x-model="options.year" class="w-full text-xs">
+                <label for="export-year" class="block text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-1">Año de Presentación</label>
+                <input id="export-year" type="number" x-model="options.year" class="w-full text-xs">
               </div>
             </div>
 
@@ -154,24 +154,24 @@ function exportComponent() {
 
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
               <div>
-                <label class="block text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-1">Fuente Tipográfica</label>
-                <select x-model="options.font_name" class="w-full text-xs">
+                <label for="export-font" class="block text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-1">Fuente Tipográfica</label>
+                <select id="export-font" x-model="options.font_name" class="w-full text-xs">
                   <option value="Times New Roman">Times New Roman (12 pt)</option>
                   <option value="Calibri">Calibri (11 pt)</option>
                   <option value="Arial">Arial (11 pt)</option>
                 </select>
               </div>
               <div>
-                <label class="block text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-1">Interlineado</label>
-                <select x-model="options.line_spacing" class="w-full text-xs">
+                <label for="export-spacing" class="block text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-1">Interlineado</label>
+                <select id="export-spacing" x-model="options.line_spacing" class="w-full text-xs">
                   <option value="2.0">Doble (2.0 — Estándar APA 7)</option>
                   <option value="1.5">1.5 líneas</option>
                   <option value="1.0">Sencillo (1.0)</option>
                 </select>
               </div>
               <div>
-                <label class="block text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-1">Márgenes</label>
-                <select x-model="options.margin_inches" class="w-full text-xs">
+                <label for="export-margin" class="block text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-1">Márgenes</label>
+                <select id="export-margin" x-model="options.margin_inches" class="w-full text-xs">
                   <option value="1.0">2.54 cm (1.0 pulgada — APA 7)</option>
                   <option value="1.5">3.81 cm (Encuadernación)</option>
                 </select>

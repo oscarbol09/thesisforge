@@ -5,6 +5,54 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>ThesisForge — Asistente de Investigación Académica</title>
   
+  <!-- SEO Primary Meta Tags -->
+  <meta name="description" content="ThesisForge: Asistente y forjador de proyectos de investigación académica con IA, búsqueda de literatura real indexada (RAG) y redacción modular bajo normas APA 7ª edición.">
+  <meta name="keywords" content="tesis, investigacion academica, RAG, APA 7, BYOK, literatura cientifica, LaTeX, docx, machine learning">
+  <meta name="author" content="Oscar Madera">
+  <link rel="canonical" href="https://oscarbol09.github.io/thesisforge/">
+
+  <!-- OpenGraph / Facebook Social Preview -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://oscarbol09.github.io/thesisforge/">
+  <meta property="og:title" content="ThesisForge — Asistente de Investigación Académica">
+  <meta property="og:description" content="Estructura tu tesis con rigor metodológico, literatura real indexada y redacción modular APA 7 con tus propias claves de IA.">
+  <meta property="og:image" content="https://oscarbol09.github.io/thesisforge/assets/social_preview.png">
+  <meta property="og:locale" content="es_LA">
+
+  <!-- Twitter Cards -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:url" content="https://oscarbol09.github.io/thesisforge/">
+  <meta name="twitter:title" content="ThesisForge — Asistente de Investigación Académica">
+  <meta name="twitter:description" content="Estructura tu tesis con rigor metodológico, literatura real indexada y redacción modular APA 7.">
+  <meta name="twitter:image" content="https://oscarbol09.github.io/thesisforge/assets/social_preview.png">
+
+  <!-- Favicon & Touch Icons -->
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon.png">
+
+  <!-- Structured Data (Schema.org / JSON-LD) -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "ThesisForge",
+    "operatingSystem": "Windows, Linux, macOS",
+    "applicationCategory": "EducationalApplication",
+    "offers": {
+      "@type": "Offer",
+      "price": "0.00",
+      "priceCurrency": "USD"
+    },
+    "description": "Asistente y forjador de proyectos de investigación académica con IA, RAG y exportación APA 7.",
+    "author": {
+      "@type": "Person",
+      "name": "Oscar Madera",
+      "url": "https://github.com/oscarbol09"
+    },
+    "license": "https://opensource.org/licenses/Apache-2.0"
+  }
+  </script>
+
   <!-- Fonts: Inter & JetBrains Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -27,15 +75,26 @@
 <body class="h-full flex flex-col bg-[var(--bg-app)] text-[var(--text-primary)]" x-data>
 
   <!-- 1. Global Navigation Top Bar -->
-  <header class="h-16 border-b border-[var(--border-subtle)] bg-[var(--bg-surface)] px-6 flex items-center justify-between z-30 shrink-0">
-    <div class="flex items-center gap-4">
-      <div class="flex items-center gap-3 cursor-pointer" @click="$store.app.activeTab = 'dashboard'">
-        <div class="w-9 h-9 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold text-lg shadow-sm">
+  <header class="h-16 border-b border-[var(--border-subtle)] bg-[var(--bg-surface)] px-4 sm:px-6 flex items-center justify-between z-30 shrink-0" role="banner">
+    <div class="flex items-center gap-3 sm:gap-4">
+      
+      <!-- Mobile sidebar toggle -->
+      <button 
+        class="md:hidden btn btn-ghost btn-sm p-1.5 text-[var(--text-secondary)]" 
+        @click="$store.app.sidebarOpen = !$store.app.sidebarOpen"
+        aria-label="Alternar menú lateral de navegación"
+        :aria-expanded="$store.app.sidebarOpen"
+      >
+        <svg class="w-5 h-5" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
+
+      <div class="flex items-center gap-2.5 sm:gap-3 cursor-pointer" @click="$store.app.activeTab = 'dashboard'" role="link" aria-label="ThesisForge - Ir al portafolio de proyectos">
+        <div class="w-9 h-9 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold text-lg shadow-sm" aria-hidden="true">
           TF
         </div>
         <div>
           <h1 class="font-bold text-base tracking-tight leading-none text-[var(--text-primary)]">ThesisForge</h1>
-          <span class="text-xs text-[var(--text-muted)] font-mono">v0.5.0</span>
+          <span class="text-xs text-[var(--text-muted)] font-mono">v0.6.0</span>
         </div>
       </div>
 
@@ -48,21 +107,21 @@
     </div>
 
     <!-- Right Controls -->
-    <div class="flex items-center gap-3">
-      <button class="btn btn-primary btn-sm" @click="$store.app.showCreateModal = true">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+    <div class="flex items-center gap-2 sm:gap-3">
+      <button class="btn btn-primary btn-sm" @click="$store.app.showCreateModal = true" aria-label="Crear nuevo proyecto (Atajo Ctrl+K)">
+        <svg class="w-4 h-4" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
         <span>Nuevo Proyecto</span>
-        <kbd class="hidden sm:inline-block px-1.5 py-0.5 text-[10px] bg-blue-700/50 rounded text-blue-100 font-mono">Ctrl+K</kbd>
+        <kbd class="hidden sm:inline-block px-1.5 py-0.5 text-[10px] bg-blue-700/50 rounded text-blue-100 font-mono" aria-hidden="true">Ctrl+K</kbd>
       </button>
 
-      <button class="btn btn-ghost btn-sm text-[var(--text-secondary)]" @click="$store.app.toggleTheme()" title="Cambiar tema">
-        <svg x-show="$store.app.theme === 'dark'" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
-        <svg x-show="$store.app.theme === 'light'" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+      <button class="btn btn-ghost btn-sm text-[var(--text-secondary)]" @click="$store.app.toggleTheme()" aria-label="Alternar modo claro y oscuro" title="Cambiar tema">
+        <svg x-show="$store.app.theme === 'dark'" class="w-4 h-4" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+        <svg x-show="$store.app.theme === 'light'" class="w-4 h-4" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
       </button>
 
-      <button class="btn btn-outline btn-sm" @click="$store.app.showSettingsModal = true" title="Configurar proveedores BYOK">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-        <span class="hidden sm:inline">Claves API</span>
+      <button class="btn btn-outline btn-sm" @click="$store.app.showSettingsModal = true" aria-label="Configurar proveedores BYOK y claves cifradas" title="Configurar proveedores BYOK">
+        <svg class="w-4 h-4" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        <span class="hidden sm:inline">Bóveda BYOK</span>
       </button>
     </div>
   </header>
@@ -71,100 +130,128 @@
   <div class="flex-1 flex overflow-hidden">
     
     <!-- Left Navigation Sidebar -->
-    <nav class="w-64 border-r border-[var(--border-subtle)] bg-[var(--bg-surface)] flex flex-col justify-between p-4 shrink-0 overflow-y-auto">
+    <nav 
+      class="w-64 border-r border-[var(--border-subtle)] bg-[var(--bg-surface)] flex flex-col justify-between p-4 shrink-0 overflow-y-auto z-20 md:static fixed inset-y-0 left-0 top-16 md:top-0 transition-transform duration-200"
+      :class="$store.app.sidebarOpen ? 'translate-x-0 shadow-xl' : '-translate-x-full md:translate-x-0'"
+      aria-label="Navegación metodológica principal"
+    >
       <div class="space-y-1">
         
         <button 
-          @click="$store.app.activeTab = 'dashboard'" 
+          @click="$store.app.activeTab = 'dashboard'; $store.app.sidebarOpen = false" 
           :class="$store.app.activeTab === 'dashboard' ? 'bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-400 font-semibold' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)]'"
-          class="w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm transition-colors text-left">
-          <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
+          class="w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm transition-colors text-left"
+          aria-label="Ir al portafolio de mis proyectos"
+        >
+          <svg class="w-4 h-4 shrink-0" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
           <span>Mis Proyectos</span>
         </button>
 
-        <div class="pt-4 pb-1 px-3 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+        <div class="pt-4 pb-1 px-3 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]" aria-hidden="true">
           Fases Metodológicas
         </div>
 
         <button 
-          @click="$store.app.activeTab = 'advisor'"
+          @click="$store.app.activeTab = 'advisor'; $store.app.sidebarOpen = false"
           :disabled="!$store.app.activeProject"
           :class="[$store.app.activeTab === 'advisor' ? 'bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-400 font-semibold' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)]', !$store.app.activeProject ? 'opacity-40 cursor-not-allowed' : '']"
-          class="w-full flex items-center justify-between px-3 py-2.5 rounded-md text-sm transition-colors text-left">
+          class="w-full flex items-center justify-between px-3 py-2.5 rounded-md text-sm transition-colors text-left"
+          aria-label="Fase 1: Asesor Metodológico"
+        >
           <div class="flex items-center gap-3 truncate">
-            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <svg class="w-4 h-4 shrink-0" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
             <span class="truncate">1. Asesor Metodológico</span>
           </div>
         </button>
 
         <button 
-          @click="$store.app.activeTab = 'literature'"
+          @click="$store.app.activeTab = 'literature'; $store.app.sidebarOpen = false"
           :disabled="!$store.app.activeProject"
           :class="[$store.app.activeTab === 'literature' ? 'bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-400 font-semibold' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)]', !$store.app.activeProject ? 'opacity-40 cursor-not-allowed' : '']"
-          class="w-full flex items-center justify-between px-3 py-2.5 rounded-md text-sm transition-colors text-left">
+          class="w-full flex items-center justify-between px-3 py-2.5 rounded-md text-sm transition-colors text-left"
+          aria-label="Fase 2: Literatura & RAG"
+        >
           <div class="flex items-center gap-3 truncate">
-            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+            <svg class="w-4 h-4 shrink-0" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
             <span class="truncate">2. Literatura & RAG</span>
           </div>
         </button>
 
         <button 
-          @click="$store.app.activeTab = 'drafting'"
+          @click="$store.app.activeTab = 'drafting'; $store.app.sidebarOpen = false"
           :disabled="!$store.app.activeProject"
           :class="[$store.app.activeTab === 'drafting' ? 'bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-400 font-semibold' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)]', !$store.app.activeProject ? 'opacity-40 cursor-not-allowed' : '']"
-          class="w-full flex items-center justify-between px-3 py-2.5 rounded-md text-sm transition-colors text-left">
+          class="w-full flex items-center justify-between px-3 py-2.5 rounded-md text-sm transition-colors text-left"
+          aria-label="Fase 3: Redacción Capitular"
+        >
           <div class="flex items-center gap-3 truncate">
-            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+            <svg class="w-4 h-4 shrink-0" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
             <span class="truncate">3. Redacción Capitular</span>
           </div>
         </button>
 
         <button 
-          @click="$store.app.activeTab = 'export'"
+          @click="$store.app.activeTab = 'export'; $store.app.sidebarOpen = false"
           :disabled="!$store.app.activeProject"
           :class="[$store.app.activeTab === 'export' ? 'bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-400 font-semibold' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)]', !$store.app.activeProject ? 'opacity-40 cursor-not-allowed' : '']"
-          class="w-full flex items-center justify-between px-3 py-2.5 rounded-md text-sm transition-colors text-left">
+          class="w-full flex items-center justify-between px-3 py-2.5 rounded-md text-sm transition-colors text-left"
+          aria-label="Fase 4: Exportar Word APA 7"
+        >
           <div class="flex items-center gap-3 truncate">
-            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+            <svg class="w-4 h-4 shrink-0" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
             <span class="truncate">4. Exportar DOCX APA 7</span>
           </div>
         </button>
 
-        <div class="pt-4 pb-1 px-3 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+        <div class="pt-4 pb-1 px-3 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]" aria-hidden="true">
           Tribunal & Sustentación
         </div>
 
         <button 
-          @click="$store.app.activeTab = 'jury'"
+          @click="$store.app.activeTab = 'jury'; $store.app.sidebarOpen = false"
           :disabled="!$store.app.activeProject"
           :class="[$store.app.activeTab === 'jury' ? 'bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-400 font-semibold' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)]', !$store.app.activeProject ? 'opacity-40 cursor-not-allowed' : '']"
-          class="w-full flex items-center justify-between px-3 py-2.5 rounded-md text-sm transition-colors text-left">
+          class="w-full flex items-center justify-between px-3 py-2.5 rounded-md text-sm transition-colors text-left"
+          aria-label="Fase 5: Auditoría de Jurado Multi-Agente"
+        >
           <div class="flex items-center gap-3 truncate">
-            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+            <svg class="w-4 h-4 shrink-0" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
             <span class="truncate">5. Auditoría de Jurado</span>
           </div>
         </button>
 
         <button 
-          @click="$store.app.activeTab = 'defense'"
+          @click="$store.app.activeTab = 'defense'; $store.app.sidebarOpen = false"
           :disabled="!$store.app.activeProject"
           :class="[$store.app.activeTab === 'defense' ? 'bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-400 font-semibold' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)]', !$store.app.activeProject ? 'opacity-40 cursor-not-allowed' : '']"
-          class="w-full flex items-center justify-between px-3 py-2.5 rounded-md text-sm transition-colors text-left">
+          class="w-full flex items-center justify-between px-3 py-2.5 rounded-md text-sm transition-colors text-left"
+          aria-label="Fase 6: Simulador de Defensa Oral"
+        >
           <div class="flex items-center gap-3 truncate">
-            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z"/></svg>
+            <svg class="w-4 h-4 shrink-0" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z"/></svg>
             <span class="truncate">6. Defensa Oral</span>
           </div>
         </button>
       </div>
 
-      <div class="pt-4 border-t border-[var(--border-subtle)] text-xs text-[var(--text-muted)] flex items-center justify-between">
-        <span>SQLite WAL + ChromaDB</span>
-        <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block" title="Servidor Local Activo"></span>
+      <!-- Sidebar Footer Links -->
+      <div class="pt-4 border-t border-[var(--border-subtle)] space-y-2 text-xs text-[var(--text-muted)]">
+        <div class="flex items-center justify-between">
+          <span>SQLite WAL + ChromaDB</span>
+          <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block" title="Servidor Local Activo" aria-label="Estado: Servidor Local Activo"></span>
+        </div>
+        <div class="flex items-center gap-2 pt-1 text-[11px] text-[var(--text-muted)] flex-wrap">
+          <a href="https://oscarbol09.github.io/thesisforge/legal/privacy/" target="_blank" rel="noopener noreferrer" class="hover:underline">Privacidad</a>
+          <span>•</span>
+          <a href="https://oscarbol09.github.io/thesisforge/legal/terms/" target="_blank" rel="noopener noreferrer" class="hover:underline">Términos</a>
+          <span>•</span>
+          <a href="https://oscarbol09.github.io/thesisforge/legal/cookies/" target="_blank" rel="noopener noreferrer" class="hover:underline">Cookies</a>
+        </div>
       </div>
     </nav>
 
     <!-- Main Dynamic Content Canvas -->
-    <main class="flex-1 overflow-y-auto p-6 md:p-8">
+    <main class="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8" role="main">
       
       <div x-show="$store.app.activeTab === 'dashboard'" x-data="dashboardComponent()">
         <template x-if="$store.app.activeTab === 'dashboard'">
@@ -217,65 +304,121 @@
   </div>
 
   <!-- 3. Modals Container -->
-  <div class="modal-backdrop" x-show="$store.app.showCreateModal" x-transition.opacity @click.self="$store.app.showCreateModal = false" style="display: none;">
+  <!-- Create Project Modal with Focus Trap & Escape Dismiss -->
+  <div 
+    class="modal-backdrop" 
+    x-show="$store.app.showCreateModal" 
+    x-transition.opacity 
+    @click.self="$store.app.showCreateModal = false" 
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="modal-create-title"
+    style="display: none;"
+  >
     <div class="modal-content" x-data="createProjectModal()">
       <div class="card-header">
-        <h3 class="font-bold text-base text-[var(--text-primary)]">Nuevo Proyecto de Investigación</h3>
-        <button class="btn btn-ghost btn-sm text-[var(--text-muted)]" @click="$store.app.showCreateModal = false">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        <h3 id="modal-create-title" class="font-bold text-base text-[var(--text-primary)]">Nuevo Proyecto de Investigación</h3>
+        <button class="btn btn-ghost btn-sm text-[var(--text-muted)]" @click="$store.app.showCreateModal = false" aria-label="Cerrar modal de nuevo proyecto">
+          <svg class="w-4 h-4" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
         </button>
       </div>
       <form @submit.prevent="submitCreate()">
         <div class="card-body space-y-4">
           <div>
-            <label class="block text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-1">Título del Proyecto *</label>
-            <input type="text" x-model="form.title" required placeholder="Ej. Análisis del impacto de LLMs en la educación médica" class="w-full">
+            <label for="create-project-title" class="block text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-1">Título del Proyecto *</label>
+            <input id="create-project-title" type="text" x-model="form.title" required placeholder="Ej. Análisis del impacto de LLMs en la educación médica" class="w-full">
           </div>
           <div>
-            <label class="block text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-1">Nivel Académico *</label>
-            <select x-model="form.academic_level" class="w-full">
+            <label for="create-project-level" class="block text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-1">Nivel Académico *</label>
+            <select id="create-project-level" x-model="form.academic_level" class="w-full">
               <option value="pregrado">Pregrado / Grado</option>
               <option value="maestria">Maestría / Posgrado</option>
               <option value="doctorado">Doctorado (Ph.D.)</option>
             </select>
           </div>
           <div>
-            <label class="block text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-1">Área de Conocimiento</label>
-            <input type="text" x-model="form.area_of_study" placeholder="Ej. Informática Médica, Ciencias Sociales" class="w-full">
+            <label for="create-project-area" class="block text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-1">Área de Conocimiento</label>
+            <input id="create-project-area" type="text" x-model="form.area_of_study" placeholder="Ej. Informática Médica, Ciencias Sociales" class="w-full">
           </div>
           <div>
-            <label class="block text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-1">Tema Específico</label>
-            <input type="text" x-model="form.topic" placeholder="Ej. Detección de sesgos en modelos clínicos" class="w-full">
+            <label for="create-project-topic" class="block text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-1">Tema Específico</label>
+            <input id="create-project-topic" type="text" x-model="form.topic" placeholder="Ej. Detección de sesgos en modelos clínicos" class="w-full">
+          </div>
+
+          <!-- Informed Consent & Data Minimization Notice -->
+          <div class="p-3 rounded bg-[var(--bg-subtle)] border border-[var(--border-subtle)] text-[11px] text-[var(--text-secondary)] space-y-1">
+            <p class="font-medium text-[var(--text-primary)]">🔒 Privacidad y Procesamiento Local</p>
+            <p>Los datos de este proyecto se guardan localmente en tu base de datos SQLite. Al solicitar inferencia, el texto se procesará únicamente con el proveedor BYOK configurado en tu bóveda.</p>
           </div>
         </div>
-        <div class="card-footer flex justify-end gap-2">
-          <button type="button" class="btn btn-secondary btn-sm" @click="$store.app.showCreateModal = false">Cancelar</button>
-          <button type="submit" class="btn btn-primary btn-sm" :disabled="isSubmitting || !form.title.trim()">
-            <span x-show="!isSubmitting">Crear Proyecto</span>
-            <span x-show="isSubmitting">Creando...</span>
-          </button>
+        <div class="card-footer flex items-center justify-between gap-2">
+          <a href="https://oscarbol09.github.io/thesisforge/legal/terms/" target="_blank" rel="noopener noreferrer" class="text-[11px] text-[var(--text-muted)] hover:underline">Términos y Ética</a>
+          <div class="flex items-center gap-2">
+            <button type="button" class="btn btn-secondary btn-sm" @click="$store.app.showCreateModal = false">Cancelar</button>
+            <button type="submit" class="btn btn-primary btn-sm" :disabled="isSubmitting || !form.title.trim()">
+              <span x-show="!isSubmitting">Crear Proyecto</span>
+              <span x-show="isSubmitting">Creando...</span>
+            </button>
+          </div>
         </div>
       </form>
     </div>
   </div>
 
-  <div class="modal-backdrop" x-show="$store.app.showSettingsModal" x-transition.opacity @click.self="$store.app.showSettingsModal = false" style="display: none;">
+  <!-- Settings / BYOK Vault Modal with Focus Trap -->
+  <div 
+    class="modal-backdrop" 
+    x-show="$store.app.showSettingsModal" 
+    x-transition.opacity 
+    @click.self="$store.app.showSettingsModal = false" 
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="modal-settings-title"
+    style="display: none;"
+  >
     <div class="modal-content max-w-xl" x-data="settingsComponent()">
       <div class="card-header">
-        <h3 class="font-bold text-base text-[var(--text-primary)]">Configuración de Proveedores BYOK</h3>
-        <button class="btn btn-ghost btn-sm text-[var(--text-muted)]" @click="$store.app.showSettingsModal = false">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        <h3 id="modal-settings-title" class="font-bold text-base text-[var(--text-primary)]">Configuración de Proveedores BYOK</h3>
+        <button class="btn btn-ghost btn-sm text-[var(--text-muted)]" @click="$store.app.showSettingsModal = false" aria-label="Cerrar modal de configuración">
+          <svg class="w-4 h-4" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
         </button>
       </div>
       <div class="card-body" x-html="renderModal()"></div>
     </div>
   </div>
 
-  <!-- 4. Global Toast Notifications Hub -->
-  <div class="toast-container" aria-live="polite">
+  <!-- 4. Cookie & Local Storage Consent Banner (GDPR / CCPA / LOPDGDD) -->
+  <div 
+    x-show="!$store.app.cookieConsent" 
+    x-transition:enter="transition ease-out duration-300 transform"
+    x-transition:enter-start="translate-y-full opacity-0"
+    x-transition:enter-end="translate-y-0 opacity-100"
+    class="fixed bottom-0 inset-x-0 z-50 p-4 bg-[var(--bg-surface-elevated)] border-t border-[var(--border-strong)] shadow-2xl"
+    role="region"
+    aria-label="Aviso de privacidad y almacenamiento local"
+  >
+    <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-xs">
+      <div class="space-y-1">
+        <p class="font-bold text-sm text-[var(--text-primary)] flex items-center gap-2">
+          <span>🍪 Almacenamiento Local Técnico y Privacidad</span>
+        </p>
+        <p class="text-[var(--text-secondary)] leading-relaxed">
+          ThesisForge utiliza almacenamiento local (<code class="text-xs font-mono bg-[var(--bg-subtle)] px-1 py-0.5 rounded">localStorage</code>) para recordar tu tema visual, sesión activa y claves cifradas en tu propio dispositivo. <strong>No utilizamos cookies de rastreo publicitario ni telemetría invasiva.</strong> Consulta nuestra 
+          <a href="https://oscarbol09.github.io/thesisforge/legal/privacy/" target="_blank" rel="noopener noreferrer" class="text-blue-600 dark:text-blue-400 font-semibold hover:underline">Política de Privacidad</a> y <a href="https://oscarbol09.github.io/thesisforge/legal/cookies/" target="_blank" rel="noopener noreferrer" class="text-blue-600 dark:text-blue-400 font-semibold hover:underline">Política de Cookies</a>.
+        </p>
+      </div>
+      <div class="flex items-center gap-2 shrink-0 self-end sm:self-center">
+        <button type="button" @click="$store.app.dismissCookieConsent()" class="btn btn-secondary btn-sm">Continuar</button>
+        <button type="button" @click="$store.app.acceptCookieConsent()" class="btn btn-primary btn-sm">Entendido y Aceptar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. Global Toast Notifications Hub -->
+  <div class="toast-container" aria-live="polite" aria-label="Notificaciones del sistema">
     <template x-for="t in $store.app.toasts" :key="t.id">
       <div class="toast">
-        <div class="shrink-0 mt-0.5">
+        <div class="shrink-0 mt-0.5" aria-hidden="true">
           <svg x-show="t.type === 'success'" class="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
           <svg x-show="t.type === 'error'" class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
           <svg x-show="t.type === 'info'" class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
@@ -284,8 +427,8 @@
           <p class="font-semibold text-xs leading-tight text-[var(--text-primary)]" x-text="t.title"></p>
           <p class="text-xs text-[var(--text-secondary)] mt-0.5 leading-snug" x-text="t.message"></p>
         </div>
-        <button class="text-[var(--text-muted)] hover:text-[var(--text-primary)]" @click="$store.app.removeToast(t.id)">
-          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        <button class="text-[var(--text-muted)] hover:text-[var(--text-primary)]" @click="$store.app.removeToast(t.id)" aria-label="Cerrar notificación">
+          <svg class="w-3.5 h-3.5" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
         </button>
       </div>
     </template>
@@ -293,6 +436,7 @@
 
   <!-- Application Logic Modules (all external — no unsafe-inline required) -->
   <script src="js/tailwind-config.js"></script>
+  <script src="js/modals.js"></script>
   <script src="js/app.js"></script>
   <script src="js/dashboard.js"></script>
   <script src="js/advisor.js"></script>
@@ -302,6 +446,5 @@
   <script src="js/jury.js"></script>
   <script src="js/defense.js"></script>
   <script src="js/settings.js"></script>
-  <script src="js/modals.js"></script>
 </body>
 </html>
