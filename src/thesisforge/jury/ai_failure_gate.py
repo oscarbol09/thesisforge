@@ -8,7 +8,7 @@ sample overgeneralization, epistemic frame-lock, survivorship bias, and proxy fa
 from __future__ import annotations
 
 import re
-from enum import Enum
+from enum import StrEnum
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -16,7 +16,7 @@ from thesisforge.core.time import utc_now
 from thesisforge.models import AuditSeverity, ProjectStateDTO, ResearchApproach
 
 
-class AIFailureMode(str, Enum):
+class AIFailureMode(StrEnum):
     """Taxonomy of the 7 Critical AI Failure Modes in Academic Research."""
 
     BUG_AS_INSIGHT = "bug_as_insight"

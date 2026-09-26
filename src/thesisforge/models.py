@@ -2,7 +2,7 @@
 
 import uuid
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -10,7 +10,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 from thesisforge.core.time import utc_now
 
 
-class AcademicLevel(str, Enum):
+class AcademicLevel(StrEnum):
     """Academic level of the research project."""
 
     PREGRADO = "pregrado"
@@ -18,7 +18,7 @@ class AcademicLevel(str, Enum):
     DOCTORADO = "doctorado"
 
 
-class ResearchApproach(str, Enum):
+class ResearchApproach(StrEnum):
     """Methodological approach."""
 
     CUANTITATIVO = "cuantitativo"
@@ -26,7 +26,7 @@ class ResearchApproach(str, Enum):
     MIXTO = "mixto"
 
 
-class EpistemologicalParadigm(str, Enum):
+class EpistemologicalParadigm(StrEnum):
     """Epistemological and philosophical research paradigm."""
 
     POSITIVISTA = "positivista"
@@ -36,7 +36,7 @@ class EpistemologicalParadigm(str, Enum):
     PRAGMATICO = "pragmatico"
 
 
-class SamplingTechnique(str, Enum):
+class SamplingTechnique(StrEnum):
     """Scientific sampling strategy and selection technique."""
 
     PROBABILISTICO_ALEATORIO = "probabilistico_aleatorio"
@@ -48,7 +48,7 @@ class SamplingTechnique(str, Enum):
     CENSO_COMPLETO = "censo_completo"
 
 
-class VariableType(str, Enum):
+class VariableType(StrEnum):
     """Classification of empirical research variables."""
 
     INDEPENDIENTE = "independiente"
@@ -59,7 +59,7 @@ class VariableType(str, Enum):
     CATEGORIA_CUALITATIVA = "categoria_cualitativa"
 
 
-class MeasurementScale(str, Enum):
+class MeasurementScale(StrEnum):
     """Statistical scale of measurement for variable operationalization."""
 
     NOMINAL = "nominal"
@@ -68,7 +68,7 @@ class MeasurementScale(str, Enum):
     RAZON = "razon"
 
 
-class ProjectPhase(str, Enum):
+class ProjectPhase(StrEnum):
     """Current milestone/phase in the thesis construction pipeline."""
 
     SETUP = "setup"
@@ -79,7 +79,7 @@ class ProjectPhase(str, Enum):
     COMPLETED = "completed"
 
 
-class SectionStatus(str, Enum):
+class SectionStatus(StrEnum):
     """Status of an individual chapter or section draft."""
 
     PENDING = "pending"
@@ -88,7 +88,7 @@ class SectionStatus(str, Enum):
     APPROVED = "approved"
 
 
-class JurorRole(str, Enum):
+class JurorRole(StrEnum):
     """Role and profile of a member of the academic evaluation jury."""
 
     METODOLOGO = "metodologo"
@@ -97,7 +97,7 @@ class JurorRole(str, Enum):
     ABOGADO_DEL_DIABLO = "abogado_del_diablo"
 
 
-class AuditSeverity(str, Enum):
+class AuditSeverity(StrEnum):
     """Severity level of an audit observation or detected defect."""
 
     CRITICAL = "critical"
@@ -106,7 +106,7 @@ class AuditSeverity(str, Enum):
     NOTE = "note"
 
 
-class AuditIssueType(str, Enum):
+class AuditIssueType(StrEnum):
     """Taxonomy of scientific audit issues and methodological biases."""
 
     METHODOLOGICAL_INCONSISTENCY = "methodological_inconsistency"
@@ -117,7 +117,7 @@ class AuditIssueType(str, Enum):
     MISSING_LIMITATIONS = "missing_limitations"
 
 
-class JuryVerdict(str, Enum):
+class JuryVerdict(StrEnum):
     """Formal academic verdict emitted by the multi-perspective jury."""
 
     APROBADO_CON_DISTINCION = "aprobado_con_distincion"
@@ -127,7 +127,7 @@ class JuryVerdict(str, Enum):
     NO_APROBADO = "no_aprobado"
 
 
-class DefenseStatus(str, Enum):
+class DefenseStatus(StrEnum):
     """Status and final verdict of an interactive oral defense session."""
 
     IN_PROGRESS = "in_progress"
@@ -291,7 +291,7 @@ class SectionDraftDTO(BaseModel):
     updated_at: datetime = Field(default_factory=utc_now)
 
 
-class ExportFormat(str, Enum):
+class ExportFormat(StrEnum):
     """Supported document export formats."""
 
     DOCX = "docx"

@@ -1,13 +1,13 @@
 """State machine and step transitions for the Methodological Advisory Interview."""
 
-from enum import Enum
+from enum import StrEnum
 
 from pydantic import BaseModel, ConfigDict, Field
 
 from thesisforge.exceptions import InvalidPhaseTransitionError
 
 
-class AdvisorStep(str, Enum):
+class AdvisorStep(StrEnum):
     """Sequential and approach-aware steps of the methodological advisory interview."""
 
     SETUP = "setup"
