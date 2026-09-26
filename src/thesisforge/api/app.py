@@ -20,6 +20,7 @@ from thesisforge.api.routes_export import router as export_router
 from thesisforge.api.routes_jury import router as jury_router
 from thesisforge.api.routes_literature import router as literature_router
 from thesisforge.api.routes_project import router as project_router
+from thesisforge.api.routes_settings import router as settings_router
 from thesisforge.config import get_settings
 from thesisforge.core.logging import get_logger
 from thesisforge.exceptions import (
@@ -291,6 +292,7 @@ def create_app() -> FastAPI:
     app.include_router(export_router, dependencies=_auth_dep)
     app.include_router(jury_router, dependencies=_auth_dep)
     app.include_router(defense_router, dependencies=_auth_dep)
+    app.include_router(settings_router, dependencies=_auth_dep)
 
     # Health check & system metadata (public — no auth)
     @app.get("/health", tags=["system"])
