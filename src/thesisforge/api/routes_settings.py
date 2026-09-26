@@ -16,14 +16,26 @@ router = APIRouter(prefix="/api/settings", tags=["settings"])
 class SetApiKeyRequest(BaseModel):
     """Payload for storing or updating an encrypted API key."""
 
-    provider: str = Field(..., min_length=1, max_length=50, description="Provider identifier, e.g. openrouter, openai, gemini")
-    api_key: str = Field(..., min_length=1, max_length=500, description="Raw API key to be encrypted in the Fernet vault")
+    provider: str = Field(
+        ...,
+        min_length=1,
+        max_length=50,
+        description="Provider identifier, e.g. openrouter, openai, gemini",
+    )
+    api_key: str = Field(
+        ...,
+        min_length=1,
+        max_length=500,
+        description="Raw API key to be encrypted in the Fernet vault",
+    )
 
 
 class ProviderStatusResponse(BaseModel):
     """Response indicating which providers have an active encrypted key in the vault."""
 
-    configured_providers: list[str] = Field(..., description="List of provider IDs with stored keys")
+    configured_providers: list[str] = Field(
+        ..., description="List of provider IDs with stored keys"
+    )
 
 
 @router.get(
@@ -62,7 +74,11 @@ async def store_api_key(
 
     await keystore.store_key(normalized, clean_key)
     logger.info("Encrypted API key saved for provider.", extra={"provider": normalized})
-    return {"status": "ok", "provider": normalized, "message": "Key securely encrypted and stored in vault."}
+    return {
+        "status": "ok",
+        "provider": normalized,
+        "message": "Key securely encrypted and stored in vault.",
+    }
 
 
 @router.delete(
