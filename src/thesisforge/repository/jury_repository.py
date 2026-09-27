@@ -13,10 +13,9 @@ logger = get_logger(__name__)
 class JuryRepository:
     """Async repository for persisting jury evaluation reports and oral defense sessions."""
 
-    def __init__(self, db_manager: DatabaseManager, owner_id: str) -> None:
+    def __init__(self, db_manager: DatabaseManager, owner_id: str = "local") -> None:
         self.db = db_manager
         self.owner_id = owner_id
-        self.db = db_manager
 
     # --- Jury Evaluations ---
 
