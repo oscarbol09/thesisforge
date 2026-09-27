@@ -1,6 +1,6 @@
 """Unit tests for DraftService including generation, streaming, revision, and approvals."""
 
-from unittest.mock import AsyncMock
+from tests.fakes import FakeLLMRouter
 
 import pytest
 
@@ -22,17 +22,9 @@ from thesisforge.repository.project_repository import ProjectRepository
 
 @pytest.fixture
 def mock_llm_router():
-    router = AsyncMock(spec=LLMRouter)
-    router.complete.return_value = (
-        "Este es un borrador académico riguroso sobre el problema de investigación."
-    )
-
-    async def mock_stream(*args, **kwargs):
-        tokens = ["Este ", "es ", "un ", "borrador ", "en ", "streaming."]
-        for t in tokens:
-            yield t
-
-    router.stream_completion.side_effect = mock_stream
+    router = FakeLLMRouter()
+    router.canned_response = "Este es un borrador académico riguroso sobre el problema de investigación."
+    router.canned_stream_tokens = ["Este ", "es ", "un ", "borrador ", "en ", "streaming."]
     return router
 
 
@@ -127,7 +119,7 @@ async def test_draft_service_generate_section_draft(
     assert draft.status == SectionStatus.READY_FOR_REVIEW
     assert draft.word_count == 11
     assert draft.version == 2
-    assert mock_llm_router.complete.called
+    assert len(mock_llm_router.recorded_prompts) > 0
 
 
 @pytest.mark.asyncio
@@ -199,10 +191,11 @@ async def test_draft_service_revise_and_approve_section(
     assert revised.version == 2
 
     # 2. Approve (single section project advances to REVIEW)
-    mock_llm_router.complete.return_value = "Resumen sintético de conclusiones del proyecto."
+    mock_llm_router.canned_response = "Resumen sintético de conclusiones del proyecto."
     approved = await service.approve_section("proj-draft-05", "sec_5_1")
     assert approved.status == SectionStatus.APPROVED
     assert approved.summary == "Resumen sintético de conclusiones del proyecto."
 
     updated_proj = await repo.get_project("proj-draft-05")
     assert updated_proj.phase == ProjectPhase.REVIEW
+

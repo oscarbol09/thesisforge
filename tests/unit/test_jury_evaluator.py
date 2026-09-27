@@ -1,6 +1,6 @@
 """Unit tests for MultiAgentJuryEngine, bias detection, and score weighting."""
 
-from unittest.mock import AsyncMock
+from tests.fakes import FakeLLMRouter
 
 import pytest
 
@@ -152,8 +152,8 @@ async def test_quantitative_without_hypothesis_generates_issue(
 @pytest.mark.asyncio
 async def test_llm_panel_audit_with_mock(sample_complete_project: ProjectStateDTO) -> None:
     """Verify parsing and report generation when LLM returns structured JSON."""
-    mock_router = AsyncMock(spec=LLMRouter)
-    mock_router.complete_json.return_value = {
+    mock_router = FakeLLMRouter()
+    mock_router.canned_json_response = {
         "overall_score": 92.0,
         "verdict": "aprobado",
         "summary_dictamen": "El tribunal aprueba la propuesta destacando su diseño experimental.",
@@ -210,7 +210,7 @@ async def test_llm_panel_audit_with_mock(sample_complete_project: ProjectStateDT
     assert report.overall_score == 92.0
     assert report.verdict == JuryVerdict.APROBADO
     assert len(report.juror_evaluations) == 4
-    assert mock_router.complete_json.await_count == 1
+    assert len(mock_router.recorded_prompts) == 1
 
 
 def test_normalize_juror_role():
@@ -225,3 +225,4 @@ def test_normalize_juror_role():
     assert normalize_juror_role("Abogado del Diablo") == JurorRole.ABOGADO_DEL_DIABLO
     assert normalize_juror_role("devil_advocate") == JurorRole.ABOGADO_DEL_DIABLO
     assert normalize_juror_role(JurorRole.AUDITOR_ESTADISTICO) == JurorRole.AUDITOR_ESTADISTICO
+

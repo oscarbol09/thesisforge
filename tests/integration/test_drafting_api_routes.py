@@ -1,6 +1,6 @@
 """Integration tests for thesis drafting REST and WebSocket API endpoints."""
 
-from unittest.mock import AsyncMock
+from tests.fakes import FakeLLMRouter
 
 import pytest
 from fastapi.testclient import TestClient
@@ -23,14 +23,9 @@ from thesisforge.repository.project_repository import ProjectRepository
 
 @pytest.fixture
 def mock_llm_router():
-    router = AsyncMock(spec=LLMRouter)
-    router.complete.return_value = "Contenido de redacción académica rigurosa."
-
-    async def mock_stream(*args, **kwargs):
-        for token in ["El ", "presente ", "estudio ", "analiza..."]:
-            yield token
-
-    router.stream_completion.side_effect = mock_stream
+    router = FakeLLMRouter()
+    router.canned_response = "Contenido de redacción académica rigurosa."
+    router.canned_stream_tokens = ["El ", "presente ", "estudio ", "analiza..."]
     return router
 
 

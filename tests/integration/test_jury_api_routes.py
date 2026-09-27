@@ -1,6 +1,6 @@
 """Integration tests for thesis jury REST API endpoints."""
 
-from unittest.mock import AsyncMock
+from tests.fakes import FakeLLMRouter
 
 import pytest
 from httpx import ASGITransport, AsyncClient
@@ -22,27 +22,7 @@ from thesisforge.repository.project_repository import ProjectRepository
 
 @pytest.fixture
 def mock_llm_router():
-    router = AsyncMock(spec=LLMRouter)
-    router.complete_json.return_value = {
-        "overall_score": 88.0,
-        "verdict": "aprobado",
-        "summary_dictamen": "Proyecto aprobado con observaciones menores.",
-        "juror_evaluations": [
-            {
-                "juror_role": "metodologo",
-                "juror_name": "Dr. Arístides Valenzuela",
-                "dimension_name": "Consistencia Metodológica",
-                "score": 90.0,
-                "criteria_evaluation": "Diseño cuantitativo adecuado.",
-                "feedback": "Aclarar el tamaño del grupo experimental.",
-                "strengths": ["Objetivos delimitados"],
-                "flaws": [],
-            }
-        ],
-        "issues": [],
-        "mandatory_fixes": [],
-        "recommended_improvements": ["Añadir detalles del instrumento"],
-    }
+    router = FakeLLMRouter()
     return router
 
 

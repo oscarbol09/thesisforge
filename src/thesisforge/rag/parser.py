@@ -246,7 +246,7 @@ class PDFDocumentParser:
         try:
             for page_num in range(len(doc)):
                 page = doc[page_num]
-                page_text = page.get_text()  # type: ignore[no-untyped-call]
+                page_text = page.get_text("text", sort=True)  # type: ignore[no-untyped-call]
                 if not page_text or not page_text.strip():
                     continue
 
