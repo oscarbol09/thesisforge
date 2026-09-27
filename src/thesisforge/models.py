@@ -257,19 +257,19 @@ class MethodologyDTO(BaseModel):
 
     approach: ResearchApproach | None = None
     paradigm: EpistemologicalParadigm | None = None
-    design: str = Field(default="", max_length=500)
-    population: str = Field(default="", max_length=500)
-    sample: str = Field(default="", max_length=500)
+    design: str = Field(default="", max_length=3000)
+    population: str = Field(default="", max_length=3000)
+    sample: str = Field(default="", max_length=3000)
     sampling_technique: SamplingTechnique | None = None
-    unit_of_analysis: str = Field(default="", max_length=300)
+    unit_of_analysis: str = Field(default="", max_length=1000)
     instruments: list[str] = Field(default_factory=list)
-    analysis_technique: str = Field(default="", max_length=500)
+    analysis_technique: str = Field(default="", max_length=3000)
     inclusion_criteria: list[str] = Field(default_factory=list)
     exclusion_criteria: list[str] = Field(default_factory=list)
     ethical_considerations: list[str] = Field(default_factory=list)
-    data_collection_procedure: str = Field(default="", max_length=3000)
-    temporal_scope: str = Field(default="transversal", max_length=100)
-    spatial_setting: str = Field(default="", max_length=300)
+    data_collection_procedure: str = Field(default="", max_length=5000)
+    temporal_scope: str = Field(default="transversal", max_length=200)
+    spatial_setting: str = Field(default="", max_length=1000)
 
 
 class SectionDraftDTO(BaseModel):
@@ -362,16 +362,16 @@ class ProjectStateDTO(BaseModel):
     academic_level: AcademicLevel = AcademicLevel.PREGRADO
 
     # Phase 1: Problem Formulation & Methodology
-    area_of_study: str = Field(default="", max_length=200)
-    topic: str = Field(default="", max_length=300)
-    title: str = Field(default="", max_length=300)
-    research_problem: str = Field(default="", max_length=5000)
-    research_question: str = Field(default="", max_length=1000)
-    hypothesis: str | None = Field(default=None, max_length=2000)
-    general_objective: str = Field(default="", max_length=1000)
+    area_of_study: str = Field(default="", max_length=500)
+    topic: str = Field(default="", max_length=1000)
+    title: str = Field(default="", max_length=1000)
+    research_problem: str = Field(default="", max_length=10000)
+    research_question: str = Field(default="", max_length=2000)
+    hypothesis: str | None = Field(default=None, max_length=5000)
+    general_objective: str = Field(default="", max_length=2000)
     specific_objectives: list[str] = Field(default_factory=list)
-    justification: str = Field(default="", max_length=5000)
-    scope_limitations: str = Field(default="", max_length=3000)
+    justification: str = Field(default="", max_length=10000)
+    scope_limitations: str = Field(default="", max_length=5000)
     variables: list[str] = Field(default_factory=list)
     operationalized_variables: list[VariableOperationalizationDTO] = Field(default_factory=list)
     qualitative_categories: list[QualitativeCategoryDTO] = Field(default_factory=list)

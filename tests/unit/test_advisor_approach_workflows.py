@@ -171,3 +171,60 @@ def test_state_machine_approach_routing() -> None:
         step_order=quant_order,
     )
     assert next_quant == AdvisorStep.HYPOTHESIS
+
+
+def test_methodology_dto_long_descriptions() -> None:
+    """MethodologyDTO accommodates comprehensive academic descriptions up to 3000 characters."""
+    from thesisforge.models import MethodologyDTO
+
+    long_analysis = ("Análisis de contenido temático asistido por codificación axial. " * 30).strip()
+    assert len(long_analysis) > 600
+    dto = MethodologyDTO(
+        approach=ResearchApproach.CUALITATIVO,
+        analysis_technique=long_analysis,
+        design="Diseño fenomenológico hermenéutico con saturación teórica...",
+    )
+    assert dto.analysis_technique == long_analysis
+
+
+async def test_advisor_service_approve_methodology_idempotent() -> None:
+    """Approve methodology transitions from ORIENTATION to CONTEXT, and is idempotent if called again."""
+    from thesisforge.advisor.service import AdvisorService
+    from thesisforge.config import AppSettings
+    from thesisforge.llm.router import LLMRouter
+    from thesisforge.models import ProjectPhase, ProjectStateDTO
+    from thesisforge.repository.database import DatabaseManager
+    from thesisforge.repository.project_repository import ProjectRepository
+
+    db = DatabaseManager("sqlite+aiosqlite:///:memory:")
+    await db.initialize()
+    repo = ProjectRepository(db)
+    llm = LLMRouter(AppSettings())
+    service = AdvisorService(repo, llm)
+
+    # Create fully consistent project
+    project = ProjectStateDTO(
+        id="test-proj-01",
+        title="Estudio sobre IA Generativa y Educación",
+        area_of_study="Ciencias de la Educación",
+        topic="IA Generativa",
+        research_problem="La irrupción de las IA generativas en la educación superior genera desafíos pedagógicos sustanciales...",
+        research_question="¿En qué medida la IA generativa impacta en el rendimiento académico de los estudiantes?",
+        general_objective="Determinar el impacto de la IA generativa en el rendimiento académico.",
+        specific_objectives=[
+            "Diagnosticar el nivel actual de adopción de herramientas de IA.",
+            "Evaluar la correlación entre uso de IA y calificaciones promedio.",
+        ],
+        hypothesis="El uso guiado de IA generativa se asocia con un mayor rendimiento académico.",
+    )
+    project.phase = ProjectPhase.ORIENTATION
+    await repo.create_project(project)
+
+    # First approval -> transitions to CONTEXT
+    approved = await service.approve_methodology(project.id)
+    assert approved.phase == ProjectPhase.CONTEXT
+
+    # Second approval -> idempotent, remains CONTEXT without error
+    reapproved = await service.approve_methodology(project.id)
+    assert reapproved.phase == ProjectPhase.CONTEXT
+

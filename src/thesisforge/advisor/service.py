@@ -10,7 +10,7 @@ from thesisforge.advisor.consistency_matrix import (
 from thesisforge.advisor.state_machine import AdvisorStateMachine, AdvisorStep
 from thesisforge.advisor.validators import MethodologyValidator
 from thesisforge.core.logging import get_logger
-from thesisforge.exceptions import InvalidPhaseTransitionError, MethodologyValidationError
+from thesisforge.exceptions import MethodologyValidationError
 from thesisforge.llm.prompts import (
     ADVISOR_SYSTEM_PROMPT,
     CONSISTENCY_AUDIT_PROMPT,
@@ -465,17 +465,19 @@ class AdvisorService:
                 details={"issues": ", ".join(audit["issues"])},
             )
 
-        if project.phase not in (ProjectPhase.SETUP, ProjectPhase.ORIENTATION):
-            raise InvalidPhaseTransitionError(
-                f"Fase inválida para aprobación metodológica: {project.phase.value}"
+        # Idempotent phase progression: transition forward if in SETUP or ORIENTATION
+        if project.phase in (ProjectPhase.SETUP, ProjectPhase.ORIENTATION):
+            project.phase = ProjectPhase.CONTEXT
+            await self.repo.update_project(project)
+            logger.info(
+                "Project methodology approved and transitioned to CONTEXT phase.",
+                extra={"project_id": project.id},
             )
-
-        project.phase = ProjectPhase.CONTEXT
-        await self.repo.update_project(project)
-        logger.info(
-            "Project methodology approved and transitioned to CONTEXT phase.",
-            extra={"project_id": project.id},
-        )
+        else:
+            logger.info(
+                "Project methodology already approved.",
+                extra={"project_id": project.id, "current_phase": project.phase.value},
+            )
         return project
 
     async def get_consistency_matrix(self, project_id: str) -> ConsistencyMatrixReport:
