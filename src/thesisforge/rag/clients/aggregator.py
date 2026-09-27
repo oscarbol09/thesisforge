@@ -7,6 +7,7 @@ from thesisforge.core.logging import get_logger
 from thesisforge.models import AcademicSearchResultDTO
 from thesisforge.rag.clients.arxiv import ArxivClient
 from thesisforge.rag.clients.crossref import CrossRefClient
+from thesisforge.rag.clients.openalex import OpenAlexClient
 from thesisforge.rag.clients.semantic_scholar import SemanticScholarClient
 
 logger = get_logger(__name__)
@@ -29,17 +30,19 @@ def _normalize_title(title: str) -> str:
 
 
 class AcademicSearchAggregator:
-    """Aggregates and deduplicates academic search results across Semantic Scholar, ArXiv, and CrossRef."""
+    """Aggregates and deduplicates academic search results across Semantic Scholar, ArXiv, CrossRef, and OpenAlex."""
 
     def __init__(
         self,
         semantic_scholar: SemanticScholarClient,
         arxiv: ArxivClient,
         crossref: CrossRefClient,
+        openalex: OpenAlexClient | None = None,
     ) -> None:
         self.semantic_scholar = semantic_scholar
         self.arxiv = arxiv
         self.crossref = crossref
+        self.openalex = openalex or OpenAlexClient()
 
     async def search(
         self,
@@ -55,7 +58,7 @@ class AcademicSearchAggregator:
             return []
 
         enabled_sources = {
-            s.lower() for s in (sources or ["semantic_scholar", "arxiv", "crossref"])
+            s.lower() for s in (sources or ["semantic_scholar", "arxiv", "crossref", "openalex"])
         }
 
         tasks: list[asyncio.Task[list[AcademicSearchResultDTO]]] = []
@@ -80,6 +83,18 @@ class AcademicSearchAggregator:
         if "crossref" in enabled_sources:
             tasks.append(
                 asyncio.create_task(self.crossref.search(clean_query, limit=limit_per_source))
+            )
+
+        if "openalex" in enabled_sources:
+            tasks.append(
+                asyncio.create_task(
+                    self.openalex.search(
+                        clean_query,
+                        limit=limit_per_source,
+                        year_start=year_start,
+                        year_end=year_end,
+                    )
+                )
             )
 
         raw_results: list[list[AcademicSearchResultDTO] | BaseException] = await asyncio.gather(

@@ -12,6 +12,7 @@ function literatureComponent() {
       semantic_scholar: true,
       arxiv: true,
       crossref: true,
+      openalex: true,
     },
     yearStart: '',
     yearEnd: '',
@@ -325,7 +326,7 @@ function literatureComponent() {
               <svg class="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
               <div class="text-xs text-[var(--text-secondary)] space-y-1">
                 <p class="font-semibold text-[var(--text-primary)]">Búsqueda Federada de Literatura Científica Abierta</p>
-                <p>ThesisForge consulta directamente los repositorios académicos de <strong>Semantic Scholar</strong>, <strong>ArXiv</strong> y <strong>CrossRef</strong> mediante sus APIs públicas de acceso abierto. <em>No requieres configurar ninguna clave API para buscar o vincular citas bibliográficas.</em></p>
+                <p>ThesisForge consulta directamente los repositorios académicos de <strong>Semantic Scholar</strong>, <strong>OpenAlex</strong>, <strong>ArXiv</strong> y <strong>CrossRef</strong> mediante sus APIs públicas de acceso abierto. <em>No requieres configurar ninguna clave API para buscar o vincular citas bibliográficas.</em></p>
               </div>
             </div>
 
@@ -355,6 +356,10 @@ function literatureComponent() {
                   <label class="flex items-center gap-1.5 cursor-pointer">
                     <input type="checkbox" x-model="sources.semantic_scholar" class="rounded text-blue-600">
                     <span>Semantic Scholar</span>
+                  </label>
+                  <label class="flex items-center gap-1.5 cursor-pointer">
+                    <input type="checkbox" x-model="sources.openalex" class="rounded text-blue-600">
+                    <span>OpenAlex</span>
                   </label>
                   <label class="flex items-center gap-1.5 cursor-pointer">
                     <input type="checkbox" x-model="sources.arxiv" class="rounded text-blue-600">

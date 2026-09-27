@@ -19,6 +19,7 @@ from thesisforge.rag.citation_guard import CitationGuard
 from thesisforge.rag.clients.aggregator import AcademicSearchAggregator
 from thesisforge.rag.clients.arxiv import ArxivClient
 from thesisforge.rag.clients.crossref import CrossRefClient
+from thesisforge.rag.clients.openalex import OpenAlexClient
 from thesisforge.rag.clients.semantic_scholar import SemanticScholarClient
 from thesisforge.rag.parser import PDFDocumentParser
 from thesisforge.rag.prisma import PRISMAFlowReport
@@ -51,10 +52,12 @@ class RAGService:
         self.semantic_scholar = SemanticScholarClient(cache=self.cache)
         self.arxiv = ArxivClient(cache=self.cache)
         self.crossref = CrossRefClient(cache=self.cache)
+        self.openalex = OpenAlexClient(cache=self.cache)
         self.aggregator = AcademicSearchAggregator(
             semantic_scholar=self.semantic_scholar,
             arxiv=self.arxiv,
             crossref=self.crossref,
+            openalex=self.openalex,
         )
 
         # Vector Store & Parser

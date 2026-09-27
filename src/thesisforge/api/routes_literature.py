@@ -56,7 +56,7 @@ async def search_literature(
     q: str = Query(..., min_length=2, description="Búsqueda de artículos científicos"),
     limit: int = Query(10, ge=1, le=50),
     source: list[str] | None = Query(
-        None, description="Fuentes: semantic_scholar, arxiv, crossref"
+        None, description="Fuentes: semantic_scholar, arxiv, crossref, openalex"
     ),
     year_start: int | None = Query(None, ge=1900, le=2100),
     year_end: int | None = Query(None, ge=1900, le=2100),
