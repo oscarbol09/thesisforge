@@ -14,15 +14,17 @@ logger = get_logger(__name__)
 class ProjectRepository:
     """Repository for managing ProjectStateDTO persistence in SQLite."""
 
-    def __init__(self, db_manager: DatabaseManager) -> None:
+    def __init__(self, db_manager: DatabaseManager, owner_id: str) -> None:
         self.db = db_manager
+        self.owner_id = owner_id
 
     async def create_project(self, project: ProjectStateDTO) -> ProjectStateDTO:
         """Persist a new project state in the database."""
         now_str = format_iso_utc(project.created_at)
         updated_str = format_iso_utc(project.updated_at)
+
+        project.owner_id = self.owner_id
         state_json = project.model_dump_json()
-        owner_id = project.owner_id or "local"
 
         query = """
             INSERT INTO projects (id, title, academic_level, phase, state_json, owner_id, version, created_at, updated_at)
@@ -38,7 +40,7 @@ class ProjectRepository:
                     project.academic_level.value,
                     project.phase.value,
                     state_json,
-                    owner_id,
+                    self.owner_id,
                     now_str,
                     updated_str,
                 ),
@@ -47,18 +49,14 @@ class ProjectRepository:
 
         logger.info(
             "Project created successfully.",
-            extra={"project_id": project.id, "owner_id": owner_id},
+            extra={"project_id": project.id, "owner_id": self.owner_id},
         )
         return project
 
-    async def get_project(self, project_id: str, owner_id: str | None = None) -> ProjectStateDTO:
-        """Retrieve a project by ID with optional owner tenant scoping or raise ProjectNotFoundError."""
-        if owner_id is not None:
-            query = "SELECT state_json FROM projects WHERE id = ? AND (owner_id = ? OR owner_id = 'local')"
-            params: tuple[Any, ...] = (project_id, owner_id)
-        else:
-            query = "SELECT state_json FROM projects WHERE id = ?"
-            params = (project_id,)
+    async def get_project(self, project_id: str) -> ProjectStateDTO:
+        """Retrieve a project by ID with tenant scoping or raise ProjectNotFoundError."""
+        query = "SELECT state_json FROM projects WHERE id = ? AND owner_id = ?"
+        params: tuple[Any, ...] = (project_id, self.owner_id)
 
         async with self.db.get_connection() as conn:
             cursor = await conn.execute(query, params)
@@ -69,21 +67,15 @@ class ProjectRepository:
             state_json = str(row["state_json"])
             return ProjectStateDTO.model_validate_json(state_json)
 
-    async def get_project_with_version(
-        self, project_id: str, owner_id: str | None = None
-    ) -> tuple[ProjectStateDTO, int]:
+    async def get_project_with_version(self, project_id: str) -> tuple[ProjectStateDTO, int]:
         """Retrieve a project and its current optimistic-lock version.
 
         Returns:
             Tuple of (ProjectStateDTO, version) where version is used for
             optimistic concurrency control in subsequent update_project_versioned calls.
         """
-        if owner_id is not None:
-            query = "SELECT state_json, version FROM projects WHERE id = ? AND (owner_id = ? OR owner_id = 'local')"
-            params: tuple[Any, ...] = (project_id, owner_id)
-        else:
-            query = "SELECT state_json, version FROM projects WHERE id = ?"
-            params = (project_id,)
+        query = "SELECT state_json, version FROM projects WHERE id = ? AND owner_id = ?"
+        params: tuple[Any, ...] = (project_id, self.owner_id)
 
         async with self.db.get_connection() as conn:
             cursor = await conn.execute(query, params)
@@ -95,50 +87,31 @@ class ProjectRepository:
             version = int(row["version"])
             return ProjectStateDTO.model_validate_json(state_json), version
 
-    async def update_project(
-        self, project: ProjectStateDTO, owner_id: str | None = None
-    ) -> ProjectStateDTO:
+    async def update_project(self, project: ProjectStateDTO) -> ProjectStateDTO:
         """Update an existing project state (blind write — use update_project_versioned
         when concurrent access from the GUI or WebSocket is possible).
         """
         project.updated_at = utc_now()
+        project.owner_id = self.owner_id
         updated_str = format_iso_utc(project.updated_at)
         state_json = project.model_dump_json()
-        target_owner = project.owner_id or owner_id or "local"
 
-        if owner_id is not None:
-            query = """
-                UPDATE projects
-                SET title = ?, academic_level = ?, phase = ?, state_json = ?, owner_id = ?,
-                    version = version + 1, updated_at = ?
-                WHERE id = ? AND (owner_id = ? OR owner_id = 'local')
-            """
-            params: tuple[Any, ...] = (
-                project.title or "Proyecto sin título",
-                project.academic_level.value,
-                project.phase.value,
-                state_json,
-                target_owner,
-                updated_str,
-                project.id,
-                owner_id,
-            )
-        else:
-            query = """
-                UPDATE projects
-                SET title = ?, academic_level = ?, phase = ?, state_json = ?, owner_id = ?,
-                    version = version + 1, updated_at = ?
-                WHERE id = ?
-            """
-            params = (
-                project.title or "Proyecto sin título",
-                project.academic_level.value,
-                project.phase.value,
-                state_json,
-                target_owner,
-                updated_str,
-                project.id,
-            )
+        query = """
+            UPDATE projects
+            SET title = ?, academic_level = ?, phase = ?, state_json = ?, owner_id = ?,
+                version = version + 1, updated_at = ?
+            WHERE id = ? AND owner_id = ?
+        """
+        params: tuple[Any, ...] = (
+            project.title or "Proyecto sin título",
+            project.academic_level.value,
+            project.phase.value,
+            state_json,
+            self.owner_id,
+            updated_str,
+            project.id,
+            self.owner_id,
+        )
 
         async with self.db.get_connection() as conn:
             cursor = await conn.execute(query, params)
@@ -155,7 +128,6 @@ class ProjectRepository:
         self,
         project: ProjectStateDTO,
         expected_version: int,
-        owner_id: str | None = None,
     ) -> ProjectStateDTO:
         """Update a project with optimistic concurrency control and owner isolation.
 
@@ -163,45 +135,27 @@ class ProjectRepository:
         already incremented the version since the caller last read it.
         """
         project.updated_at = utc_now()
+        project.owner_id = self.owner_id
         updated_str = format_iso_utc(project.updated_at)
         state_json = project.model_dump_json()
-        target_owner = project.owner_id or owner_id or "local"
 
-        if owner_id is not None:
-            query = """
-                UPDATE projects
-                SET title = ?, academic_level = ?, phase = ?, state_json = ?, owner_id = ?,
-                    version = version + 1, updated_at = ?
-                WHERE id = ? AND version = ? AND (owner_id = ? OR owner_id = 'local')
-            """
-            params: tuple[Any, ...] = (
-                project.title or "Proyecto sin título",
-                project.academic_level.value,
-                project.phase.value,
-                state_json,
-                target_owner,
-                updated_str,
-                project.id,
-                expected_version,
-                owner_id,
-            )
-        else:
-            query = """
-                UPDATE projects
-                SET title = ?, academic_level = ?, phase = ?, state_json = ?, owner_id = ?,
-                    version = version + 1, updated_at = ?
-                WHERE id = ? AND version = ?
-            """
-            params = (
-                project.title or "Proyecto sin título",
-                project.academic_level.value,
-                project.phase.value,
-                state_json,
-                target_owner,
-                updated_str,
-                project.id,
-                expected_version,
-            )
+        query = """
+            UPDATE projects
+            SET title = ?, academic_level = ?, phase = ?, state_json = ?, owner_id = ?,
+                version = version + 1, updated_at = ?
+            WHERE id = ? AND version = ? AND owner_id = ?
+        """
+        params: tuple[Any, ...] = (
+            project.title or "Proyecto sin título",
+            project.academic_level.value,
+            project.phase.value,
+            state_json,
+            self.owner_id,
+            updated_str,
+            project.id,
+            expected_version,
+            self.owner_id,
+        )
 
         async with self.db.get_connection() as conn:
             cursor = await conn.execute(query, params)
@@ -209,12 +163,8 @@ class ProjectRepository:
 
             if cursor.rowcount == 0:
                 # Distinguish between project not found and version conflict
-                check_query = (
-                    "SELECT version FROM projects WHERE id = ? AND (owner_id = ? OR owner_id = 'local')"
-                    if owner_id is not None
-                    else "SELECT version FROM projects WHERE id = ?"
-                )
-                check_params = (project.id, owner_id) if owner_id is not None else (project.id,)
+                check_query = "SELECT version FROM projects WHERE id = ? AND owner_id = ?"
+                check_params = (project.id, self.owner_id)
                 check_cursor = await conn.execute(check_query, check_params)
                 check_row = await check_cursor.fetchone()
                 if check_row is None:
@@ -234,14 +184,10 @@ class ProjectRepository:
         )
         return project
 
-    async def delete_project(self, project_id: str, owner_id: str | None = None) -> bool:
+    async def delete_project(self, project_id: str) -> bool:
         """Delete a project by ID with owner scoping. ChromaDB collection cleanup is handled by caller."""
-        if owner_id is not None:
-            query = "DELETE FROM projects WHERE id = ? AND (owner_id = ? OR owner_id = 'local')"
-            params: tuple[Any, ...] = (project_id, owner_id)
-        else:
-            query = "DELETE FROM projects WHERE id = ?"
-            params = (project_id,)
+        query = "DELETE FROM projects WHERE id = ? AND owner_id = ?"
+        params: tuple[Any, ...] = (project_id, self.owner_id)
 
         async with self.db.get_connection() as conn:
             cursor = await conn.execute(query, params)
@@ -254,14 +200,10 @@ class ProjectRepository:
         logger.info("Project deleted successfully.", extra={"project_id": project_id})
         return True
 
-    async def list_projects(self, owner_id: str | None = None) -> list[ProjectSummaryDTO]:
+    async def list_projects(self) -> list[ProjectSummaryDTO]:
         """Return list of project summaries filtered by owner ordered by updated_at descending."""
-        if owner_id is not None:
-            query = "SELECT state_json FROM projects WHERE (owner_id = ? OR owner_id = 'local') ORDER BY updated_at DESC"
-            params: tuple[Any, ...] = (owner_id,)
-        else:
-            query = "SELECT state_json FROM projects ORDER BY updated_at DESC"
-            params = ()
+        query = "SELECT state_json FROM projects WHERE owner_id = ? ORDER BY updated_at DESC"
+        params: tuple[Any, ...] = (self.owner_id,)
 
         summaries: list[ProjectSummaryDTO] = []
         async with self.db.get_connection() as conn:
@@ -273,16 +215,10 @@ class ProjectRepository:
                 summaries.append(proj.to_summary())
         return summaries
 
-    async def list_by_phase(
-        self, phase: ProjectPhase, owner_id: str | None = None
-    ) -> list[ProjectSummaryDTO]:
+    async def list_by_phase(self, phase: ProjectPhase) -> list[ProjectSummaryDTO]:
         """Filter project summaries by current phase and owner."""
-        if owner_id is not None:
-            query = "SELECT state_json FROM projects WHERE phase = ? AND (owner_id = ? OR owner_id = 'local') ORDER BY updated_at DESC"
-            params: tuple[Any, ...] = (phase.value, owner_id)
-        else:
-            query = "SELECT state_json FROM projects WHERE phase = ? ORDER BY updated_at DESC"
-            params = (phase.value,)
+        query = "SELECT state_json FROM projects WHERE phase = ? AND owner_id = ? ORDER BY updated_at DESC"
+        params: tuple[Any, ...] = (phase.value, self.owner_id)
 
         summaries: list[ProjectSummaryDTO] = []
         async with self.db.get_connection() as conn:

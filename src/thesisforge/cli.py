@@ -132,7 +132,7 @@ async def _run_export_docx_cli(
     db = DatabaseManager(settings.database_url)
     await db.initialize()
     try:
-        repo = ProjectRepository(db)
+        repo = ProjectRepository(db, "local")
         export_service = ExportService(db_manager=db, project_repo=repo)
         opts = ExportOptionsDTO(
             author_name=author,
@@ -169,7 +169,7 @@ async def _run_export_bib_cli(
     db = DatabaseManager(settings.database_url)
     await db.initialize()
     try:
-        repo = ProjectRepository(db)
+        repo = ProjectRepository(db, "local")
         export_service = ExportService(db_manager=db, project_repo=repo)
         with console.status(
             "[bold cyan]Compilando bibliografía BibTeX (.bib)...[/bold cyan]",
@@ -204,7 +204,7 @@ async def _run_export_bundle_cli(
     db = DatabaseManager(settings.database_url)
     await db.initialize()
     try:
-        repo = ProjectRepository(db)
+        repo = ProjectRepository(db, "local")
         bundle_service = ProjectBundleService(project_repo=repo)
         with console.status(
             "[bold cyan]Empaquetando archivo de proyecto (.thesisforge)...[/bold cyan]",
@@ -235,7 +235,7 @@ async def _run_import_bundle_cli(
     db = DatabaseManager(settings.database_url)
     await db.initialize()
     try:
-        repo = ProjectRepository(db)
+        repo = ProjectRepository(db, "local")
         bundle_service = ProjectBundleService(project_repo=repo)
         with console.status(
             "[bold cyan]Validando y restaurando proyecto desde archivo...[/bold cyan]",
@@ -265,7 +265,7 @@ async def _run_draft_init_cli(project_id: str) -> None:
     db = DatabaseManager(settings.database_url)
     await db.initialize()
     try:
-        repo = ProjectRepository(db)
+        repo = ProjectRepository(db, "local")
         draft_service = DraftService(db_manager=db, project_repo=repo)
         with console.status(
             "[bold cyan]Inicializando estructura capitular canónica...[/bold cyan]",
@@ -296,7 +296,7 @@ async def _run_draft_list_cli(project_id: str) -> None:
     db = DatabaseManager(settings.database_url)
     await db.initialize()
     try:
-        repo = ProjectRepository(db)
+        repo = ProjectRepository(db, "local")
         project = await repo.get_project(project_id)
         if not project:
             console.print(f"[bold red]Error:[/bold red] Proyecto '{project_id}' no encontrado.")
@@ -352,7 +352,7 @@ async def _run_jury_audit_cli(project_id: str) -> None:
         from thesisforge.jury.service import JuryService
         from thesisforge.repository.jury_repository import JuryRepository
 
-        repo = ProjectRepository(db)
+        repo = ProjectRepository(db, "local")
         jury_repo = JuryRepository(db)
         jury_service = JuryService(db_manager=db, project_repo=repo, jury_repo=jury_repo)
 
@@ -453,7 +453,7 @@ async def _run_defense_start_cli(project_id: str) -> None:
         from thesisforge.jury.service import JuryService
         from thesisforge.repository.jury_repository import JuryRepository
 
-        repo = ProjectRepository(db)
+        repo = ProjectRepository(db, "local")
         jury_repo = JuryRepository(db)
         jury_service = JuryService(db_manager=db, project_repo=repo, jury_repo=jury_repo)
 

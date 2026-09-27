@@ -6,6 +6,7 @@ from fastapi import Depends
 
 from thesisforge.advisor.service import AdvisorService
 from thesisforge.config import AppSettings, get_settings
+from thesisforge.core.auth import get_current_owner
 from thesisforge.core.security import LocalKeyVault
 from thesisforge.drafting.service import DraftService
 from thesisforge.export.bundle import ProjectBundleService
@@ -35,9 +36,10 @@ def get_key_vault() -> LocalKeyVault:
 
 def get_project_repository(
     db: DatabaseManager = Depends(get_db_manager),
+    owner_id: str = Depends(get_current_owner),
 ) -> ProjectRepository:
     """Project repository dependency."""
-    return ProjectRepository(db)
+    return ProjectRepository(db, owner_id)
 
 
 def get_keystore_repository(

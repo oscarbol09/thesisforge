@@ -24,9 +24,12 @@ class ExportService:
         project_repo: ProjectRepository | None = None,
         compiler: APA7DocxCompiler | None = None,
         bibtex_exporter: BibTeXExporter | None = None,
+        owner_id: str = "local",
     ) -> None:
         self.db = db_manager
-        self.project_repo = project_repo or (ProjectRepository(db_manager) if db_manager else None)
+        self.project_repo = project_repo or (
+            ProjectRepository(db_manager, owner_id) if db_manager else None
+        )
         self.compiler = compiler or APA7DocxCompiler()
         self.bibtex_exporter = bibtex_exporter or BibTeXExporter()
 

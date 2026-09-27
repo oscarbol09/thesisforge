@@ -34,7 +34,6 @@ async def create_project(
         topic=payload.topic,
         language=payload.language,
         phase=ProjectPhase.ORIENTATION,
-        owner_id=owner_id,
     )
     return await repo.create_project(project)
 
@@ -45,7 +44,7 @@ async def list_projects(
     owner_id: str = Depends(get_current_owner),
 ) -> list[ProjectSummaryDTO]:
     """List all projects summaries for current owner."""
-    return await repo.list_projects(owner_id=owner_id)
+    return await repo.list_projects()
 
 
 @router.get("/{project_id}", response_model=ProjectStateDTO)
@@ -55,7 +54,9 @@ async def get_project(
     owner_id: str = Depends(get_current_owner),
 ) -> ProjectStateDTO:
     """Retrieve full project state by ID scoped to current owner."""
-    return await repo.get_project(project_id, owner_id=owner_id)
+    return await repo.get_project(
+        project_id,
+    )
 
 
 @router.put("/{project_id}", response_model=ProjectStateDTO)
@@ -83,9 +84,12 @@ async def update_project(
     project.owner_id = owner_id
     if x_project_version is not None:
         return await repo.update_project_versioned(
-            project, expected_version=x_project_version, owner_id=owner_id
+            project,
+            expected_version=x_project_version,
         )
-    return await repo.update_project(project, owner_id=owner_id)
+    return await repo.update_project(
+        project,
+    )
 
 
 @router.delete("/{project_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -96,5 +100,7 @@ async def delete_project(
     owner_id: str = Depends(get_current_owner),
 ) -> None:
     """Delete a project by ID and clean up its SQLite records and ChromaDB vector collection."""
-    await repo.delete_project(project_id, owner_id=owner_id)
+    await repo.delete_project(
+        project_id,
+    )
     await rag_service.vector_store.delete_project_collection(project_id)
