@@ -150,4 +150,3 @@ async def test_jury_service_defense_workflow(
     # Check project completed phase
     proj = await proj_repo.get_project("proj-service-test-01")
     assert proj.phase == ProjectPhase.COMPLETED
-

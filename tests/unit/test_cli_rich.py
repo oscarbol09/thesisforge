@@ -135,7 +135,9 @@ def test_cli_rich_draft_list_styled(capsys: pytest.CaptureFixture[str], cli_db_u
         assert "in_progress" in captured.out
 
 
-def test_cli_rich_export_docx_panel(capsys: pytest.CaptureFixture[str], tmp_path: Path, cli_db_url: str):
+def test_cli_rich_export_docx_panel(
+    capsys: pytest.CaptureFixture[str], tmp_path: Path, cli_db_url: str
+):
     """Verify export-docx displays Rich panel with destination path and size."""
     project = ProjectStateDTO(id="proj-docx-01", title="Test Docx Rich")
 

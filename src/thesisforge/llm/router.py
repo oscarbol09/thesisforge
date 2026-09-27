@@ -313,5 +313,3 @@ class LLMRouter:
             raise LLMProviderError(
                 f"Stream interrumpido en proveedor LLM ({resolved_model}): {err}"
             ) from err
-
-

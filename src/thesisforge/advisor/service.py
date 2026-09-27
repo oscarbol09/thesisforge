@@ -297,9 +297,7 @@ class AdvisorService:
             }
 
         elif step == AdvisorStep.OBJECTIVES:
-            if safe_input and (
-                not project.general_objective or not project.specific_objectives
-            ):
+            if safe_input and (not project.general_objective or not project.specific_objectives):
                 approach_val = (
                     project.methodology.approach.value
                     if project.methodology.approach
@@ -504,5 +502,3 @@ class AdvisorService:
             },
         )
         return matrix
-
-

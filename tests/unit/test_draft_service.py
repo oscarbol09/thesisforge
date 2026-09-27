@@ -22,7 +22,9 @@ from thesisforge.repository.project_repository import ProjectRepository
 @pytest.fixture
 def mock_llm_router():
     router = FakeLLMRouter()
-    router.canned_response = "Este es un borrador académico riguroso sobre el problema de investigación."
+    router.canned_response = (
+        "Este es un borrador académico riguroso sobre el problema de investigación."
+    )
     router.canned_stream_tokens = ["Este ", "es ", "un ", "borrador ", "en ", "streaming."]
     return router
 
@@ -197,4 +199,3 @@ async def test_draft_service_revise_and_approve_section(
 
     updated_proj = await repo.get_project("proj-draft-05")
     assert updated_proj.phase == ProjectPhase.REVIEW
-

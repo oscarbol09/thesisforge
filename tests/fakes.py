@@ -20,7 +20,9 @@ class FakeLLMRouter(LLMRouter):
         self.recorded_prompts.append((system_prompt, prompt))
         return self.canned_response
 
-    async def complete_json(self, prompt: str, system_prompt: str | None = None, response_model=None, **kwargs) -> dict[str, Any] | BaseModel:
+    async def complete_json(
+        self, prompt: str, system_prompt: str | None = None, response_model=None, **kwargs
+    ) -> dict[str, Any] | BaseModel:
         self.recorded_prompts.append((system_prompt, prompt))
 
         # If the test gave us a dict to return, return it (optionally validating)
@@ -29,7 +31,9 @@ class FakeLLMRouter(LLMRouter):
             return response_model.model_validate(resp)
         return resp
 
-    async def stream_completion(self, prompt: str, system_prompt: str | None = None, **kwargs) -> AsyncGenerator[str, None]:
+    async def stream_completion(
+        self, prompt: str, system_prompt: str | None = None, **kwargs
+    ) -> AsyncGenerator[str, None]:
         self.recorded_prompts.append((system_prompt, prompt))
         for token in self.canned_stream_tokens:
             yield token

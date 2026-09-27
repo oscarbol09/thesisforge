@@ -233,5 +233,3 @@ class JuryRepository:
                 data = json.loads(r["session_json"])
                 results.append(DefenseSessionDTO.model_validate(data))
             return results
-
-

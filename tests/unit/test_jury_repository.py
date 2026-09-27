@@ -177,4 +177,3 @@ async def test_defense_session_not_found(in_memory_db: DatabaseManager) -> None:
     jury_repo = JuryRepository(in_memory_db, owner_id="local")
     with pytest.raises(DefenseSessionError):
         await jury_repo.get_defense_session("non-existent-session")
-

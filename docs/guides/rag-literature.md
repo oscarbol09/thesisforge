@@ -69,9 +69,16 @@ report = PRISMAFlowReport(project_id="proj-123", query_string="metodología cuan
 report.record_database_search("Semantic Scholar", 120)
 report.record_database_search("ArXiv", 45)
 report.record_deduplication(18)
-report.record_screening(screened=147, excluded=89, reasons={"Fuera de alcance temático": 52, "Idioma no incluido": 37})
-report.record_eligibility(sought=58, not_retrieved=4, assessed=54, excluded=22,
-                          reasons={"Sin acceso a texto completo": 14, "Diseño no elegible": 8})
+report.record_screening(
+    screened=147, excluded=89, reasons={"Fuera de alcance temático": 52, "Idioma no incluido": 37}
+)
+report.record_eligibility(
+    sought=58,
+    not_retrieved=4,
+    assessed=54,
+    excluded=22,
+    reasons={"Sin acceso a texto completo": 14, "Diseño no elegible": 8},
+)
 
 print(report.to_markdown_flowchart())
 ```

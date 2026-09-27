@@ -105,7 +105,9 @@ def test_cli_search_papers_apa_format(capsys: pytest.CaptureFixture[str]):
         assert "(2017)" in captured.out
 
 
-def test_cli_export_docx_command(capsys: pytest.CaptureFixture[str], tmp_path: Path, cli_db_url: str):
+def test_cli_export_docx_command(
+    capsys: pytest.CaptureFixture[str], tmp_path: Path, cli_db_url: str
+):
     """Test CLI export-docx subcommand."""
     project = ProjectStateDTO(id="proj-cli-01", title="Test CLI Docx")
 
@@ -143,7 +145,9 @@ def test_cli_export_docx_command(capsys: pytest.CaptureFixture[str], tmp_path: P
         assert out_file.exists()
 
 
-def test_cli_draft_init_command(capsys: pytest.CaptureFixture[str], tmp_path: Path, cli_db_url: str):
+def test_cli_draft_init_command(
+    capsys: pytest.CaptureFixture[str], tmp_path: Path, cli_db_url: str
+):
     """Test CLI draft-init subcommand."""
     project = ProjectStateDTO(id="proj-cli-02", title="Test CLI Init")
 
@@ -169,7 +173,9 @@ def test_cli_draft_init_command(capsys: pytest.CaptureFixture[str], tmp_path: Pa
         assert "Estructura Capitular Inicializada" in captured.out
 
 
-def test_cli_draft_list_command(capsys: pytest.CaptureFixture[str], tmp_path: Path, cli_db_url: str):
+def test_cli_draft_list_command(
+    capsys: pytest.CaptureFixture[str], tmp_path: Path, cli_db_url: str
+):
     """Test CLI draft-list subcommand."""
     project = ProjectStateDTO(
         id="proj-cli-03",
@@ -209,7 +215,9 @@ def test_cli_draft_list_command(capsys: pytest.CaptureFixture[str], tmp_path: Pa
         assert "450 palabras" in captured.out
 
 
-def test_cli_export_bundle_command(capsys: pytest.CaptureFixture[str], tmp_path: Path, cli_db_url: str):
+def test_cli_export_bundle_command(
+    capsys: pytest.CaptureFixture[str], tmp_path: Path, cli_db_url: str
+):
     """Test CLI export-bundle subcommand."""
     project = ProjectStateDTO(id="proj-bundle-01", title="Test Bundle Export")
 
@@ -245,19 +253,25 @@ def test_cli_export_bundle_command(capsys: pytest.CaptureFixture[str], tmp_path:
         assert fake_bundle.exists()
 
 
-def test_cli_import_bundle_command(capsys: pytest.CaptureFixture[str], tmp_path: Path, cli_db_url: str):
+def test_cli_import_bundle_command(
+    capsys: pytest.CaptureFixture[str], tmp_path: Path, cli_db_url: str
+):
     """Test CLI import-bundle subcommand."""
     project = ProjectStateDTO(id="proj-bundle-source", title="Source Project")
 
     source_db_url = f"sqlite+aiosqlite:///{tmp_path}/source.db"
+
     async def setup_source_db():
         db = DatabaseManager(source_db_url)
         await db.initialize()
         repo = ProjectRepository(db, "local")
         await repo.create_project(project)
         from thesisforge.export.bundle import ProjectBundleService
+
         bundle_service = ProjectBundleService(project_repo=repo)
-        path = await bundle_service.export_bundle_file("proj-bundle-source", str(tmp_path / "backup.thesisforge"))
+        path = await bundle_service.export_bundle_file(
+            "proj-bundle-source", str(tmp_path / "backup.thesisforge")
+        )
         await db.close()
         return path
 
