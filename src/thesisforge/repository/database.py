@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS projects (
     academic_level TEXT NOT NULL,
     phase TEXT NOT NULL,
     state_json TEXT NOT NULL,
+    owner_id TEXT NOT NULL DEFAULT 'local',
     version INTEGER NOT NULL DEFAULT 1,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
@@ -27,6 +28,7 @@ CREATE TABLE IF NOT EXISTS projects (
 CREATE INDEX IF NOT EXISTS idx_projects_phase ON projects(phase);
 CREATE INDEX IF NOT EXISTS idx_projects_updated_at ON projects(updated_at DESC);
 CREATE INDEX IF NOT EXISTS idx_projects_academic_level ON projects(academic_level);
+CREATE INDEX IF NOT EXISTS idx_projects_owner_id ON projects(owner_id);
 
 CREATE TABLE IF NOT EXISTS keystore (
     provider TEXT PRIMARY KEY,

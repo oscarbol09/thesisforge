@@ -146,6 +146,12 @@ CREATE INDEX IF NOT EXISTS idx_doc_index_status_status
 """
 
 
+V5_PROJECT_OWNER_ID = """
+-- Migration v5: Multi-tenant ownership and IDOR isolation column for projects
+CREATE TABLE IF NOT EXISTS _migration_v5_guard (id INTEGER PRIMARY KEY);
+"""
+
+
 async def _v3_add_version_column(db: aiosqlite.Connection) -> None:
     """Safely add the version column to projects if it does not already exist."""
     async with db.execute("PRAGMA table_info(projects);") as cursor:
@@ -153,6 +159,16 @@ async def _v3_add_version_column(db: aiosqlite.Connection) -> None:
     if "version" not in cols:
         await db.execute("ALTER TABLE projects ADD COLUMN version INTEGER NOT NULL DEFAULT 1;")
         logger.info("Migration v3: added 'version' column to projects table.")
+
+
+async def _v5_add_owner_id_column(db: aiosqlite.Connection) -> None:
+    """Safely add the owner_id column and index to projects if it does not already exist."""
+    async with db.execute("PRAGMA table_info(projects);") as cursor:
+        cols = [row[1] async for row in cursor]
+    if "owner_id" not in cols:
+        await db.execute("ALTER TABLE projects ADD COLUMN owner_id TEXT NOT NULL DEFAULT 'local';")
+        await db.execute("CREATE INDEX IF NOT EXISTS idx_projects_owner_id ON projects(owner_id);")
+        logger.info("Migration v5: added 'owner_id' column and index to projects table.")
 
 
 ALL_MIGRATIONS: list[Migration] = [
@@ -168,6 +184,12 @@ ALL_MIGRATIONS: list[Migration] = [
         version=4,
         name="v4_document_index_status",
         up_sql=V4_DOCUMENT_INDEX_STATUS,
+    ),
+    Migration(
+        version=5,
+        name="v5_project_owner_id",
+        up_sql=V5_PROJECT_OWNER_ID,
+        up_callable=_v5_add_owner_id_column,
     ),
 ]
 

@@ -64,6 +64,42 @@ async def test_project_not_found_errors(in_memory_db: DatabaseManager):
 
 
 @pytest.mark.asyncio
+async def test_project_owner_isolation(in_memory_db: DatabaseManager):
+    """Verify multi-tenant owner scoping prevents Insecure Direct Object References (IDOR)."""
+    repo = ProjectRepository(in_memory_db)
+    proj_alice = ProjectStateDTO(
+        id="proj-alice-01",
+        title="Tesis de Alice",
+        owner_id="user_alice",
+    )
+    await repo.create_project(proj_alice)
+
+    # 1. Alice can access her own project
+    fetched = await repo.get_project("proj-alice-01", owner_id="user_alice")
+    assert fetched.id == "proj-alice-01"
+    assert fetched.owner_id == "user_alice"
+
+    # 2. Bob cannot access Alice's project (IDOR blocked)
+    with pytest.raises(ProjectNotFoundError):
+        await repo.get_project("proj-alice-01", owner_id="user_bob")
+
+    # 3. Listing is scoped by owner
+    alice_list = await repo.list_projects(owner_id="user_alice")
+    assert len(alice_list) == 1
+    assert alice_list[0].id == "proj-alice-01"
+
+    bob_list = await repo.list_projects(owner_id="user_bob")
+    assert len(bob_list) == 0
+
+    # 4. Bob cannot delete Alice's project
+    with pytest.raises(ProjectNotFoundError):
+        await repo.delete_project("proj-alice-01", owner_id="user_bob")
+
+    # 5. Alice can delete her own project
+    assert await repo.delete_project("proj-alice-01", owner_id="user_alice") is True
+
+
+@pytest.mark.asyncio
 async def test_keystore_repository(in_memory_db: DatabaseManager, vault: LocalKeyVault):
     """Test storing, reading, listing, and deleting encrypted API keys."""
     repo = SecureKeyStoreRepository(in_memory_db, vault)

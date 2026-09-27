@@ -42,18 +42,20 @@ async def create_project(
 @router.get("", response_model=list[ProjectSummaryDTO])
 async def list_projects(
     repo: ProjectRepository = Depends(get_project_repository),
+    owner_id: str = Depends(get_current_owner),
 ) -> list[ProjectSummaryDTO]:
-    """List all projects summaries."""
-    return await repo.list_projects()
+    """List all projects summaries for current owner."""
+    return await repo.list_projects(owner_id=owner_id)
 
 
 @router.get("/{project_id}", response_model=ProjectStateDTO)
 async def get_project(
     project_id: str,
     repo: ProjectRepository = Depends(get_project_repository),
+    owner_id: str = Depends(get_current_owner),
 ) -> ProjectStateDTO:
-    """Retrieve full project state by ID."""
-    return await repo.get_project(project_id)
+    """Retrieve full project state by ID scoped to current owner."""
+    return await repo.get_project(project_id, owner_id=owner_id)
 
 
 @router.put("/{project_id}", response_model=ProjectStateDTO)
@@ -61,6 +63,7 @@ async def update_project(
     project_id: str,
     project: ProjectStateDTO,
     repo: ProjectRepository = Depends(get_project_repository),
+    owner_id: str = Depends(get_current_owner),
     x_project_version: int | None = Header(
         default=None,
         alias="X-Project-Version",
@@ -71,15 +74,18 @@ async def update_project(
         ),
     ),
 ) -> ProjectStateDTO:
-    """Update project state.
+    """Update project state with owner isolation.
 
     Supports optimistic concurrency control via the X-Project-Version header.
     If provided and the stored version differs, returns HTTP 409 Conflict.
     """
     project.id = project_id
+    project.owner_id = owner_id
     if x_project_version is not None:
-        return await repo.update_project_versioned(project, expected_version=x_project_version)
-    return await repo.update_project(project)
+        return await repo.update_project_versioned(
+            project, expected_version=x_project_version, owner_id=owner_id
+        )
+    return await repo.update_project(project, owner_id=owner_id)
 
 
 @router.delete("/{project_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -87,7 +93,8 @@ async def delete_project(
     project_id: str,
     repo: ProjectRepository = Depends(get_project_repository),
     rag_service: RAGService = Depends(get_rag_service),
+    owner_id: str = Depends(get_current_owner),
 ) -> None:
     """Delete a project by ID and clean up its SQLite records and ChromaDB vector collection."""
-    await repo.delete_project(project_id)
+    await repo.delete_project(project_id, owner_id=owner_id)
     await rag_service.vector_store.delete_project_collection(project_id)
