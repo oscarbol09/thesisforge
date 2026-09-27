@@ -14,12 +14,14 @@ services:
       - THESISFORGE_PORT=8000
       - THESISFORGE_ENVIRONMENT=production
       - THESISFORGE_LOG_LEVEL=INFO
+      - THESISFORGE_DATABASE_URL=sqlite+aiosqlite:////app/data/thesisforge.db
       - CROSSREF_MAILTO=${CROSSREF_MAILTO:-thesisforge@academic.org}
       - SEMANTIC_SCHOLAR_API_KEY=${SEMANTIC_SCHOLAR_API_KEY:-}
     env_file:
       - .env
     volumes:
       - thesisforge_data:/app/data
+      - thesisforge_home:/home/thesisforge/.thesisforge
     healthcheck:
       test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
       interval: 30s
@@ -30,3 +32,6 @@ services:
 volumes:
   thesisforge_data:
     driver: local
+  thesisforge_home:
+    driver: local
+

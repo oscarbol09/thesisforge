@@ -104,14 +104,18 @@ async def index_pdf_file(
     if not file.filename or not file.filename.lower().endswith(".pdf"):
         raise DocumentProcessingError("El archivo debe ser un documento PDF válido (.pdf).")
 
-    pdf_bytes = await file.read()
+    chunk_size = 1024 * 1024  # 1 MB chunk
+    buffer = bytearray()
+    while chunk := await file.read(chunk_size):
+        buffer.extend(chunk)
+        if len(buffer) > MAX_PDF_UPLOAD_BYTES:
+            raise DocumentProcessingError(
+                f"El archivo PDF excede el límite máximo permitido de {MAX_PDF_UPLOAD_BYTES // (1024 * 1024)} MB."
+            )
+
+    pdf_bytes = bytes(buffer)
     if not pdf_bytes:
         raise DocumentProcessingError("El archivo subido está vacío.")
-
-    if len(pdf_bytes) > MAX_PDF_UPLOAD_BYTES:
-        raise DocumentProcessingError(
-            f"El archivo PDF excede el límite máximo permitido de {MAX_PDF_UPLOAD_BYTES // (1024 * 1024)} MB."
-        )
 
     document_id = uuid.uuid4().hex[:10]
     doc_title = title or file.filename.rsplit(".", 1)[0]

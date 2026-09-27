@@ -51,6 +51,18 @@ def test_keyvault_invalid_master_key():
         LocalKeyVault("not_a_valid_fernet_key")
 
 
+def test_keyvault_empty_or_whitespace_master_key_generates_valid_vault():
+    """Test initializing vault with empty or whitespace string generates a valid Fernet key."""
+    vault_empty = LocalKeyVault("", persist=False)
+    assert vault_empty.key_bytes is not None
+    assert len(vault_empty.key_str) == 44
+    assert vault_empty.decrypt(vault_empty.encrypt("test")) == "test"
+
+    vault_ws = LocalKeyVault("   ", persist=False)
+    assert len(vault_ws.key_str) == 44
+    assert vault_ws.decrypt(vault_ws.encrypt("test2")) == "test2"
+
+
 @pytest.mark.parametrize(
     "blocked_url",
     [

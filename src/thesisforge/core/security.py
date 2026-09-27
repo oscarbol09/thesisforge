@@ -138,8 +138,16 @@ def resolve_or_create_master_key(
     key_file_path: Path | str | None = None,
 ) -> bytes:
     """Resolve master key from parameter, disk file, or generate and persist locally."""
-    if master_key is not None:
-        return master_key.encode("utf-8") if isinstance(master_key, str) else master_key
+    if isinstance(master_key, str):
+        master_key_str = master_key.strip()
+        if master_key_str:
+            return master_key_str.encode("utf-8")
+        master_key = None
+    elif isinstance(master_key, bytes):
+        master_key_bytes = master_key.strip()
+        if master_key_bytes:
+            return master_key_bytes
+        master_key = None
 
     target_path = (
         Path(key_file_path)
@@ -185,12 +193,17 @@ class LocalKeyVault:
         persist: bool = True,
     ) -> None:
         """Initialize vault with a master key or persist/generate one on disk."""
+        if isinstance(master_key, str):
+            master_key_str = master_key.strip()
+            master_key = master_key_str.encode("utf-8") if master_key_str else None
+        elif isinstance(master_key, bytes):
+            master_key_bytes = master_key.strip()
+            master_key = master_key_bytes if master_key_bytes else None
+
         if persist and master_key is None and key_file_path != ":memory:":
             self._key = resolve_or_create_master_key(master_key, key_file_path)
         elif master_key is None:
             self._key = Fernet.generate_key()
-        elif isinstance(master_key, str):
-            self._key = master_key.encode("utf-8")
         else:
             self._key = master_key
 

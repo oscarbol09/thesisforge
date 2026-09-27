@@ -7,11 +7,14 @@ from typing import TYPE_CHECKING
 from fastapi import APIRouter, Depends, File, Response, UploadFile
 
 from thesisforge.api.deps import get_export_service, get_project_bundle_service
+from thesisforge.exceptions import ExportError
 from thesisforge.models import CitationDTO, ExportOptionsDTO, ProjectStateDTO
 
 if TYPE_CHECKING:
     from thesisforge.export.bundle import ProjectBundleService
     from thesisforge.export.service import ExportService
+
+MAX_BUNDLE_UPLOAD_BYTES = 25 * 1024 * 1024  # 25 MB
 
 router = APIRouter(prefix="/api/export", tags=["export"])
 
@@ -83,5 +86,14 @@ async def import_project_bundle(
     bundle_service: ProjectBundleService = Depends(get_project_bundle_service),
 ) -> ProjectStateDTO:
     """Validate and restore a project from an uploaded .thesisforge archive."""
-    content = await file.read()
-    return await bundle_service.import_bundle_bytes(content)
+    chunk_size = 1024 * 1024  # 1 MB chunk
+    buffer = bytearray()
+    while chunk := await file.read(chunk_size):
+        buffer.extend(chunk)
+        if len(buffer) > MAX_BUNDLE_UPLOAD_BYTES:
+            raise ExportError(
+                f"El archivo del paquete excede el límite máximo permitido de {MAX_BUNDLE_UPLOAD_BYTES // (1024 * 1024)} MB."
+            )
+    if not buffer:
+        raise ExportError("El archivo del paquete .thesisforge subido está vacío.")
+    return await bundle_service.import_bundle_bytes(bytes(buffer))

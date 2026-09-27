@@ -61,9 +61,11 @@ def test_audit_scholarly_draft_rewards_clean_human_text_with_l3_citations() -> N
 
 def test_audit_scholarly_draft_empty_text() -> None:
     result = audit_scholarly_draft("")
-    assert result.score == 100.0
+    assert result.score == 0.0
     assert result.word_count == 0
     assert result.slop_count == 0
+    assert len(result.recommendations) > 0
+    assert "vacío" in result.recommendations[0].lower()
 
 
 def test_detoxify_text_removes_meta_fillers_and_capitalizes() -> None:

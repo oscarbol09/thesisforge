@@ -21,6 +21,7 @@ The ``EmbeddingProvider`` protocol makes it trivial to plug in OpenAI, Cohere,
 or any other provider without touching the vector store logic.
 """
 
+import asyncio
 import hashlib
 import math
 import re
@@ -358,7 +359,8 @@ class ChromaVectorStore:
 
         embeddings = self.embedding_function(documents)
         try:
-            collection.add(
+            await asyncio.to_thread(
+                collection.add,
                 ids=ids,
                 documents=documents,
                 embeddings=embeddings,
@@ -404,7 +406,8 @@ class ChromaVectorStore:
         # In hybrid mode, retrieve a wider candidate pool to allow RRF re-ranking
         n_candidates = max(top_k * 3, 20) if hybrid else top_k
         try:
-            results = collection.query(
+            results = await asyncio.to_thread(
+                collection.query,
                 query_embeddings=query_embeddings,
                 n_results=min(n_candidates, 50),
                 where=where_clause,
@@ -496,7 +499,7 @@ class ChromaVectorStore:
         col_name = self._get_collection_name(project_id)
         try:
             collection = self._client.get_collection(name=col_name)
-            collection.delete(where={"document_id": document_id})
+            await asyncio.to_thread(collection.delete, where={"document_id": document_id})
             logger.info(
                 "Deleted document chunks.",
                 extra={"project_id": project_id, "document_id": document_id},
@@ -509,7 +512,7 @@ class ChromaVectorStore:
         """Delete the entire collection for a project."""
         col_name = self._get_collection_name(project_id)
         try:
-            self._client.delete_collection(name=col_name)
+            await asyncio.to_thread(self._client.delete_collection, name=col_name)
             logger.info("Deleted project collection.", extra={"project_id": project_id})
         except Exception as err:
             logger.debug(

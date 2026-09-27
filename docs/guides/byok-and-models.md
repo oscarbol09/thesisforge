@@ -11,11 +11,12 @@ ThesisForge clasifica los modelos recomendados en opciones gratuitas (*Free / Op
 | Proveedor | Modelos Gratuitos (*Free Tier*) | Modelos Tier Superior (*High Capacity*) | Cómo Obtener Clave |
 | :--- | :--- | :--- | :--- |
 | **OpenRouter** | `meta-llama/llama-3.3-70b-instruct:free`<br>`google/gemini-2.0-flash-exp:free`<br>`qwen/qwen-2.5-72b-instruct:free` | `anthropic/claude-3.5-sonnet`<br>`openai/gpt-4o`<br>`deepseek/deepseek-r1` | [openrouter.ai/keys](https://openrouter.ai/keys) |
-| **Google Gemini** | `gemini-2.0-flash`<br>`gemini-1.5-flash` | `gemini-2.0-pro-exp-02-05`<br>`gemini-1.5-pro` | [aistudio.google.com](https://aistudio.google.com/) |
+| **Google Gemini** | `gemini-2.0-flash`<br>`gemini-2.5-flash` | `gemini-2.5-pro`<br>`gemini-2.0-pro` | [aistudio.google.com](https://aistudio.google.com/) |
 | **Anthropic** | *(No ofrece free tier directo)* | `claude-3-7-sonnet-20250219`<br>`claude-3-5-sonnet-20241022` | [console.anthropic.com](https://console.anthropic.com/) |
 | **OpenAI** | *(No ofrece free tier directo)* | `gpt-4o`<br>`gpt-4o-mini`<br>`o3-mini` | [platform.openai.com](https://platform.openai.com/) |
-| **Groq Cloud** | `llama-3.3-70b-versatile`<br>`llama-3.1-8b-instant`<br>`mixtral-8x7b-32768` | `deepseek-r1-distill-llama-70b` | [console.groq.com](https://console.groq.com/) |
+| **Groq Cloud** | `llama-3.3-70b-versatile`<br>`llama-3.1-8b-instant` | `deepseek-r1-distill-llama-70b`<br>`qwen-2.5-32b` | [console.groq.com](https://console.groq.com/) |
 | **Ollama (Local)** | `llama3.3:latest`<br>`qwen2.5:14b`<br>`deepseek-r1:14b`<br>`mistral-nemo:12b` | Ejecución en hardware local propio | [ollama.ai](https://ollama.ai/) |
+
 
 ---
 

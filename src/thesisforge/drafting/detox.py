@@ -166,7 +166,7 @@ def audit_scholarly_draft(text: str) -> DraftQualityAuditResult:
     """Audit academic draft for AI-slop density, syntactic rhythm, and L3 locator coverage."""
     if not text or not text.strip():
         return DraftQualityAuditResult(
-            score=100.0,
+            score=0.0,
             word_count=0,
             slop_count=0,
             slop_density_per_1k=0.0,
@@ -175,8 +175,10 @@ def audit_scholarly_draft(text: str) -> DraftQualityAuditResult:
             sentence_length_std_dev=0.0,
             standard_citations_count=0,
             l3_locator_citations_count=0,
-            l3_coverage_ratio=1.0,
-            recommendations=[],
+            l3_coverage_ratio=0.0,
+            recommendations=[
+                "El borrador está vacío. Redacta o genera contenido para comenzar la auditoría de calidad científica."
+            ],
         )
 
     words = text.split()

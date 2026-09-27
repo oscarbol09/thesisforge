@@ -201,16 +201,25 @@ document.addEventListener('alpine:init', () => {
       this.toasts = this.toasts.filter(t => t.id !== id);
     },
 
-    // Content Sanitization
-    sanitize(rawHtml) {
-      if (typeof DOMPurify !== 'undefined') {
-        return DOMPurify.sanitize(rawHtml);
-      }
-      // Basic text escaping fallback
-      const div = document.createElement('div');
-      div.textContent = rawHtml;
-      return div.innerHTML;
+    // Content Escaping & Sanitization
+    escapeHtml(str) {
+      if (str == null) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
     },
+
+    sanitize(rawHtml) {
+      if (rawHtml == null) return '';
+      if (typeof DOMPurify !== 'undefined') {
+        return DOMPurify.sanitize(String(rawHtml));
+      }
+      return this.escapeHtml(rawHtml);
+    },
+
 
     // Academic Phase Utilities
     getPhaseLabel(phase) {

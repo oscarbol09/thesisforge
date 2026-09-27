@@ -9,18 +9,21 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 RUN pip install --no-cache-dir uv
 
-COPY pyproject.toml README.md ./
+COPY pyproject.toml uv.lock README.md ./
 COPY src ./src
 
-RUN uv pip install --system --no-cache-dir .
+RUN uv export --no-dev --no-hashes --output-file requirements.txt \
+    && uv pip install --system --no-cache-dir -r requirements.txt \
+    && uv pip install --system --no-cache-dir --no-deps . \
+    && rm requirements.txt
 
 # Production Runner Stage
 FROM python:3.12-slim AS runner
 
 WORKDIR /app
 
-# Security: Create non-root user
-RUN groupadd -r thesisforge && useradd -r -g thesisforge thesisforge
+# Security: Create non-root user and home directory
+RUN groupadd -r thesisforge && useradd -r -m -g thesisforge thesisforge
 
 COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
 COPY --from=builder /usr/local/bin/thesisforge /usr/local/bin/thesisforge
@@ -29,7 +32,9 @@ COPY --from=builder /usr/local/bin/uvicorn /usr/local/bin/uvicorn
 COPY config.yaml.example ./config.yaml
 COPY gui ./gui
 
-RUN mkdir -p /app/data && chown -R thesisforge:thesisforge /app
+RUN mkdir -p /app/data /home/thesisforge/.thesisforge \
+    && chown -R thesisforge:thesisforge /app /home/thesisforge
+
 
 USER thesisforge
 

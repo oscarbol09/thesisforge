@@ -106,6 +106,28 @@ class ProjectBundleService:
         try:
             buffer = io.BytesIO(bundle_bytes)
             with zipfile.ZipFile(buffer, mode="r") as zf:
+                infolist = zf.infolist()
+                if len(infolist) > 20:
+                    raise ExportError(
+                        f"El paquete contiene demasiados archivos ({len(infolist)} > 20)."
+                    )
+
+                total_uncompressed = 0
+                for info in infolist:
+                    # Prevent Zip-Slip directory traversal
+                    if ".." in info.filename or info.filename.startswith(("/", "\\")):
+                        raise ExportError("Ruta de archivo no permitida en el paquete ZIP.")
+                    # Prevent Zip-Bomb memory exhaustion
+                    if info.file_size > 15 * 1024 * 1024:
+                        raise ExportError(
+                            f"El archivo '{info.filename}' excede el límite de 15 MB descomprimidos."
+                        )
+                    total_uncompressed += info.file_size
+                    if total_uncompressed > 30 * 1024 * 1024:
+                        raise ExportError(
+                            "El tamaño total descomprimido del paquete excede el límite de 30 MB."
+                        )
+
                 file_list = zf.namelist()
                 if "manifest.json" not in file_list or "project.json" not in file_list:
                     raise ExportError(
