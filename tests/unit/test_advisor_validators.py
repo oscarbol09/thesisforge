@@ -159,7 +159,10 @@ def test_validate_conclusions_alignment():
         "Existe una correlación inversa estadísticamente significativa entre estrés y autoeficacia.",
         "El programa de intervención redujo significativamente los puntajes de estrés docente.",
     ]
-    assert len(MethodologyValidator.validate_conclusions_alignment(conclusions_matching, objectives)) == 0
+    assert (
+        len(MethodologyValidator.validate_conclusions_alignment(conclusions_matching, objectives))
+        == 0
+    )
 
     conclusions_mismatch = [
         "El diagnóstico evidenció niveles moderados de estrés en la muestra.",
@@ -192,5 +195,3 @@ def test_validate_recommendations():
     issues = MethodologyValidator.validate_recommendations(vacuous_recs)
     assert len(issues) == 1
     assert "vacua o genérica" in issues[0]
-
-

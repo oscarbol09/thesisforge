@@ -100,5 +100,3 @@ def test_audit_scholarly_draft_detects_chapter_5_conclusions_and_recommendations
     categories = [o.category for o in result.slop_occurrences]
     assert "conclusions_evasion_fog" in categories
     assert "vacuous_recommendation" in categories
-
-

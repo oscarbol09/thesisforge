@@ -65,11 +65,22 @@ DICHOTOMOUS_STARTER_PATTERN = re.compile(
 )
 
 PROCEDURAL_TASK_PATTERNS = [
-    re.compile(r"\b(revisar|consultar)\s+(la\s+)?(literatura|bibliograf[ií]a|fuentes|estado\s+del\s+arte)\b", re.IGNORECASE),
+    re.compile(
+        r"\b(revisar|consultar)\s+(la\s+)?(literatura|bibliograf[ií]a|fuentes|estado\s+del\s+arte)\b",
+        re.IGNORECASE,
+    ),
     re.compile(r"\b(elaborar|construir|redactar)\s+(el\s+)?marco\s+te[oó]rico\b", re.IGNORECASE),
-    re.compile(r"\b(aplicar|administrar|pasar)\s+(las?\s+)?(encuestas?|cuestionarios?|entrevistas?|test)\b", re.IGNORECASE),
-    re.compile(r"\b(recolectar|recopilar|levantar)\s+(los\s+)?(datos|informaci[oó]n|muestras)\b", re.IGNORECASE),
-    re.compile(r"\b(diseñar|elaborar)\s+(los?\s+)?instrumentos?\s+de\s+recolecci[oó]n\b", re.IGNORECASE),
+    re.compile(
+        r"\b(aplicar|administrar|pasar)\s+(las?\s+)?(encuestas?|cuestionarios?|entrevistas?|test)\b",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"\b(recolectar|recopilar|levantar)\s+(los\s+)?(datos|informaci[oó]n|muestras)\b",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"\b(diseñar|elaborar)\s+(los?\s+)?instrumentos?\s+de\s+recolecci[oó]n\b", re.IGNORECASE
+    ),
 ]
 
 CAUSAL_VERB_PATTERNS = [
@@ -201,11 +212,17 @@ class MethodologyValidator:
         """Validate delimitations and limitations preventing rhetorical excuses."""
         issues: list[str] = []
         cleaned = scope_limitations.strip().lower()
-        if cleaned:
-            if re.search(r"\b(falta\s+de\s+tiempo|poco\s+tiempo|recursos\s+econ[oó]micos|falta\s+de\s+dinero)\b", cleaned) and len(cleaned) < 80:
-                issues.append(
-                    "Las limitaciones no deben ser excusas operativas personales (ej. falta de tiempo o dinero). Deben formularse como restricciones metodológicas reales con su efecto y estrategia de mitigación."
-                )
+        if (
+            cleaned
+            and re.search(
+                r"\b(falta\s+de\s+tiempo|poco\s+tiempo|recursos\s+econ[oó]micos|falta\s+de\s+dinero)\b",
+                cleaned,
+            )
+            and len(cleaned) < 80
+        ):
+            issues.append(
+                "Las limitaciones no deben ser excusas operativas personales (ej. falta de tiempo o dinero). Deben formularse como restricciones metodológicas reales con su efecto y estrategia de mitigación."
+            )
         return issues
 
     @classmethod

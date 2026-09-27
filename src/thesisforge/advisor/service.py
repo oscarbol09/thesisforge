@@ -1,5 +1,6 @@
 """Methodological advisory service orchestrating AI interview, validation, and project state."""
 
+import contextlib
 from typing import Any
 
 from thesisforge.advisor.consistency_matrix import (
@@ -19,10 +20,14 @@ from thesisforge.llm.prompts import (
 )
 from thesisforge.llm.router import LLMRouter
 from thesisforge.models import (
-    MethodologyDTO,
+    AcademicLevel,
+    EpistemologicalParadigm,
     ProjectPhase,
     ProjectStateDTO,
+    QualitativeCategoryDTO,
     ResearchApproach,
+    SamplingTechnique,
+    VariableOperationalizationDTO,
 )
 from thesisforge.repository.project_repository import ProjectRepository
 
@@ -93,9 +98,7 @@ class AdvisorService:
 
         return AdvisorStep.APPROVED
 
-    def _sync_form_data_to_project(
-        self, project: ProjectStateDTO, form: dict[str, Any]
-    ) -> None:
+    def _sync_form_data_to_project(self, project: ProjectStateDTO, form: dict[str, Any]) -> None:
         """Synchronize incoming form fields into the ProjectStateDTO."""
         if not form:
             return
@@ -104,10 +107,8 @@ class AdvisorService:
             project.title = str(form["title"]).strip()
 
         if form.get("academic_level"):
-            try:
+            with contextlib.suppress(ValueError):
                 project.academic_level = AcademicLevel(str(form["academic_level"]).strip())
-            except ValueError:
-                pass
 
         if form.get("area_of_study"):
             project.area_of_study = str(form["area_of_study"]).strip()
@@ -157,53 +158,37 @@ class AdvisorService:
             parsed_ops: list[VariableOperationalizationDTO] = []
             for item in form["operationalized_variables"]:
                 if isinstance(item, dict) and item.get("name"):
-                    try:
+                    with contextlib.suppress(Exception):
                         parsed_ops.append(VariableOperationalizationDTO(**item))
-                    except Exception:
-                        pass
             project.operationalized_variables = parsed_ops
 
         # Qualitative categories
-        if "qualitative_categories" in form and isinstance(
-            form["qualitative_categories"], list
-        ):
+        if "qualitative_categories" in form and isinstance(form["qualitative_categories"], list):
             parsed_cats: list[QualitativeCategoryDTO] = []
             for item in form["qualitative_categories"]:
                 if isinstance(item, dict) and item.get("name"):
-                    try:
+                    with contextlib.suppress(Exception):
                         parsed_cats.append(QualitativeCategoryDTO(**item))
-                    except Exception:
-                        pass
             project.qualitative_categories = parsed_cats
 
         # Nested or flat methodology fields
-        meth_dict = (
-            form["methodology"] if isinstance(form.get("methodology"), dict) else {}
-        )
+        meth_dict = form["methodology"] if isinstance(form.get("methodology"), dict) else {}
         approach_val = meth_dict.get("approach") or form.get("approach")
         if approach_val:
-            try:
+            with contextlib.suppress(ValueError):
                 project.methodology.approach = ResearchApproach(str(approach_val).strip())
-            except ValueError:
-                pass
 
         paradigm_val = meth_dict.get("paradigm") or form.get("paradigm")
         if paradigm_val:
-            try:
-                project.methodology.paradigm = EpistemologicalParadigm(
-                    str(paradigm_val).strip()
-                )
-            except ValueError:
-                pass
+            with contextlib.suppress(ValueError):
+                project.methodology.paradigm = EpistemologicalParadigm(str(paradigm_val).strip())
 
         sampling_val = meth_dict.get("sampling_technique") or form.get("sampling_technique")
         if sampling_val:
-            try:
+            with contextlib.suppress(ValueError):
                 project.methodology.sampling_technique = SamplingTechnique(
                     str(sampling_val).strip()
                 )
-            except ValueError:
-                pass
 
         for m_attr in (
             "design",
@@ -215,15 +200,13 @@ class AdvisorService:
             "temporal_scope",
             "spatial_setting",
         ):
-            val = meth_dict.get(m_attr) or form.get(m_attr)
-            if val is not None:
-                setattr(project.methodology, m_attr, str(val).strip())
+            raw_m_val = meth_dict.get(m_attr) or form.get(m_attr)
+            if raw_m_val is not None:
+                setattr(project.methodology, m_attr, str(raw_m_val).strip())
 
         inst_val = meth_dict.get("instruments") or form.get("instruments")
         if inst_val is not None and isinstance(inst_val, list):
-            project.methodology.instruments = [
-                str(i).strip() for i in inst_val if str(i).strip()
-            ]
+            project.methodology.instruments = [str(i).strip() for i in inst_val if str(i).strip()]
 
     async def process_step(
         self,

@@ -1,11 +1,14 @@
 """API routes for managing encrypted BYOK API keys and runtime provider configuration."""
 
+import time
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 
 from thesisforge.api.deps import get_keystore_repository
 from thesisforge.core.auth import get_current_owner
 from thesisforge.core.logging import get_logger
+from thesisforge.llm.router import LLMRouter
 from thesisforge.repository.keystore_repository import SecureKeyStoreRepository
 
 logger = get_logger(__name__)
@@ -129,9 +132,6 @@ async def test_llm_connection(
     keystore: SecureKeyStoreRepository = Depends(get_keystore_repository),
 ) -> TestConnectionResponse:
     """Test connection and model validity for a given provider."""
-    import time
-    from thesisforge.llm.router import LLMRouter
-
     normalized_provider = payload.provider.strip().lower()
     clean_model = payload.model.strip()
 
@@ -180,4 +180,3 @@ async def test_llm_connection(
             message=f"Error al conectar con '{clean_model}': {str(exc)}",
             latency_ms=latency,
         )
-

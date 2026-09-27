@@ -108,4 +108,3 @@ async def test_test_connection_endpoint_without_key(test_app: httpx.AsyncClient)
     data = res.json()
     assert data["status"] == "error"
     assert "No se encontró clave" in data["message"]
-

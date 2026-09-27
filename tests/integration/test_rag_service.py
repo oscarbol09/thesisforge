@@ -148,7 +148,9 @@ async def test_rag_add_citation_to_project(in_memory_db: DatabaseManager):
     await repo.create_project(project)
 
     with (
-        patch.object(rag_service.citation_guard, "verify_doi", new_callable=AsyncMock) as mock_verify,
+        patch.object(
+            rag_service.citation_guard, "verify_doi", new_callable=AsyncMock
+        ) as mock_verify,
         patch.object(rag_service.crossref, "resolve_doi", new_callable=AsyncMock) as mock_resolve,
     ):
         mock_verify.return_value = True
