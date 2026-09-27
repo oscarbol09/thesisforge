@@ -184,6 +184,35 @@ class LLMRouter:
             )
             raise LLMProviderError(f"Error en proveedor LLM ({resolved_model}): {err}") from err
 
+    from typing import TypeVar
+
+    T = TypeVar("T", bound=BaseModel)
+
+    async def complete_pydantic(
+        self,
+        response_model: type[T],
+        prompt: str,
+        system_prompt: str | None = None,
+        model: str | None = None,
+        provider: str | None = None,
+        temperature: float = 0.2,
+        **kwargs: Any,
+    ) -> T:
+        """Execute completion and parse result into a Pydantic model."""
+        parsed = await self.complete_json(
+            prompt=prompt,
+            system_prompt=system_prompt,
+            model=model,
+            provider=provider,
+            temperature=temperature,
+            **kwargs,
+        )
+        try:
+            return response_model.model_validate(parsed)
+        except ValidationError as e:
+            logger.error(f"LLM Response failed Pydantic validation: {e}")
+            raise LLMProviderError(f"El esquema JSON del modelo es incorrecto: {e}") from e
+
     async def complete_json(
         self,
         prompt: str,
@@ -191,9 +220,8 @@ class LLMRouter:
         model: str | None = None,
         provider: str | None = None,
         temperature: float = 0.2,
-        response_model: type[BaseModel] | None = None,
         **kwargs: Any,
-    ) -> dict[str, Any] | BaseModel:
+    ) -> dict[str, Any]:
         """Execute completion and parse result strictly as JSON dict."""
         raw_text = await self.complete(
             prompt=prompt,
@@ -228,13 +256,6 @@ class LLMRouter:
                     "JSON decode failed on LLM response, attempting fallback extraction.",
                 )
                 raise LLMProviderError(f"El modelo no retornó un JSON válido: {err}") from err
-
-        if response_model:
-            try:
-                return response_model.model_validate(parsed)
-            except ValidationError as e:
-                logger.error(f"LLM Response failed Pydantic validation: {e}")
-                raise LLMProviderError(f"El esquema JSON del modelo es incorrecto: {e}") from e
         return parsed
 
     async def stream_completion(
