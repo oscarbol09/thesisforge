@@ -100,7 +100,7 @@ def test_assert_safe_academic_url_allowed(monkeypatch: pytest.MonkeyPatch):
     # Mock DNS lookup to return a known safe public IP
     monkeypatch.setattr(
         "socket.getaddrinfo",
-        lambda host, port, proto: [(2, 1, 6, "", ("142.250.190.46", 443))],
+        lambda host, port, *args, **kwargs: [(2, 1, 6, "", ("142.250.190.46", 443))],
     )
 
     url = "https://api.semanticscholar.org/graph/v1/paper/search?query=RAG"

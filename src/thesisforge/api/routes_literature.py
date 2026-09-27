@@ -184,6 +184,39 @@ async def add_citation_to_project(
     )
 
 
+@router.get("/projects/{project_id}/documents")
+async def get_project_documents(
+    project_id: str,
+    rag: RAGService = Depends(get_rag_service),
+) -> list[dict[str, Any]]:
+    """Retrieve all indexed documents and their ChromaDB status for a project."""
+    return await rag.get_document_index_statuses(project_id)
+
+
+@router.delete("/projects/{project_id}/documents/{document_id}")
+async def delete_project_document(
+    project_id: str,
+    document_id: str,
+    rag: RAGService = Depends(get_rag_service),
+) -> dict[str, str]:
+    """Remove an indexed document and its chunks from ChromaDB and SQLite."""
+    await rag.delete_document(project_id=project_id, document_id=document_id)
+    return {"status": "deleted", "document_id": document_id}
+
+
+@router.delete("/projects/{project_id}/citations/{citation_id}")
+async def delete_project_citation(
+    project_id: str,
+    citation_id: str,
+    rag: RAGService = Depends(get_rag_service),
+) -> dict[str, str]:
+    """Remove a bibliographic citation from the master project state."""
+    project = await rag.repo.get_project(project_id)
+    project.validated_citations = [c for c in project.validated_citations if c.id != citation_id]
+    await rag.repo.update_project(project)
+    return {"status": "deleted", "citation_id": citation_id}
+
+
 @router.post("/prisma-flow/{project_id}")
 async def build_prisma_flow(
     project_id: str,

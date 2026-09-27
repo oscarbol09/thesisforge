@@ -361,7 +361,75 @@ class RAGService:
             doi=doi,
         )
 
+        # Update master project state: record indexed document ID and auto-register citation
+        project = await self.repo.get_project(project_id)
+        if document_id not in project.indexed_documents:
+            project.indexed_documents.append(document_id)
+
+        first_chunk = chunks[0] if chunks else None
+        cit_title = title or (first_chunk.title if first_chunk else "") or f"Documento PDF ({document_id})"
+        cit_authors = authors or (first_chunk.authors if first_chunk and first_chunk.authors else ["Documento Indexado"])
+        cit_year = year or (first_chunk.year if first_chunk and first_chunk.year else utc_now().year)
+
+        pdf_cit = CitationDTO(
+            id=document_id,
+            title=cit_title,
+            authors=cit_authors,
+            year=cit_year,
+            doi=doi,
+            journal="Archivo PDF Local (ChromaDB)",
+            abstract=f"Documento cargado e indexado localmente ({len(chunks)} fragmentos semánticos).",
+            source="local_pdf",
+        )
+        pdf_cit.apa_formatted = APA7Formatter.format_reference_entry(pdf_cit)
+
+        # Append to validated citations if not already present
+        existing_keys = {
+            (c.doi.lower() if c.doi else (c.title.lower() if c.title else c.id))
+            for c in project.validated_citations
+        }
+        cand_key = doi.lower() if doi else (cit_title.lower() if cit_title else document_id)
+        if cand_key not in existing_keys:
+            project.validated_citations.append(pdf_cit)
+
+        await self.repo.update_project(project)
+        logger.info(
+            "Indexed PDF document and registered project citation.",
+            extra={"project_id": project_id, "document_id": document_id, "chunks": len(chunks)},
+        )
+
         return chunks
+
+    async def delete_document(self, project_id: str, document_id: str) -> bool:
+        """Remove an indexed document from ChromaDB, SQLite chunk tables, and project state."""
+        # 1. Delete from ChromaDB
+        await self.vector_store.delete_document(project_id=project_id, document_id=document_id)
+
+        # 2. Delete from SQLite document_chunks and document_index_status
+        async with self.db.get_connection() as conn:
+            await conn.execute(
+                "DELETE FROM document_chunks WHERE project_id = ? AND document_id = ?",
+                (project_id, document_id),
+            )
+            await conn.execute(
+                "DELETE FROM document_index_status WHERE project_id = ? AND document_id = ?",
+                (project_id, document_id),
+            )
+            await conn.commit()
+
+        # 3. Update project master state
+        project = await self.repo.get_project(project_id)
+        if document_id in project.indexed_documents:
+            project.indexed_documents.remove(document_id)
+        project.validated_citations = [
+            c for c in project.validated_citations if c.id != document_id
+        ]
+        await self.repo.update_project(project)
+        logger.info(
+            "Deleted document and removed from project state.",
+            extra={"project_id": project_id, "document_id": document_id},
+        )
+        return True
 
     async def query_relevant_chunks(
         self,

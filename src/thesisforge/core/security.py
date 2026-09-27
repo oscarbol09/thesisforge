@@ -76,7 +76,7 @@ def assert_safe_academic_url(target_url: str) -> str:
         ips_to_check = [direct_ip]
     except ValueError:
         try:
-            addr_info = socket.getaddrinfo(hostname, None, proto=socket.IPPROTO_TCP)
+            addr_info = socket.getaddrinfo(hostname, 0, socket.AF_UNSPEC, socket.SOCK_STREAM)
             ips_to_check = [ipaddress.ip_address(sockaddr[0]) for *_, sockaddr in addr_info]
         except (socket.gaierror, OSError) as err:
             raise SSRFBlockedError(f"No fue posible resolver el host '{hostname}': {err}") from err
@@ -120,7 +120,7 @@ async def assert_safe_academic_url_async(target_url: str) -> str:
         loop = asyncio.get_running_loop()
         try:
             addr_info = await loop.run_in_executor(
-                None, socket.getaddrinfo, hostname, None, socket.IPPROTO_TCP
+                None, socket.getaddrinfo, hostname, 0, socket.AF_UNSPEC, socket.SOCK_STREAM
             )
             ips_to_check = [ipaddress.ip_address(sockaddr[0]) for *_, sockaddr in addr_info]
         except (socket.gaierror, OSError) as err:
