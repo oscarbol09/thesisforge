@@ -108,6 +108,31 @@ function literatureComponent() {
       }
     },
 
+    async exportBibtex() {
+      const project = Alpine.store('app').activeProject;
+      if (!project) return;
+      try {
+        const response = await fetch(`/api/export/projects/${project.id}/bibtex`);
+        if (!response.ok) {
+          const errData = await response.json().catch(() => ({}));
+          throw new Error(errData.message || `Error HTTP ${response.status}`);
+        }
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = `bibliografia_${project.id}.bib`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        Alpine.store('app').toast('success', 'BibTeX Descargado', `Archivo "bibliografia_${project.id}.bib" exportado correctamente.`);
+      } catch (err) {
+        Alpine.store('app').toast('error', 'Error al exportar BibTeX', err.message);
+      }
+    },
+
     async searchLiterature() {
       if (!this.searchQuery.trim()) return;
       this.isSearching = true;
@@ -533,9 +558,16 @@ function literatureComponent() {
                 <button class="btn btn-primary btn-sm" @click="activeSubTab = 'search'">Buscar Literatura o Subir PDF</button>
               </div>
             ` : `
-              <div class="space-y-4">
-                <div class="flex items-center justify-between text-xs text-[var(--text-muted)] px-1">
+                <div class="flex items-center justify-between text-xs text-[var(--text-muted)] px-1 flex-wrap gap-2">
                   <span>Total de fuentes bibliográficas vinculadas: <strong class="text-[var(--text-primary)]">${citations.length}</strong></span>
+                  <button 
+                    class="btn btn-outline btn-xs flex items-center gap-1.5"
+                    @click="exportBibtex()"
+                    title="Descargar citas del proyecto en formato BibTeX (.bib)"
+                  >
+                    <svg class="w-3.5 h-3.5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    <span>Exportar BibTeX (.bib)</span>
+                  </button>
                 </div>
 
                 ${citations.map((c, idx) => `

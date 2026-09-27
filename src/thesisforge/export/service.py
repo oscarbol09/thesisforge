@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from thesisforge.exceptions import ConfigurationError, ExportError, ProjectNotFoundError
+from thesisforge.export.bibtex_exporter import BibTeXExporter
 from thesisforge.export.docx_compiler import APA7DocxCompiler
 from thesisforge.models import ExportFormat, ExportOptionsDTO, ProjectStateDTO
 from thesisforge.repository.project_repository import ProjectRepository
@@ -22,10 +23,12 @@ class ExportService:
         db_manager: DatabaseManager | None = None,
         project_repo: ProjectRepository | None = None,
         compiler: APA7DocxCompiler | None = None,
+        bibtex_exporter: BibTeXExporter | None = None,
     ) -> None:
         self.db = db_manager
         self.project_repo = project_repo or (ProjectRepository(db_manager) if db_manager else None)
         self.compiler = compiler or APA7DocxCompiler()
+        self.bibtex_exporter = bibtex_exporter or BibTeXExporter()
 
     async def compile_project_docx(
         self,
@@ -69,4 +72,33 @@ class ExportService:
         docx_bytes = await self.compile_project_docx(project_id, options)
         target_path.parent.mkdir(parents=True, exist_ok=True)
         target_path.write_bytes(docx_bytes)
+        return target_path
+
+    async def compile_project_bibtex(self, project_id: str) -> str:
+        """Fetch project from repository and compile validated citations into BibTeX (.bib) format."""
+        if not self.project_repo:
+            raise ConfigurationError("ProjectRepository no está inicializado en ExportService.")
+
+        project = await self.project_repo.get_project(project_id)
+        if not project:
+            raise ProjectNotFoundError(
+                f"Proyecto con ID '{project_id}' no encontrado para exportación BibTeX."
+            )
+
+        return self.compile_project_state_bibtex(project)
+
+    def compile_project_state_bibtex(self, project: ProjectStateDTO) -> str:
+        """Compile a ProjectStateDTO instance into a standardized BibTeX (.bib) string."""
+        return self.bibtex_exporter.export_project_bibliography(project)
+
+    async def save_project_bibtex(
+        self,
+        project_id: str,
+        output_path: str | Path,
+    ) -> Path:
+        """Compile and save BibTeX bibliography to a local destination file."""
+        target_path = Path(output_path)
+        bib_text = await self.compile_project_bibtex(project_id)
+        target_path.parent.mkdir(parents=True, exist_ok=True)
+        target_path.write_text(bib_text, encoding="utf-8")
         return target_path

@@ -297,6 +297,7 @@ class ExportFormat(StrEnum):
     DOCX = "docx"
     PDF = "pdf"
     MARKDOWN = "markdown"
+    BIBTEX = "bibtex"
 
 
 class ExportOptionsDTO(BaseModel):

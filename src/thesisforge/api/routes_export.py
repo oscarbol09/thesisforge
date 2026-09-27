@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 from fastapi import APIRouter, Depends, File, Response, UploadFile
 
 from thesisforge.api.deps import get_export_service, get_project_bundle_service
-from thesisforge.models import ExportOptionsDTO, ProjectStateDTO
+from thesisforge.models import CitationDTO, ExportOptionsDTO, ProjectStateDTO
 
 if TYPE_CHECKING:
     from thesisforge.export.bundle import ProjectBundleService
@@ -28,6 +28,36 @@ async def export_project_docx(
     return Response(
         content=docx_bytes,
         media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@router.get("/projects/{project_id}/bibtex")
+async def export_project_bibtex(
+    project_id: str,
+    export_service: ExportService = Depends(get_export_service),
+) -> Response:
+    """Compile validated project citations into BibTeX (.bib) file attachment for Zotero and Overleaf."""
+    bib_text = await export_service.compile_project_bibtex(project_id)
+    filename = f"bibliografia_{project_id}.bib"
+    return Response(
+        content=bib_text,
+        media_type="text/plain; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@router.post("/citations/bibtex")
+async def export_citations_bibtex(
+    citations: list[CitationDTO],
+    export_service: ExportService = Depends(get_export_service),
+) -> Response:
+    """Export an arbitrary list of citations as a BibTeX (.bib) text stream."""
+    bib_text = export_service.bibtex_exporter.export_citations(citations)
+    filename = "referencias.bib"
+    return Response(
+        content=bib_text,
+        media_type="text/plain; charset=utf-8",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
 

@@ -93,6 +93,28 @@ async def _run_export_docx_cli(
         await db.close()
 
 
+async def _run_export_bib_cli(
+    project_id: str,
+    output_path: str | None = None,
+) -> None:
+    """Compile and export project citations to BibTeX (.bib) file or stdout."""
+    settings = get_settings()
+    db = DatabaseManager(settings.database_url)
+    await db.initialize()
+    try:
+        repo = ProjectRepository(db)
+        export_service = ExportService(db_manager=db, project_repo=repo)
+        if output_path:
+            saved = await export_service.save_project_bibtex(project_id, output_path)
+            size_kb = saved.stat().st_size / 1024
+            print(f"Bibliografía BibTeX exportada exitosamente: {saved} ({size_kb:.1f} KB)")
+        else:
+            bib_text = await export_service.compile_project_bibtex(project_id)
+            print(bib_text)
+    finally:
+        await db.close()
+
+
 async def _run_export_bundle_cli(
     project_id: str,
     output_path: str,
@@ -374,6 +396,29 @@ def main() -> None:
     export_parser.add_argument("--institution", type=str, default="", help="Institution name")
     export_parser.add_argument("--advisor", type=str, default="", help="Advisor name")
 
+    # export-bib command
+    export_bib_parser = subparsers.add_parser(
+        "export-bib",
+        help="Compile and export validated project citations into BibTeX (.bib) format for Zotero and Overleaf",
+    )
+    export_bib_parser.add_argument(
+        "project_id", nargs="?", default=None, help="ID of the research project"
+    )
+    export_bib_parser.add_argument(
+        "--project-id",
+        dest="project_id_flag",
+        type=str,
+        default=None,
+        help="ID of the research project",
+    )
+    export_bib_parser.add_argument(
+        "--output",
+        "-o",
+        type=str,
+        default=None,
+        help="Target .bib file path (optional; prints to standard output if omitted)",
+    )
+
     # export-bundle command
     export_bundle_parser = subparsers.add_parser(
         "export-bundle",
@@ -510,6 +555,14 @@ def main() -> None:
                     author=args.author,
                     institution=args.institution,
                     advisor=args.advisor,
+                )
+            )
+        elif args.command == "export-bib":
+            pid = resolve_pid(args)
+            asyncio.run(
+                _run_export_bib_cli(
+                    project_id=pid,
+                    output_path=args.output,
                 )
             )
         elif args.command == "export-bundle":

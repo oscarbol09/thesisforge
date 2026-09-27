@@ -71,13 +71,54 @@ function exportComponent() {
       }
     },
 
+    async downloadBibtex() {
+      const project = Alpine.store('app').activeProject;
+      if (!project) return;
+
+      this.isExportingBib = true;
+      try {
+        const response = await fetch(`/api/export/projects/${project.id}/bibtex`);
+
+        if (!response.ok) {
+          const errData = await response.json().catch(() => ({}));
+          const errMsg = errData.message || `Error HTTP ${response.status}`;
+          Alpine.store('app').toast('error', 'Error al exportar BibTeX', errMsg);
+          return;
+        }
+
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        
+        const contentDisposition = response.headers.get('Content-Disposition');
+        let filename = `bibliografia_${project.id}.bib`;
+        if (contentDisposition && contentDisposition.includes('filename=')) {
+          filename = contentDisposition.split('filename=')[1].replace(/["']/g, '').trim();
+        }
+        
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+
+        Alpine.store('app').toast('success', 'BibTeX Descargado', `El archivo "${filename}" fue exportado para Zotero, Mendeley y Overleaf.`);
+      } catch (err) {
+        Alpine.store('app').toast('error', 'Error de Descarga', err.message);
+      } finally {
+        this.isExportingBib = false;
+      }
+    },
+
     render() {
       const project = Alpine.store('app').activeProject;
       if (!project) {
         return `
           <div class="card p-12 text-center max-w-md mx-auto space-y-4">
             <h3 class="font-bold text-lg text-[var(--text-primary)]">Ningún Proyecto Seleccionado</h3>
-            <p class="text-sm text-[var(--text-secondary)]">Selecciona un proyecto para exportar a Microsoft Word (.docx).</p>
+            <p class="text-sm text-[var(--text-secondary)]">Selecciona un proyecto para exportar a Microsoft Word (.docx) o BibTeX (.bib).</p>
             <button class="btn btn-primary" @click="$store.app.activeTab = 'dashboard'">Ir al Panel de Proyectos</button>
           </div>
         `;
@@ -85,6 +126,7 @@ function exportComponent() {
 
       const totalSections = project.sections?.length || 0;
       const approvedSections = project.sections?.filter(s => s.status === 'approved').length || 0;
+      const totalCitations = project.validated_citations?.length || 0;
 
       return `
         <div class="space-y-8 max-w-4xl mx-auto">
@@ -97,8 +139,21 @@ function exportComponent() {
                 <span>•</span>
                 <span>Exportación & Compilación Editorial</span>
               </div>
-              <h2 class="text-2xl font-bold tracking-tight text-[var(--text-primary)]">Compilador Microsoft Word APA 7ª Edición</h2>
-              <p class="text-sm text-[var(--text-secondary)] mt-1">Genera un documento .docx oficial con márgenes de 2.54 cm, portada, numeración y bibliografía formateada.</p>
+              <h2 class="text-2xl font-bold tracking-tight text-[var(--text-primary)]">Compilador Editorial APA 7 & BibTeX</h2>
+              <p class="text-sm text-[var(--text-secondary)] mt-1">Genera un documento Word (.docx) oficial con normas APA 7ª Edición o exporta la bibliografía en formato BibTeX (.bib) para Zotero, Mendeley y Overleaf.</p>
+            </div>
+
+            <div class="flex items-center gap-2 shrink-0">
+              <button 
+                class="btn btn-outline btn-sm flex items-center gap-1.5" 
+                @click="downloadBibtex()" 
+                :disabled="isExportingBib || totalCitations === 0"
+                title="Exportar archivo .bib compatible con Overleaf y gestores bibliográficos"
+              >
+                <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                <span x-show="!isExportingBib">Exportar BibTeX (${totalCitations})</span>
+                <span x-show="isExportingBib">Exportando .bib...</span>
+              </button>
             </div>
           </div>
 
@@ -110,7 +165,7 @@ function exportComponent() {
               </div>
               <div>
                 <p class="text-xs font-bold text-[var(--text-primary)]">Estado de las Secciones a Compilar:</p>
-                <p class="text-xs text-[var(--text-secondary)]">${approvedSections} de ${totalSections} secciones aprobadas en el proyecto.</p>
+                <p class="text-xs text-[var(--text-secondary)]">${approvedSections} de ${totalSections} secciones aprobadas • ${totalCitations} referencias bibliográficas vinculadas.</p>
               </div>
             </div>
             <span class="badge ${approvedSections === totalSections && totalSections > 0 ? 'badge-success' : 'badge-note'}">
@@ -194,9 +249,21 @@ function exportComponent() {
             </div>
 
             <!-- Export Button CTA -->
-            <div class="pt-4 flex justify-end">
+            <div class="pt-4 flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-[var(--border-subtle)]">
               <button 
-                class="btn btn-primary btn-lg" 
+                type="button"
+                class="btn btn-outline btn-md w-full sm:w-auto flex items-center justify-center gap-2" 
+                @click="downloadBibtex()" 
+                :disabled="isExportingBib || totalCitations === 0"
+              >
+                <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                <span x-show="!isExportingBib">Descargar BibTeX (.bib)</span>
+                <span x-show="isExportingBib">Descargando BibTeX...</span>
+              </button>
+
+              <button 
+                type="button"
+                class="btn btn-primary btn-lg w-full sm:w-auto flex items-center justify-center gap-2" 
                 @click="downloadDocx()" 
                 :disabled="isExporting"
               >
