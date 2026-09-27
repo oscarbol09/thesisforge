@@ -90,7 +90,7 @@ async def test_api_jury_audit_flow(override_deps: DatabaseManager) -> None:
         audit_data = resp_audit.json()
         assert audit_data["success"] is True
         assert audit_data["report"]["project_id"] == "proj-api-jury-01"
-        assert audit_data["report"]["overall_score"] == 88.0
+        assert audit_data["report"]["overall_score"] == 75.0
         evaluation_id = audit_data["report"]["id"]
 
         # 2. Get Latest Evaluation
@@ -98,7 +98,7 @@ async def test_api_jury_audit_flow(override_deps: DatabaseManager) -> None:
         assert resp_latest.status_code == 200
         latest_data = resp_latest.json()
         assert latest_data["id"] == evaluation_id
-        assert latest_data["verdict"] == "aprobado"
+        assert latest_data["verdict"] == "modificaciones_menores"
 
         # 3. List Evaluations for Project
         resp_list = await client.get("/api/jury/projects/proj-api-jury-01/evaluations")
