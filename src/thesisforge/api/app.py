@@ -69,7 +69,8 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             "default-src 'self'; "
             "img-src 'self' data: https:; "
             # No 'unsafe-inline' — all scripts are in external files under gui/js/.
-            "script-src 'self' "
+            # 'unsafe-eval' is required by Alpine.js for reactive expression parsing.
+            "script-src 'self' 'unsafe-eval' "
             "https://cdn.tailwindcss.com "
             "https://cdnjs.cloudflare.com "
             "https://cdn.jsdelivr.net; "
@@ -302,6 +303,20 @@ def create_app() -> FastAPI:
     @app.get("/api/version", tags=["system"])
     async def get_version() -> dict[str, str]:
         return {"version": __version__}
+
+    # Static Assets Mounting
+    assets_path = Path("assets")
+    if assets_path.is_dir():
+        app.mount("/assets", StaticFiles(directory=str(assets_path)), name="assets")
+
+    @app.get("/favicon.ico", include_in_schema=False)
+    async def favicon_endpoint() -> Response:
+        fav = Path("assets/favicon.ico")
+        if fav.is_file():
+            from fastapi.responses import FileResponse
+
+            return FileResponse(fav)
+        return Response(status_code=404)
 
     # Web SPA Static Files Mounting
     gui_path = Path(settings.gui_dir)

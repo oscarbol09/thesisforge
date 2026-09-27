@@ -376,14 +376,218 @@
     aria-labelledby="modal-settings-title"
     style="display: none;"
   >
-    <div class="modal-content max-w-xl" x-data="settingsComponent()">
-      <div class="card-header">
-        <h3 id="modal-settings-title" class="font-bold text-base text-[var(--text-primary)]">Configuración de Proveedores BYOK</h3>
+    <div class="modal-content max-w-2xl" x-data="settingsComponent()">
+      <div class="card-header flex items-center justify-between border-b border-[var(--border-subtle)] pb-3">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold">
+            <svg class="w-4 h-4" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          </div>
+          <div>
+            <h3 id="modal-settings-title" class="font-bold text-sm text-[var(--text-primary)]">Configuración de Proveedores BYOK & Modelos IA</h3>
+            <p class="text-[11px] text-[var(--text-muted)]">Elige tu proveedor, selecciona modelos libres/prémium o conecta tus propios modelos locales.</p>
+          </div>
+        </div>
         <button class="btn btn-ghost btn-sm text-[var(--text-muted)]" @click="$store.app.showSettingsModal = false" aria-label="Cerrar modal de configuración">
           <svg class="w-4 h-4" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
         </button>
       </div>
-      <div class="card-body" x-html="renderModal()"></div>
+
+      <div class="card-body space-y-4 pt-3 text-xs max-h-[75vh] overflow-y-auto pr-1">
+        
+        <!-- Bóveda info banner -->
+        <div class="p-3 rounded-lg bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900 text-blue-900 dark:text-blue-300 space-y-0.5">
+          <div class="flex items-center gap-2 font-semibold text-xs">
+            <svg class="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+            <span>Bóveda Criptográfica Fernet (Zero Plaintext Storage)</span>
+          </div>
+          <p class="text-[11px] text-[var(--text-secondary)] leading-relaxed">Tus claves de API se cifran en el backend SQLite con Fernet (AES-128-CBC + HMAC-SHA256). Nunca se guardan en texto plano en el navegador.</p>
+        </div>
+
+        <!-- Provider & Model Selection Grid -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+          <div>
+            <label for="settings-default-provider" class="block font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-1 text-[11px]">Proveedor Principal *</label>
+            <select 
+              id="settings-default-provider" 
+              x-model="$store.app.settings.default_provider" 
+              @change="onProviderChange($event.target.value)" 
+              class="w-full text-xs font-medium py-2"
+            >
+              <template x-for="p in providers" :key="p.id">
+                <option :value="p.id" x-text="p.name" :selected="p.id === $store.app.settings.default_provider"></option>
+              </template>
+            </select>
+          </div>
+
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <label for="settings-default-model" class="block font-semibold uppercase tracking-wider text-[var(--text-muted)] text-[11px]">Modelo Activo *</label>
+              <button 
+                type="button" 
+                @click="toggleCustomModel()" 
+                class="text-[10px] text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
+                x-text="isCustomModel ? '← Volver al catálogo' : '✍️ Escribir ID manual'"
+              ></button>
+            </div>
+
+            <!-- Dropdown selector when not in custom text mode -->
+            <div x-show="!isCustomModel">
+              <select 
+                id="settings-default-model" 
+                x-model="$store.app.settings.default_model" 
+                @change="onModelChange($event.target.value)" 
+                class="w-full text-xs font-mono py-2"
+              >
+                <!-- Free Tier Models Group -->
+                <optgroup label="⭐ Modelos Gratuitos (Free Tier)" x-show="freeModels.length > 0">
+                  <template x-for="m in freeModels" :key="m.id">
+                    <option :value="m.id" x-text="m.name + (m.recommended ? ' ★' : '')" :selected="m.id === $store.app.settings.default_model"></option>
+                  </template>
+                </optgroup>
+
+                <!-- Premium Tier Models Group -->
+                <optgroup label="👑 Modelos Prémium (Mayor Capacidad)" x-show="premiumModels.length > 0">
+                  <template x-for="m in premiumModels" :key="m.id">
+                    <option :value="m.id" x-text="m.name + (m.recommended ? ' ★' : '')" :selected="m.id === $store.app.settings.default_model"></option>
+                  </template>
+                </optgroup>
+              </select>
+            </div>
+
+            <!-- Manual Custom Text Input -->
+            <div x-show="isCustomModel" class="space-y-1">
+              <input 
+                id="settings-custom-model-input" 
+                type="text" 
+                x-model="$store.app.settings.default_model" 
+                placeholder="Ej. meta-llama/llama-3.3-70b-instruct" 
+                class="w-full text-xs font-mono py-2"
+              >
+              <p class="text-[10px] text-[var(--text-muted)]">Introduce el identificador exacto del modelo soportado por LiteLLM.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Selected Model Metadata Card -->
+        <div x-show="selectedModelInfo" class="p-3 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-subtle)] space-y-1.5 transition-all">
+          <div class="flex items-center justify-between gap-2 flex-wrap">
+            <div class="flex items-center gap-2">
+              <span class="font-bold text-xs text-[var(--text-primary)]" x-text="selectedModelInfo?.name"></span>
+              <span class="text-[10px] px-2 py-0.5 rounded font-medium" :class="selectedModelInfo?.badgeClass" x-text="selectedModelInfo?.badge"></span>
+            </div>
+            <span class="text-[10px] text-[var(--text-muted)] font-mono" x-text="selectedModelInfo?.id"></span>
+          </div>
+          <p class="text-[11px] text-[var(--text-secondary)] leading-relaxed" x-text="selectedModelInfo?.description"></p>
+          <div class="flex items-center gap-1.5 pt-1 border-t border-[var(--border-subtle)] text-[10px] text-[var(--text-muted)]">
+            <svg class="w-3 h-3 text-[var(--text-muted)]" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <span x-text="selectedModelInfo?.specs"></span>
+          </div>
+        </div>
+
+        <!-- Test Connection Button & Result -->
+        <div class="flex items-center justify-between p-2.5 rounded-lg bg-[var(--bg-surface-elevated)] border border-[var(--border-subtle)]">
+          <div>
+            <p class="font-semibold text-xs text-[var(--text-primary)]">Verificar Conectividad</p>
+            <p class="text-[10px] text-[var(--text-muted)]">Realiza un ping con el modelo activo para comprobar tu clave de API y latencia.</p>
+          </div>
+          <button 
+            type="button" 
+            @click="testConnection()" 
+            class="btn btn-outline btn-sm text-xs flex items-center gap-1.5 shrink-0" 
+            :disabled="isTestingConnection"
+          >
+            <svg x-show="isTestingConnection" class="animate-spin w-3.5 h-3.5" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
+            <svg x-show="!isTestingConnection" class="w-3.5 h-3.5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+            <span x-text="isTestingConnection ? 'Probando...' : 'Probar Conexión'"></span>
+          </button>
+        </div>
+
+        <!-- Test Result Banner -->
+        <div x-show="testResult" class="p-2.5 rounded-lg text-xs flex items-start gap-2" :class="testResult?.status === 'ok' ? 'bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 text-emerald-900 dark:text-emerald-300' : 'bg-red-50 dark:bg-red-950/40 border border-red-300 dark:border-red-800 text-red-900 dark:text-red-300'">
+          <div class="shrink-0 mt-0.5">
+            <svg x-show="testResult?.status === 'ok'" class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+            <svg x-show="testResult?.status !== 'ok'" class="w-4 h-4 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="font-semibold text-[11px]" x-text="testResult?.message"></p>
+          </div>
+          <button type="button" @click="testResult = null" class="text-[var(--text-muted)] hover:text-[var(--text-primary)]">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+
+        <!-- API Keys Inputs Grid -->
+        <div class="space-y-3 pt-2 border-t border-[var(--border-subtle)]">
+          <div class="flex items-center justify-between">
+            <h4 class="font-bold text-xs uppercase tracking-wider text-[var(--text-primary)]">Credenciales Cifradas en Bóveda</h4>
+            <span class="text-[10px] text-[var(--text-muted)]">Deja en blanco para conservar claves guardadas</span>
+          </div>
+
+          <template x-for="p in keyProviders" :key="p.keyField">
+            <div class="space-y-1">
+              <div class="flex items-center justify-between">
+                <label :for="'key-input-' + p.keyField" class="font-semibold text-[var(--text-secondary)] flex items-center gap-1.5 text-xs">
+                  <span x-text="p.name"></span>
+                  <span 
+                    class="badge text-[10px] py-0 px-1.5" 
+                    :class="configuredProviders.includes(p.keyField) ? 'badge-completed' : 'badge-setup'"
+                    x-text="configuredProviders.includes(p.keyField) ? 'Cifrada en Bóveda' : 'No Configurada'"
+                  ></span>
+                </label>
+                <template x-if="configuredProviders.includes(p.keyField)">
+                  <button type="button" @click="removeStoredKey(p.keyField)" class="text-[11px] text-red-500 hover:text-red-700 underline" title="Eliminar clave de la bóveda">Eliminar</button>
+                </template>
+              </div>
+              <input 
+                :id="'key-input-' + p.keyField" 
+                type="password" 
+                x-model="keyInputs[p.keyField]" 
+                :placeholder="configuredProviders.includes(p.keyField) ? '•••••••••••••••• (Guardada y Cifrada — escribe para actualizar)' : p.placeholder" 
+                class="w-full text-xs font-mono py-1.5"
+                autocomplete="off"
+              >
+            </div>
+          </template>
+
+          <!-- Semantic Scholar Optional Key -->
+          <div class="space-y-1">
+            <div class="flex items-center justify-between">
+              <label for="key-input-semantic-scholar" class="font-semibold text-[var(--text-secondary)] flex items-center gap-1.5 text-xs">
+                <span>Semantic Scholar API Key</span>
+                <span 
+                  class="badge text-[10px] py-0 px-1.5" 
+                  :class="configuredProviders.includes('semantic_scholar') ? 'badge-completed' : 'badge-setup'"
+                  x-text="configuredProviders.includes('semantic_scholar') ? 'Cifrada en Bóveda' : '(Opcional)'"
+                ></span>
+              </label>
+              <template x-if="configuredProviders.includes('semantic_scholar')">
+                <button type="button" @click="removeStoredKey('semantic_scholar')" class="text-[11px] text-red-500 hover:text-red-700 underline">Eliminar</button>
+              </template>
+            </div>
+            <input 
+              id="key-input-semantic-scholar" 
+              type="password" 
+              x-model="keyInputs.semantic_scholar" 
+              placeholder="Clave para consultas académicas masivas sin rate limit" 
+              class="w-full text-xs font-mono py-1.5"
+              autocomplete="off"
+            >
+          </div>
+        </div>
+
+        <!-- Modal Footer Actions -->
+        <div class="pt-3 border-t border-[var(--border-subtle)] flex items-center justify-between">
+          <a href="https://oscarbol09.github.io/thesisforge/legal/privacy/" target="_blank" rel="noopener noreferrer" class="text-[11px] text-blue-600 dark:text-blue-400 hover:underline">Política de Privacidad</a>
+          <div class="flex items-center gap-2">
+            <button type="button" class="btn btn-secondary btn-sm" @click="$store.app.showSettingsModal = false">Cerrar</button>
+            <button type="button" class="btn btn-primary btn-sm" @click="saveSettings()" :disabled="isSaving">
+              <span x-show="!isSaving">Guardar Cambios</span>
+              <span x-show="isSaving">Guardando en Bóveda...</span>
+            </button>
+          </div>
+        </div>
+
+      </div>
     </div>
   </div>
 
@@ -437,6 +641,7 @@
   <!-- Application Logic Modules (all external — no unsafe-inline required) -->
   <script src="js/tailwind-config.js"></script>
   <script src="js/modals.js"></script>
+  <script src="js/model-catalog.js"></script>
   <script src="js/app.js"></script>
   <script src="js/dashboard.js"></script>
   <script src="js/advisor.js"></script>

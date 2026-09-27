@@ -95,3 +95,17 @@ async def test_keystore_store_empty_key_rejected(test_app: httpx.AsyncClient) ->
         json={"provider": "openai", "api_key": "   "},
     )
     assert res.status_code == 400
+
+
+@pytest.mark.asyncio
+async def test_test_connection_endpoint_without_key(test_app: httpx.AsyncClient) -> None:
+    """Test connection endpoint returns error when no key is configured."""
+    res = await test_app.post(
+        "/api/settings/test-connection",
+        json={"provider": "openrouter", "model": "anthropic/claude-3.5-sonnet"},
+    )
+    assert res.status_code == 200
+    data = res.json()
+    assert data["status"] == "error"
+    assert "No se encontró clave" in data["message"]
+

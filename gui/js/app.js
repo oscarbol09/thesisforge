@@ -41,7 +41,11 @@ document.addEventListener('alpine:init', () => {
       try {
         const savedSettings = JSON.parse(localStorage.getItem('tf_byok_settings') || '{}');
         if (savedSettings.default_provider) this.settings.default_provider = savedSettings.default_provider;
-        if (savedSettings.default_model) this.settings.default_model = savedSettings.default_model;
+        if (savedSettings.default_model) {
+          this.settings.default_model = savedSettings.default_model;
+        } else if (typeof getRecommendedModelForProvider === 'function') {
+          this.settings.default_model = getRecommendedModelForProvider(this.settings.default_provider);
+        }
       } catch (e) {
         // ignore JSON parse errors
       }
@@ -93,6 +97,11 @@ document.addEventListener('alpine:init', () => {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
       };
+
+      const token = localStorage.getItem('tf_instance_token');
+      if (token) {
+        defaultHeaders['Authorization'] = `Bearer ${token}`;
+      }
 
       // Don't set Content-Type for FormData (browser will set multipart/form-data with boundary)
       if (options.body instanceof FormData) {

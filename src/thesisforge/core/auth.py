@@ -100,10 +100,12 @@ def get_instance_token() -> str:
 
 
 def _auth_is_disabled(settings: AppSettings) -> bool:
-    """Return True in test environments, or when explicitly disabled in development."""
+    """Return True in test environments, or when explicitly disabled / unset in development."""
     if settings.environment == "test":
         return True
-    return settings.environment == "development" and settings.auth_disabled
+    return settings.environment == "development" and (
+        settings.auth_disabled or not settings.instance_token
+    )
 
 
 async def get_current_owner(
