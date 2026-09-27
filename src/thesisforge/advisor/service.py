@@ -72,6 +72,8 @@ class AdvisorService:
 
     def _determine_current_step(self, project: ProjectStateDTO) -> AdvisorStep:
         """Derive current interview step from existing project fields."""
+        if not project.title or not project.academic_level:
+            return AdvisorStep.SETUP
         if not project.topic or not project.area_of_study:
             return AdvisorStep.TOPIC_AND_AREA
         if not project.research_problem:
@@ -91,6 +93,138 @@ class AdvisorService:
 
         return AdvisorStep.APPROVED
 
+    def _sync_form_data_to_project(
+        self, project: ProjectStateDTO, form: dict[str, Any]
+    ) -> None:
+        """Synchronize incoming form fields into the ProjectStateDTO."""
+        if not form:
+            return
+
+        if form.get("title"):
+            project.title = str(form["title"]).strip()
+
+        if form.get("academic_level"):
+            try:
+                project.academic_level = AcademicLevel(str(form["academic_level"]).strip())
+            except ValueError:
+                pass
+
+        if form.get("area_of_study"):
+            project.area_of_study = str(form["area_of_study"]).strip()
+
+        if form.get("topic"):
+            project.topic = str(form["topic"]).strip()
+
+        if form.get("research_problem") is not None:
+            val = str(form["research_problem"]).strip()
+            if val:
+                project.research_problem = val
+
+        if form.get("justification") is not None:
+            project.justification = str(form["justification"]).strip()
+
+        if form.get("scope_limitations") is not None:
+            project.scope_limitations = str(form["scope_limitations"]).strip()
+
+        if form.get("research_question") is not None:
+            val = str(form["research_question"]).strip()
+            if val:
+                project.research_question = val
+
+        if form.get("general_objective") is not None:
+            val = str(form["general_objective"]).strip()
+            if val:
+                project.general_objective = val
+
+        if form.get("specific_objectives") is not None and isinstance(
+            form["specific_objectives"], list
+        ):
+            objs = [str(x).strip() for x in form["specific_objectives"] if str(x).strip()]
+            if objs:
+                project.specific_objectives = objs
+
+        if form.get("hypothesis") is not None:
+            project.hypothesis = str(form["hypothesis"]).strip()
+
+        if form.get("variables") is not None and isinstance(form["variables"], list):
+            vars_cleaned = [str(x).strip() for x in form["variables"] if str(x).strip()]
+            project.variables = vars_cleaned
+
+        # Operationalized variables
+        if "operationalized_variables" in form and isinstance(
+            form["operationalized_variables"], list
+        ):
+            parsed_ops: list[VariableOperationalizationDTO] = []
+            for item in form["operationalized_variables"]:
+                if isinstance(item, dict) and item.get("name"):
+                    try:
+                        parsed_ops.append(VariableOperationalizationDTO(**item))
+                    except Exception:
+                        pass
+            project.operationalized_variables = parsed_ops
+
+        # Qualitative categories
+        if "qualitative_categories" in form and isinstance(
+            form["qualitative_categories"], list
+        ):
+            parsed_cats: list[QualitativeCategoryDTO] = []
+            for item in form["qualitative_categories"]:
+                if isinstance(item, dict) and item.get("name"):
+                    try:
+                        parsed_cats.append(QualitativeCategoryDTO(**item))
+                    except Exception:
+                        pass
+            project.qualitative_categories = parsed_cats
+
+        # Nested or flat methodology fields
+        meth_dict = (
+            form["methodology"] if isinstance(form.get("methodology"), dict) else {}
+        )
+        approach_val = meth_dict.get("approach") or form.get("approach")
+        if approach_val:
+            try:
+                project.methodology.approach = ResearchApproach(str(approach_val).strip())
+            except ValueError:
+                pass
+
+        paradigm_val = meth_dict.get("paradigm") or form.get("paradigm")
+        if paradigm_val:
+            try:
+                project.methodology.paradigm = EpistemologicalParadigm(
+                    str(paradigm_val).strip()
+                )
+            except ValueError:
+                pass
+
+        sampling_val = meth_dict.get("sampling_technique") or form.get("sampling_technique")
+        if sampling_val:
+            try:
+                project.methodology.sampling_technique = SamplingTechnique(
+                    str(sampling_val).strip()
+                )
+            except ValueError:
+                pass
+
+        for m_attr in (
+            "design",
+            "population",
+            "sample",
+            "unit_of_analysis",
+            "analysis_technique",
+            "data_collection_procedure",
+            "temporal_scope",
+            "spatial_setting",
+        ):
+            val = meth_dict.get(m_attr) or form.get(m_attr)
+            if val is not None:
+                setattr(project.methodology, m_attr, str(val).strip())
+
+        inst_val = meth_dict.get("instruments") or form.get("instruments")
+        if inst_val is not None and isinstance(inst_val, list):
+            project.methodology.instruments = [
+                str(i).strip() for i in inst_val if str(i).strip()
+            ]
+
     async def process_step(
         self,
         project_id: str,
@@ -103,86 +237,127 @@ class AdvisorService:
         form = form_data or {}
         system_prompt = ADVISOR_SYSTEM_PROMPT.format(academic_level=project.academic_level.value)
 
+        # 1. Sync any passed form data immediately
+        self._sync_form_data_to_project(project, form)
+
         ai_response: dict[str, Any] = {}
 
-        if step == AdvisorStep.TOPIC_AND_AREA:
-            project.area_of_study = form.get("area_of_study", project.area_of_study) or user_input
-            project.topic = form.get("topic", project.topic) or user_input
-            if form.get("title"):
-                project.title = form["title"]
+        if step == AdvisorStep.SETUP:
+            if user_input and not project.title:
+                project.title = user_input.strip()
+            ai_response = {
+                "message": f"Configuración inicial establecida para nivel '{project.academic_level.value}' y título '{project.title}'."
+            }
+
+        elif step == AdvisorStep.TOPIC_AND_AREA:
+            if user_input and not project.topic:
+                project.topic = user_input.strip()
             ai_response = {
                 "message": f"Área '{project.area_of_study}' y tema '{project.topic}' registrados. Procedamos al planteamiento del problema."
             }
 
         elif step == AdvisorStep.PROBLEM_STATEMENT:
-            prompt = PROBLEM_FORMULATION_PROMPT.format(
-                area_of_study=project.area_of_study,
-                topic=project.topic,
-                user_input=user_input,
-                academic_level=project.academic_level.value,
-            )
-            try:
-                ai_response = await self.llm.complete_json(prompt, system_prompt=system_prompt)
-                refined = ai_response.get("refined_problem", user_input)
-                project.research_problem = refined
-                if form.get("research_question"):
-                    project.research_question = form["research_question"]
-                elif ai_response.get("suggested_questions"):
-                    project.research_question = ai_response["suggested_questions"][0]
-            except Exception as e:
-                logger.warning(
-                    "LLM JSON completion failed in problem statement, using raw input.",
-                    extra={"error": str(e)},
+            if user_input.strip():
+                prompt = PROBLEM_FORMULATION_PROMPT.format(
+                    area_of_study=project.area_of_study,
+                    topic=project.topic,
+                    user_input=user_input,
+                    academic_level=project.academic_level.value,
                 )
-                project.research_problem = user_input
+                try:
+                    ai_response = await self.llm.complete_json(prompt, system_prompt=system_prompt)
+                    refined = ai_response.get("refined_problem")
+                    if refined and not project.research_problem:
+                        project.research_problem = refined
+                    if not project.research_question and ai_response.get("suggested_questions"):
+                        project.research_question = ai_response["suggested_questions"][0]
+                except Exception as e:
+                    logger.warning(
+                        "LLM JSON completion failed in problem statement, using raw input.",
+                        extra={"error": str(e)},
+                    )
+                    if not project.research_problem:
+                        project.research_problem = user_input.strip()
+                    ai_response = {
+                        "critique": "Problema registrado directamente.",
+                        "refined_problem": project.research_problem,
+                    }
+            else:
+                issues = MethodologyValidator.validate_problem_statement(project.research_problem)
                 ai_response = {
-                    "critique": "Problema registrado directamente.",
-                    "refined_problem": user_input,
+                    "refined_problem": project.research_problem,
+                    "issues": issues,
+                    "is_valid": len(issues) == 0,
+                    "message": "Planteamiento del problema registrado correctamente.",
                 }
 
         elif step == AdvisorStep.RESEARCH_QUESTION:
-            project.research_question = user_input.strip()
+            if user_input.strip() and not project.research_question:
+                project.research_question = user_input.strip()
             issues = MethodologyValidator.validate_research_question(project.research_question)
             ai_response = {
                 "question": project.research_question,
                 "issues": issues,
                 "is_valid": len(issues) == 0,
+                "message": "Pregunta de investigación validada."
+                if len(issues) == 0
+                else "Observaciones detectadas en la formulación de la pregunta.",
             }
 
         elif step == AdvisorStep.OBJECTIVES:
-            approach_val = (
-                project.methodology.approach.value
-                if project.methodology.approach
-                else "cuantitativo"
-            )
-            prompt = OBJECTIVES_PROMPT.format(
-                research_problem=project.research_problem,
-                research_question=project.research_question,
-                approach=approach_val,
-                academic_level=project.academic_level.value,
-                user_input=user_input,
-            )
-            try:
-                ai_response = await self.llm.complete_json(prompt, system_prompt=system_prompt)
-                if form.get("general_objective"):
-                    project.general_objective = form["general_objective"]
-                elif ai_response.get("general_objective"):
-                    project.general_objective = ai_response["general_objective"]
+            if user_input.strip() and (
+                not project.general_objective or not project.specific_objectives
+            ):
+                approach_val = (
+                    project.methodology.approach.value
+                    if project.methodology.approach
+                    else "cuantitativo"
+                )
+                prompt = OBJECTIVES_PROMPT.format(
+                    research_problem=project.research_problem,
+                    research_question=project.research_question,
+                    approach=approach_val,
+                    academic_level=project.academic_level.value,
+                    user_input=user_input,
+                )
+                try:
+                    ai_response = await self.llm.complete_json(prompt, system_prompt=system_prompt)
+                    if not project.general_objective and ai_response.get("general_objective"):
+                        project.general_objective = ai_response["general_objective"]
+                    if not project.specific_objectives and ai_response.get("specific_objectives"):
+                        project.specific_objectives = ai_response["specific_objectives"]
+                    if not project.variables and ai_response.get("variables_or_categories"):
+                        project.variables = ai_response["variables_or_categories"]
+                except Exception as e:
+                    logger.warning("LLM objective extraction fallback.", extra={"error": str(e)})
+                    if not project.general_objective:
+                        project.general_objective = user_input.strip()
+                    ai_response = {"general_objective": project.general_objective}
 
-                if form.get("specific_objectives"):
-                    project.specific_objectives = form["specific_objectives"]
-                elif ai_response.get("specific_objectives"):
-                    project.specific_objectives = ai_response["specific_objectives"]
-
-                if ai_response.get("variables_or_categories"):
-                    project.variables = ai_response["variables_or_categories"]
-            except Exception as e:
-                logger.warning("LLM objective extraction fallback.", extra={"error": str(e)})
-                project.general_objective = user_input
-                ai_response = {"general_objective": user_input}
+            gen_issues = MethodologyValidator.validate_general_objective(
+                project.general_objective, project.research_question
+            )
+            spec_issues = MethodologyValidator.validate_specific_objectives(
+                project.specific_objectives
+            )
+            all_obj_issues = gen_issues + spec_issues
+            if not ai_response:
+                ai_response = {
+                    "general_objective": project.general_objective,
+                    "specific_objectives": project.specific_objectives,
+                    "issues": all_obj_issues,
+                    "is_valid": len(all_obj_issues) == 0,
+                    "message": "Objetivos registrados y validados."
+                    if len(all_obj_issues) == 0
+                    else "Observaciones metodológicas en objetivos.",
+                }
+            else:
+                ai_response["issues"] = all_obj_issues
+                ai_response["is_valid"] = len(all_obj_issues) == 0
 
         elif step == AdvisorStep.HYPOTHESIS:
-            project.hypothesis = user_input.strip() or form.get("hypothesis")
+            if user_input.strip() and not project.hypothesis:
+                project.hypothesis = user_input.strip()
             issues = MethodologyValidator.validate_hypothesis(
                 project.hypothesis, project.methodology.approach
             )
@@ -190,80 +365,93 @@ class AdvisorService:
                 "hypothesis": project.hypothesis,
                 "issues": issues,
                 "is_valid": len(issues) == 0,
+                "message": "Formulación de hipótesis/supuestos registrada.",
             }
 
         elif step == AdvisorStep.METHODOLOGY_DESIGN:
-            approach_str = form.get(
-                "approach",
-                project.methodology.approach.value
-                if project.methodology.approach
-                else "cuantitativo",
-            )
-            try:
-                project.methodology.approach = ResearchApproach(approach_str)
-            except ValueError:
-                project.methodology.approach = ResearchApproach.CUANTITATIVO
+            if user_input.strip():
+                prompt = METHODOLOGY_DESIGN_PROMPT.format(
+                    academic_level=project.academic_level.value,
+                    research_question=project.research_question,
+                    general_objective=project.general_objective,
+                    user_input=user_input,
+                    approach=project.methodology.approach.value
+                    if project.methodology.approach
+                    else "cuantitativo",
+                )
+                try:
+                    ai_response = await self.llm.complete_json(prompt, system_prompt=system_prompt)
+                    if not project.methodology.design and ai_response.get("design"):
+                        project.methodology.design = ai_response["design"]
+                    if not project.methodology.population and ai_response.get("population"):
+                        project.methodology.population = ai_response["population"]
+                    if not project.methodology.sample and ai_response.get("sample"):
+                        project.methodology.sample = ai_response["sample"]
+                    if not project.methodology.instruments and ai_response.get("instruments"):
+                        project.methodology.instruments = ai_response["instruments"]
+                    if not project.methodology.analysis_technique and ai_response.get(
+                        "analysis_technique"
+                    ):
+                        project.methodology.analysis_technique = ai_response["analysis_technique"]
+                except Exception as e:
+                    logger.warning(
+                        "Methodology design fallback to direct form.", extra={"error": str(e)}
+                    )
+                    ai_response = {"design": project.methodology.design}
 
-            prompt = METHODOLOGY_DESIGN_PROMPT.format(
-                academic_level=project.academic_level.value,
-                research_question=project.research_question,
-                general_objective=project.general_objective,
-                user_input=user_input,
-                approach=project.methodology.approach.value,
+            epistem_issues = MethodologyValidator.validate_epistemological_alignment(
+                project.methodology.paradigm.value if project.methodology.paradigm else None,
+                project.methodology.approach,
+                project.methodology.design,
             )
-            try:
-                ai_response = await self.llm.complete_json(prompt, system_prompt=system_prompt)
-                project.methodology.design = form.get(
-                    "design", ai_response.get("design", "Descriptivo")
-                )
-                project.methodology.population = form.get(
-                    "population", ai_response.get("population", "")
-                )
-                project.methodology.sample = form.get("sample", ai_response.get("sample", ""))
-                project.methodology.instruments = form.get(
-                    "instruments", ai_response.get("instruments", [])
-                )
-                project.methodology.analysis_technique = form.get(
-                    "analysis_technique", ai_response.get("analysis_technique", "")
-                )
-            except Exception as e:
-                logger.warning(
-                    "Methodology design fallback to direct form.", extra={"error": str(e)}
-                )
-                project.methodology = MethodologyDTO(
-                    approach=project.methodology.approach,
-                    design=form.get("design", user_input),
-                    population=form.get("population", ""),
-                    sample=form.get("sample", ""),
-                    instruments=form.get("instruments", []),
-                    analysis_technique=form.get("analysis_technique", ""),
-                )
-                ai_response = {"design": project.methodology.design}
+            if not ai_response:
+                ai_response = {
+                    "design": project.methodology.design,
+                    "approach": project.methodology.approach.value
+                    if project.methodology.approach
+                    else "cuantitativo",
+                    "issues": epistem_issues,
+                    "is_valid": len(epistem_issues) == 0,
+                    "message": "Diseño metodológico registrado correctamente.",
+                }
+            else:
+                ai_response["issues"] = epistem_issues
+                ai_response["is_valid"] = len(epistem_issues) == 0
 
         elif step == AdvisorStep.CONSISTENCY_AUDIT:
-            prompt = CONSISTENCY_AUDIT_PROMPT.format(
-                academic_level=project.academic_level.value,
-                title=project.title,
-                research_problem=project.research_problem,
-                research_question=project.research_question,
-                hypothesis=project.hypothesis or "N/A",
-                general_objective=project.general_objective,
-                specific_objectives="; ".join(project.specific_objectives),
-                approach=project.methodology.approach.value
-                if project.methodology.approach
-                else "N/A",
-                design=project.methodology.design,
-            )
-            try:
-                ai_response = await self.llm.complete_json(prompt, system_prompt=system_prompt)
-            except Exception as e:
-                logger.warning("Audit LLM fallback.", extra={"error": str(e)})
+            if user_input.strip():
+                prompt = CONSISTENCY_AUDIT_PROMPT.format(
+                    academic_level=project.academic_level.value,
+                    title=project.title,
+                    research_problem=project.research_problem,
+                    research_question=project.research_question,
+                    hypothesis=project.hypothesis or "N/A",
+                    general_objective=project.general_objective,
+                    specific_objectives="; ".join(project.specific_objectives),
+                    approach=project.methodology.approach.value
+                    if project.methodology.approach
+                    else "N/A",
+                    design=project.methodology.design,
+                )
+                try:
+                    ai_response = await self.llm.complete_json(prompt, system_prompt=system_prompt)
+                except Exception as e:
+                    logger.warning("Audit LLM fallback.", extra={"error": str(e)})
+                    local_audit = MethodologyValidator.audit_project(project)
+                    ai_response = {
+                        "score": local_audit["score"],
+                        "status": local_audit["status"],
+                        "verdict": "Auditoría determinista ejecutada.",
+                        "flaws": local_audit["issues"],
+                    }
+            else:
                 local_audit = MethodologyValidator.audit_project(project)
                 ai_response = {
                     "score": local_audit["score"],
                     "status": local_audit["status"],
-                    "verdict": "Auditoría determinista ejecutada.",
+                    "verdict": "Auditoría determinista completada.",
                     "flaws": local_audit["issues"],
+                    "is_consistent": local_audit["is_consistent"],
                 }
 
         # Persist updated project
