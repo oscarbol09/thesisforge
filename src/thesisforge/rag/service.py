@@ -367,9 +367,15 @@ class RAGService:
             project.indexed_documents.append(document_id)
 
         first_chunk = chunks[0] if chunks else None
-        cit_title = title or (first_chunk.title if first_chunk else "") or f"Documento PDF ({document_id})"
-        cit_authors = authors or (first_chunk.authors if first_chunk and first_chunk.authors else ["Documento Indexado"])
-        cit_year = year or (first_chunk.year if first_chunk and first_chunk.year else utc_now().year)
+        cit_title = (
+            title or (first_chunk.title if first_chunk else "") or f"Documento PDF ({document_id})"
+        )
+        cit_authors = authors or (
+            first_chunk.authors if first_chunk and first_chunk.authors else ["Documento Indexado"]
+        )
+        cit_year = year or (
+            first_chunk.year if first_chunk and first_chunk.year else utc_now().year
+        )
 
         pdf_cit = CitationDTO(
             id=document_id,

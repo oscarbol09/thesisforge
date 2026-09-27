@@ -177,7 +177,9 @@ def test_methodology_dto_long_descriptions() -> None:
     """MethodologyDTO accommodates comprehensive academic descriptions up to 3000 characters."""
     from thesisforge.models import MethodologyDTO
 
-    long_analysis = ("Análisis de contenido temático asistido por codificación axial. " * 30).strip()
+    long_analysis = (
+        "Análisis de contenido temático asistido por codificación axial. " * 30
+    ).strip()
     assert len(long_analysis) > 600
     dto = MethodologyDTO(
         approach=ResearchApproach.CUALITATIVO,
@@ -227,4 +229,3 @@ async def test_advisor_service_approve_methodology_idempotent() -> None:
     # Second approval -> idempotent, remains CONTEXT without error
     reapproved = await service.approve_methodology(project.id)
     assert reapproved.phase == ProjectPhase.CONTEXT
-
