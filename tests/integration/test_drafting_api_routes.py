@@ -1,10 +1,9 @@
 """Integration tests for thesis drafting REST and WebSocket API endpoints."""
 
-from tests.fakes import FakeLLMRouter
-
 import pytest
 from fastapi.testclient import TestClient
 from httpx import ASGITransport, AsyncClient
+from tests.fakes import FakeLLMRouter
 
 from thesisforge.api.app import app
 from thesisforge.api.deps import get_db_manager, get_llm_router

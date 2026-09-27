@@ -1,12 +1,31 @@
 """Unit tests for ThesisForge CLI entrypoint."""
 
+import asyncio
 from pathlib import Path
-from unittest.mock import AsyncMock, patch
+from unittest.mock import patch
 
 import pytest
 
 from thesisforge.cli import main
-from thesisforge.models import SectionDraftDTO, SectionStatus
+from thesisforge.config import get_settings
+from thesisforge.models import (
+    AcademicSearchResultDTO,
+    ProjectStateDTO,
+    SectionDraftDTO,
+    SectionStatus,
+)
+from thesisforge.repository.database import DatabaseManager
+from thesisforge.repository.project_repository import ProjectRepository
+
+
+@pytest.fixture
+def cli_db_url(tmp_path: Path) -> str:
+    """Provide a file-based SQLite database for hermetic CLI testing."""
+    db_file = tmp_path / "cli_test.db"
+    url = f"sqlite+aiosqlite:///{db_file}"
+    # Clear settings cache so the CLI picks up the new environment variable
+    get_settings.cache_clear()
+    return url
 
 
 def test_cli_version(capsys: pytest.CaptureFixture[str]):
@@ -42,8 +61,6 @@ def test_cli_search_papers_command(capsys: pytest.CaptureFixture[str]):
         patch("sys.argv", ["thesisforge", "search-papers", "Quantum Computing", "--limit", "2"]),
         patch("thesisforge.rag.clients.aggregator.AcademicSearchAggregator.search") as mock_search,
     ):
-        from thesisforge.models import AcademicSearchResultDTO
-
         mock_search.return_value = [
             AcademicSearchResultDTO(
                 paper_id="paper_1",
@@ -71,8 +88,6 @@ def test_cli_search_papers_apa_format(capsys: pytest.CaptureFixture[str]):
         ),
         patch("thesisforge.rag.clients.aggregator.AcademicSearchAggregator.search") as mock_search,
     ):
-        from thesisforge.models import AcademicSearchResultDTO
-
         mock_search.return_value = [
             AcademicSearchResultDTO(
                 paper_id="paper_2",
@@ -90,12 +105,23 @@ def test_cli_search_papers_apa_format(capsys: pytest.CaptureFixture[str]):
         assert "(2017)" in captured.out
 
 
-def test_cli_export_docx_command(capsys: pytest.CaptureFixture[str], tmp_path: Path):
+def test_cli_export_docx_command(capsys: pytest.CaptureFixture[str], tmp_path: Path, cli_db_url: str):
     """Test CLI export-docx subcommand."""
-    fake_file = tmp_path / "thesis_cli.docx"
-    fake_file.write_bytes(b"PK0000fake")
+    project = ProjectStateDTO(id="proj-cli-01", title="Test CLI Docx")
+
+    async def setup_db():
+        db = DatabaseManager(cli_db_url)
+        await db.initialize()
+        repo = ProjectRepository(db, "local")
+        await repo.create_project(project)
+        await db.close()
+
+    asyncio.run(setup_db())
+
+    out_file = tmp_path / "output.docx"
 
     with (
+        patch.dict("os.environ", {"THESISFORGE_DATABASE_URL": cli_db_url}),
         patch(
             "sys.argv",
             [
@@ -104,84 +130,78 @@ def test_cli_export_docx_command(capsys: pytest.CaptureFixture[str], tmp_path: P
                 "--project-id",
                 "proj-cli-01",
                 "--output",
-                str(fake_file),
+                str(out_file),
                 "--author",
                 "Mario Vargas",
             ],
         ),
-        patch(
-            "thesisforge.export.service.ExportService.save_project_docx", new_callable=AsyncMock
-        ) as mock_save,
-        patch("thesisforge.repository.database.DatabaseManager.initialize", new_callable=AsyncMock),
-        patch("thesisforge.repository.database.DatabaseManager.close", new_callable=AsyncMock),
     ):
-        mock_save.return_value = fake_file
         main()
 
         captured = capsys.readouterr()
         assert "Documento APA 7 compilado exitosamente" in captured.out
+        assert out_file.exists()
 
 
-def test_cli_draft_init_command(capsys: pytest.CaptureFixture[str]):
+def test_cli_draft_init_command(capsys: pytest.CaptureFixture[str], tmp_path: Path, cli_db_url: str):
     """Test CLI draft-init subcommand."""
+    project = ProjectStateDTO(id="proj-cli-02", title="Test CLI Init")
+
+    async def setup_db():
+        db = DatabaseManager(cli_db_url)
+        await db.initialize()
+        repo = ProjectRepository(db, "local")
+        await repo.create_project(project)
+        await db.close()
+
+    asyncio.run(setup_db())
+
     with (
+        patch.dict("os.environ", {"THESISFORGE_DATABASE_URL": cli_db_url}),
         patch(
             "sys.argv",
             ["thesisforge", "draft-init", "--project-id", "proj-cli-02"],
         ),
-        patch(
-            "thesisforge.drafting.service.DraftService.initialize_thesis_sections",
-            new_callable=AsyncMock,
-        ) as mock_init,
-        patch("thesisforge.repository.database.DatabaseManager.initialize", new_callable=AsyncMock),
-        patch("thesisforge.repository.database.DatabaseManager.close", new_callable=AsyncMock),
     ):
-        mock_init.return_value = [
-            SectionDraftDTO(
-                section_id="sec_1_1",
-                chapter_number=1,
-                order_index=1,
-                title="Planteamiento del Problema",
-                status=SectionStatus.PENDING,
-            )
-        ]
         main()
 
         captured = capsys.readouterr()
         assert "Estructura Capitular Inicializada" in captured.out
-        assert "sec_1_1" in captured.out
 
 
-def test_cli_draft_list_command(capsys: pytest.CaptureFixture[str]):
+def test_cli_draft_list_command(capsys: pytest.CaptureFixture[str], tmp_path: Path, cli_db_url: str):
     """Test CLI draft-list subcommand."""
-    from thesisforge.models import ProjectStateDTO
+    project = ProjectStateDTO(
+        id="proj-cli-03",
+        title="Tesis de CLI",
+        sections=[
+            SectionDraftDTO(
+                section_id="sec_1_1",
+                chapter_number=1,
+                order_index=1,
+                title="Planteamiento",
+                status=SectionStatus.APPROVED,
+                word_count=450,
+            )
+        ],
+    )
+
+    async def setup_db():
+        db = DatabaseManager(cli_db_url)
+        await db.initialize()
+        repo = ProjectRepository(db, "local")
+        await repo.create_project(project)
+        await db.close()
+
+    asyncio.run(setup_db())
 
     with (
+        patch.dict("os.environ", {"THESISFORGE_DATABASE_URL": cli_db_url}),
         patch(
             "sys.argv",
             ["thesisforge", "draft-list", "--project-id", "proj-cli-03"],
         ),
-        patch(
-            "thesisforge.repository.project_repository.ProjectRepository.get_project",
-            new_callable=AsyncMock,
-        ) as mock_get,
-        patch("thesisforge.repository.database.DatabaseManager.initialize", new_callable=AsyncMock),
-        patch("thesisforge.repository.database.DatabaseManager.close", new_callable=AsyncMock),
     ):
-        mock_get.return_value = ProjectStateDTO(
-            id="proj-cli-03",
-            title="Tesis de CLI",
-            sections=[
-                SectionDraftDTO(
-                    section_id="sec_1_1",
-                    chapter_number=1,
-                    order_index=1,
-                    title="Planteamiento",
-                    status=SectionStatus.APPROVED,
-                    word_count=450,
-                )
-            ],
-        )
         main()
 
         captured = capsys.readouterr()
@@ -189,12 +209,23 @@ def test_cli_draft_list_command(capsys: pytest.CaptureFixture[str]):
         assert "450 palabras" in captured.out
 
 
-def test_cli_export_bundle_command(capsys: pytest.CaptureFixture[str], tmp_path: Path):
+def test_cli_export_bundle_command(capsys: pytest.CaptureFixture[str], tmp_path: Path, cli_db_url: str):
     """Test CLI export-bundle subcommand."""
+    project = ProjectStateDTO(id="proj-bundle-01", title="Test Bundle Export")
+
+    async def setup_db():
+        db = DatabaseManager(cli_db_url)
+        await db.initialize()
+        repo = ProjectRepository(db, "local")
+        await repo.create_project(project)
+        await db.close()
+
+    asyncio.run(setup_db())
+
     fake_bundle = tmp_path / "backup.thesisforge"
-    fake_bundle.write_bytes(b"PK0000fakebundle")
 
     with (
+        patch.dict("os.environ", {"THESISFORGE_DATABASE_URL": cli_db_url}),
         patch(
             "sys.argv",
             [
@@ -206,49 +237,52 @@ def test_cli_export_bundle_command(capsys: pytest.CaptureFixture[str], tmp_path:
                 str(fake_bundle),
             ],
         ),
-        patch(
-            "thesisforge.export.bundle.ProjectBundleService.export_bundle_file",
-            new_callable=AsyncMock,
-        ) as mock_export,
-        patch("thesisforge.repository.database.DatabaseManager.initialize", new_callable=AsyncMock),
-        patch("thesisforge.repository.database.DatabaseManager.close", new_callable=AsyncMock),
     ):
-        mock_export.return_value = fake_bundle
         main()
 
         captured = capsys.readouterr()
         assert "Paquete .thesisforge exportado exitosamente" in captured.out
+        assert fake_bundle.exists()
 
 
-def test_cli_import_bundle_command(capsys: pytest.CaptureFixture[str], tmp_path: Path):
+def test_cli_import_bundle_command(capsys: pytest.CaptureFixture[str], tmp_path: Path, cli_db_url: str):
     """Test CLI import-bundle subcommand."""
-    fake_bundle = tmp_path / "backup.thesisforge"
-    fake_bundle.write_bytes(b"PK0000fakebundle")
-    from thesisforge.models import AcademicLevel, ProjectStateDTO
+    project = ProjectStateDTO(id="proj-bundle-source", title="Source Project")
+
+    source_db_url = f"sqlite+aiosqlite:///{tmp_path}/source.db"
+    async def setup_source_db():
+        db = DatabaseManager(source_db_url)
+        await db.initialize()
+        repo = ProjectRepository(db, "local")
+        await repo.create_project(project)
+        from thesisforge.export.bundle import ProjectBundleService
+        bundle_service = ProjectBundleService(project_repo=repo)
+        path = await bundle_service.export_bundle_file("proj-bundle-source", str(tmp_path / "backup.thesisforge"))
+        await db.close()
+        return path
+
+    bundle_path = asyncio.run(setup_source_db())
+
+    async def init_dest_db():
+        db = DatabaseManager(cli_db_url)
+        await db.initialize()
+        await db.close()
+
+    asyncio.run(init_dest_db())
 
     with (
+        patch.dict("os.environ", {"THESISFORGE_DATABASE_URL": cli_db_url}),
         patch(
             "sys.argv",
             [
                 "thesisforge",
                 "import-bundle",
-                str(fake_bundle),
+                str(bundle_path),
                 "--new-id",
                 "proj-restored-cli",
             ],
         ),
-        patch(
-            "thesisforge.export.bundle.ProjectBundleService.import_bundle_file",
-            new_callable=AsyncMock,
-        ) as mock_import,
-        patch("thesisforge.repository.database.DatabaseManager.initialize", new_callable=AsyncMock),
-        patch("thesisforge.repository.database.DatabaseManager.close", new_callable=AsyncMock),
     ):
-        mock_import.return_value = ProjectStateDTO(
-            id="proj-restored-cli",
-            title="Proyecto Restaurado",
-            academic_level=AcademicLevel.MAESTRIA,
-        )
         main()
 
         captured = capsys.readouterr()

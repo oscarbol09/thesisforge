@@ -1,8 +1,7 @@
 """Unit tests for DraftService including generation, streaming, revision, and approvals."""
 
-from tests.fakes import FakeLLMRouter
-
 import pytest
+from tests.fakes import FakeLLMRouter
 
 from thesisforge.drafting.service import DraftService
 from thesisforge.exceptions import SectionNotFoundError

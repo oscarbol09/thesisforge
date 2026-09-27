@@ -1,11 +1,9 @@
 """Unit tests for MultiAgentJuryEngine, bias detection, and score weighting."""
 
+import pytest
 from tests.fakes import FakeLLMRouter
 
-import pytest
-
 from thesisforge.jury.evaluator import MultiAgentJuryEngine, normalize_juror_role
-from thesisforge.llm.router import LLMRouter
 from thesisforge.models import (
     AcademicLevel,
     CitationDTO,
