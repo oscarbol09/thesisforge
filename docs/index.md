@@ -24,11 +24,13 @@ graph LR
 
 ## Características Principales
 
-- **Control total de claves (BYOK):** Compatible con OpenRouter, Google Gemini, Groq, OpenAI y modelos locales vía Ollama.
-- **Seguridad en reposo y de red:** Cifrado simétrico de claves mediante Fernet (256-bit), protección contra Server-Side Request Forgery (SSRF) con bloqueo estricto de rangos privados y sanitización CWE-117.
-- **Distribución dual:** Servidor web asíncrono con FastAPI y empaquetado de escritorio local (PyWebView).
-- **Tribunal Multi-Agente & Defensa Socrática:** 4 perfiles de jurado académico con auditoría híbrida (reglas + LLM) y réplicas interactivas por WebSockets.
-- **Exportación estructurada en Word:** Generación directa de archivos `.docx` formateados con normas APA 7ª edición (portada, márgenes de 2.54 cm, sangría francesa y DOIs activos).
+- **Tratado Integral de Metodología Científica:** Arquitectura de 8 movimientos del problema, reporte estadístico APA 7 en 4 componentes ($M/DT$, estadístico con $gl$, $p$-exacto, tamaño de efecto con IC 95%), análisis cualitativo en 4 movimientos con casos discrepantes, triangulación en 3 movimientos, conclusiones isomórficas ($N=N$) y recomendaciones en 4 componentes por destinatario explícito.
+- **Control total de claves (BYOK) y Catálogo Curado:** Compatible con OpenRouter, Google Gemini, Anthropic, OpenAI, Groq y modelos locales vía Ollama, clasificados en opciones *Free Tier* y *Tier Superior* con prueba de latencia y conexión en tiempo real.
+- **Auditoría Anti-Slop y Detox de Redacción:** Detección de clichés sintéticos de IA, variabilidad de ritmo sintáctico, anclaje de citas L3 con localizador de página/párrafo, eliminación de inflación inferencial (*"altamente significativo"*), mitigación de concepciones erróneas frecuentistas y bloqueo de recomendaciones vacuas.
+- **Seguridad en reposo y de red:** Cifrado simétrico de claves mediante Fernet (AES-128-CBC + HMAC-SHA256), protección contra Server-Side Request Forgery (SSRF) con bloqueo estricto de rangos privados, neutralización de inyección de fórmulas (CWE-1236) y sanitización de logs CWE-117.
+- **Distribución dual:** Servidor web asíncrono con FastAPI y SPA moderna (Tailwind CSS + Alpine.js) junto a un lanzador de escritorio nativo con PyWebView.
+- **Tribunal Multi-Agente & Defensa Socrática:** 4 perfiles de jurado académico con auditoría híbrida (20 errores metodológicos fatales + compuerta de 7 modos de fallo de IA) y réplicas interactivas por WebSockets.
+- **Exportación estructurada en Word:** Generación directa de archivos `.docx` formateados con normas APA 7ª edición (portada, márgenes de 2.54 cm, sangría francesa, índice dinámico TOC y referencias desduplicadas).
 
 ---
 

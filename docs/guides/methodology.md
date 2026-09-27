@@ -64,7 +64,66 @@ graph LR
 
 ---
 
-## 2. Enfoques de Investigación Soportados
+## 2. Tratado Integral de Metodología de la Investigación Científica
+
+ThesisForge integra formalmente la doctrina del *Tratado Integral de Metodología de la Investigación Científica* en sus validadores automáticos, prompts de asesoría, esquemas canónicos y auditorías de jurado.
+
+### 2.1 Capítulo I: Planteamiento del Problema
+- **Arquitectura en 8 Movimientos:**
+  1. *Movimiento 1 (Contexto Macro):* Tendencias y estado global del tema.
+  2. *Movimiento 2 (Descenso al Contexto Local):* Realidad específica institucional o comunitaria.
+  3. *Movimiento 3 (Evidencia Empírica Directa):* Síntomas y métricas locales observables (prohibido el síndrome del marco teórico disfrazado).
+  4. *Movimiento 4 (Magnitud y Alcance):* Frecuencia, personas afectadas y temporalidad.
+  5. *Movimiento 5 (Consecuencias en 3 Niveles):* Sujetos, Institución y Campo del Conocimiento.
+  6. *Movimiento 6 (Vacío de Conocimiento Crítico):* La tensión epistémica no resuelta.
+  7. *Movimiento 7 (Estado del Arte Acotado):* Breve contraste con la literatura más reciente.
+  8. *Movimiento 8 (Síntesis y Necesidad Imperativa):* Justificación del abordaje urgente.
+- **Anatomía de la Pregunta de Investigación (5 Componentes):** Toda pregunta general debe integrar: (1) Unidad de análisis, (2) Foco/Variables, (3) Contexto espacial, (4) Temporalidad, y (5) Tipo de relación o proceso. Quedan expresamente prohibidas las preguntas dicotómicas (Sí/No) o con verbos vacuos como núcleo (*"¿Es...?", "¿Influye...?"*).
+- **Regla de Oro de los Objetivos ($OG \equiv PG$):** El Objetivo General es la traducción isomórfica exacta de la Pregunta General en infinitivo. Se prohíben las tareas procedimentales (*"revisar literatura"*, *"aplicar encuestas"*) como objetivos específicos.
+- **Justificación en 4 Dimensiones con Formulación Negativa:** Fundamentación Teórica, Práctica/Social, Metodológica e Institucional, culminando obligatoriamente en el párrafo de formulación negativa (consecuencias y pérdidas si el estudio no se ejecuta).
+- **Delimitaciones vs. Limitaciones en 4 Pasos:** Distinción nítida entre fronteras elegidas (espacio, tiempo, población) y restricciones metodológicas reales formuladas con la estructura: *Restricción $\to$ Efecto potencial $\to$ Mitigación metodológica $\to$ Afirmación que no se hará*.
+
+---
+
+### 2.2 Capítulo IV: Presentación de Resultados, Contrastación y Discusión
+- **Distinción Fundacional:**
+  - *Resultado:* El dato en bruto arrojado por el instrumento (frecuencia, porcentaje, puntaje, cita textual).
+  - *Análisis:* La transformación técnica del dato en información (estadístico, supuestos, categorización axial).
+  - *Discusión:* La operación científica que sitúa el hallazgo en el cuerpo del conocimiento (convergencias, divergencias, extensión e implicaciones).
+- **Regla Operativa:** Cero tablas o citas huérfanas (cada dato aparece, se analiza e interpreta en el mismo movimiento textual).
+- **Secuencia Cuantitativa (3 Niveles):**
+  1. *Depuración y verificación de supuestos:* Normalidad, homocedasticidad, multicolinealidad, valores atípicos y perdidos.
+  2. *Nivel 1 Descriptivos:* $M, DT$, asimetría, curtosis y frecuencias.
+  3. *Nivel 2 Inferenciales:* Pruebas estadísticas por cada objetivo específico con reporte estricto **APA 7 en 4 componentes**: descriptivos ($M, DT$), estadístico con grados de libertad [ej. $t(118) = 2.79$], $p$-valor exacto sin cero inicial ($p = .006$, $p < .001$, nunca $p = .000$) y tamaño del efecto con Intervalo de Confianza del 95% ($d = 0.51$, IC 95% $[0.15, 0.87]$ o $\eta_p^2$).
+- **Prevención de Inflación Inferencial:** Prohibido el término *"altamente significativo"*. Obligatorio el reporte íntegro y transparente de resultados no significativos, nulos e inesperados (cero HARKing y $p$-hacking).
+- **Análisis Cualitativo en 4 Movimientos:** (1) Afirmación Analítica del investigador $\to$ (2) Evidencia Textual con código $\to$ (3) Interpretación Hermenéutica $\to$ (4) Densificación con Casos Negativos/Discrepantes. Prohibido el collage de citas y el reporte de porcentajes poblacionales con muestras intencionales.
+- **Triangulación en 3 Movimientos:** Convergencias $\to$ Divergencias (las más enriquecedoras, nunca ocultadas) $\to$ Síntesis Integrada. En estudios mixtos: *Joint Display* con metainferencias dialógicas.
+- **Discusión en 4 Movimientos:** (1) Síntesis de hallazgos $\to$ (2) Confrontación con la literatura en 3 operaciones (Convergencia, Divergencia [obligatoria], Extensión) $\to$ (3) Implicaciones en 3 niveles (Teóricas, Prácticas, Metodológicas) $\to$ (4) Limitaciones específicas y Líneas Futuras. Culmina declarando el aporte original (*"esta investigación demostró que..."*). Prohibidos autores nuevos no presentes en el marco teórico del Capítulo II.
+
+---
+
+### 2.3 Capítulo V: Conclusiones y Recomendaciones
+- **Cadena Descendente Obligatoria:**
+  $$\text{Resultado} \longrightarrow \text{Conclusión} \longrightarrow \text{Implicación} \longrightarrow \text{Recomendación}$$
+  Nada se recomienda que no se concluya, nada se concluye que no se derive de un resultado, y ninguna implicación excede lo que el diseño permite sostener. Se prohíbe convertir el capítulo en un resumen redundante de los capítulos anteriores.
+- **Principio de Correspondencia Isomórfica:** Conclusiones organizadas estrictamente por objetivo específico en el mismo orden ($N$ objetivos específicos = $N$ conclusiones específicas) más 1 Conclusión General que responde a la pregunta rectora.
+- **3 Tipos de Conclusiones por Certeza Epistémica:**
+  1. *Confirmatorias:* Sustentadas en contraste formal ($p < \alpha$, tamaño de efecto) o triangulación convergente.
+  2. *Tentativas o Provisionales:* Derivadas de evidencia sugestiva o resultados nulos (*"los datos sugieren"*).
+  3. *De Proceso o Metodológicas:* Aprendizajes sobre instrumentos, acceso o investigación-acción.
+- **5 Propiedades de una Conclusión:** Afirmativa y directa, Trazable al dato del Cap. IV, Acotada a la delimitación del Cap. I, Sin cifras estadísticas repetidas y Sin material bibliográfico nuevo.
+- **Conclusión General en 3 Movimientos:** (1) Respuesta directa reformulando la pregunta, (2) Condiciones de validez y restricciones, (3) Grado de certeza y aporte local.
+- **Recomendaciones con Destinatario Explícito (4 Componentes):**
+  1. Destinatario y acción en infinitivo con verbo verificable (Docentes/Aula, Instituciones, Ministerios/Políticas, Formación Docente, Comunidad Científica).
+  2. Hallazgo/conclusión de origen (trazabilidad).
+  3. Alcance y condiciones de viabilidad.
+  4. Mecanismo o indicador de seguimiento.
+  *Prohibidas las recomendaciones vacuas o genéricas ("mejorar la calidad educativa") o que excedan la competencia del destinatario.*
+- **Sección 5.3: Aportes a la Ciencia y Transferencia Social:** Declaración de aportes teóricos, prácticos, metodológicos y sociales; devolución de resultados a los participantes; y Declaración Explícita de Originalidad en nivel doctoral (de objeto, contexto, teoría, método o aplicación).
+
+---
+
+## 3. Enfoques de Investigación Soportados
 
 El asesor adapta automáticamente sus reglas de validación y la estructura de los capítulos según el enfoque seleccionado:
 
@@ -72,27 +131,29 @@ El asesor adapta automáticamente sus reglas de validación y la estructura de l
 | :--- | :--- | :--- | :--- |
 | **Cuantitativo (`CUANTITATIVO`)** | Hipótesis general y derivadas **obligatorias** para diseños correlacionales, explicativos o experimentales. | Variables independientes y dependientes con dimensiones, indicadores e instrumentos cuantitativos. | 5 Capítulos estándar con pruebas estadísticas e inferenciales. |
 | **Cualitativo (`CUALITATIVO`)** | Supuestos teóricos / preguntas directrices (no requiere hipótesis numéricas contrastables). | Categorías y subcategorías de análisis, matrices de triangulación y guías de entrevista/observación. | 5 Capítulos con análisis temático, fenomenológico o fundamentado. |
-| **Mixto (`MIXTO`)** | Hipótesis cuantitativas complementadas con preguntas cualitativas de profundización. | Variables cuantitativas y categorías cualitativas integradas con diseño de triangulación concurrente (DITRIAC) o secuencial. | 5 Capítulos con integración de hallazgos mixtos. |
+| **Mixto (`MIXTO`)** | Hipótesis cuantitativas complementadas con preguntas cualitativas de profundización. | Variables cuantitativas y categorías cualitativas integradas con diseño de triangulación concurrente (DITRIAC) o secuencial. | 5 Capítulos con integración de hallazgos mixtos (*Joint Display*). |
 
 ---
 
-## 3. Taxonomía de Objetivos (Bloom)
+## 4. Taxonomía de Objetivos (Bloom & Investigación Científica)
 
-El validador léxico (`AdvisorValidators` en `src/thesisforge/advisor/validators.py`) analiza que los objetivos de investigación utilicen verbos en infinitivo clasificados según el nivel de profundidad de la investigación:
+El validador léxico (`MethodologyValidator` en `src/thesisforge/advisor/validators.py`) analiza que los objetivos utilicen verbos en infinitivo clasificados según el nivel epistemológico de la investigación y bloquea tareas procedimentales:
 
 | Nivel de Investigación | Verbos Permitidos | Propósito Epistemológico |
 | :--- | :--- | :--- |
 | **Exploratorio** | Identificar, Explorar, Describir, Reconocer, Indagar | Primer acercamiento a fenómenos poco estudiados o emergentes. |
-| **Descriptivo** | Caracterizar, Clasificar, Cuantificar, Detallar, Medir | Especificar propiedades, perfiles y frecuencias de variables. |
+| **Descriptivo** | Caracterizar, Clasificar, Cuantificar, Detallar, Diagnosticar | Especificar propiedades, perfiles y frecuencias de variables. |
 | **Correlacional** | Relacionar, Asociar, Vincular, Correlacionar, Comparar | Evaluar el grado de relación o asociación entre dos o más variables. |
 | **Explicativo / Causal** | Demostrar, Determinar, Evaluar, Comprobar, Explicar | Establecer relaciones de causa y efecto e inferencias explicativas. |
+| **Aplicado / Propositivo** | Diseñar, Desarrollar, Modelar, Formular, Optimizar, Validar | Construcción y validación de propuestas, modelos o intervenciones. |
 
 ---
 
-## 4. Fases de la Entrevista Metodológica
+## 5. Fases de la Entrevista Metodológica
 
 1. **Delimitación Temática y Línea de Investigación:** Delimita el campo de estudio, el contexto geográfico-institucional y la población objetivo.
-2. **Planteamiento del Problema:** Formula la pregunta general rectora y las preguntas secundarias derivadas según el método sintomático-causal.
-3. **Objetivos de Investigación:** Formula el objetivo general y los objetivos específicos alineados punto por punto con las preguntas.
-4. **Hipótesis y Operacionalización:** Define hipótesis generales y secundarias (enfoques cuantitativos/mixtos) o supuestos rectores (cualitativos), junto con variables o categorías con al menos 3 caracteres significativos.
-5. **Aprobación de la Ficha Metodológica:** Sella la estructura lógica del proyecto en la base de datos para que los generadores de borradores y el jurado evalúen el trabajo con contexto inmutable.
+2. **Planteamiento del Problema:** Formula la situación problemática siguiendo los 8 movimientos y la pregunta general con sus 5 componentes anatómicos.
+3. **Objetivos de Investigación:** Formula el objetivo general isomorfo ($OG \equiv PG$) y los objetivos específicos secuenciales por fases cognitivas.
+4. **Hipótesis y Operacionalización:** Define hipótesis generales y secundarias (enfoques cuantitativos/mixtos) o supuestos rectores (cualitativos), junto con variables o categorías con matrices de dimensiones e indicadores.
+5. **Aprobación de la Ficha Metodológica:** Sella la estructura lógica del proyecto en la base de datos para que los generadores de borradores y el tribunal multi-agente evalúen el trabajo con contexto inmutable.
+

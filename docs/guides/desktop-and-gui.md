@@ -86,6 +86,8 @@ thesisforge gui --debug
 - Rúbrica dimensional cuantitativa (0–100) y veredicto oficial.
 - Simulador de sustentación socrática por turnos con retroalimentación inmediata.
 
-### G. Ajustes BYOK y Seguridad (`gui/js/settings.js`)
-- Modal para configurar claves de API de proveedores LLM (Google Gemini, OpenRouter, OpenAI, Groq, NVIDIA NIM) o servidor local Ollama (`http://localhost:11434`).
+### G. Ajustes BYOK, Selección de Modelos y Seguridad (`gui/js/settings.js`)
+- Modal para configurar claves de API de proveedores LLM (Google Gemini, OpenRouter, OpenAI, Groq, Anthropic) o servidor local Ollama (`http://localhost:11434`).
+- **Catálogo de Modelos Curado:** Selección explícita entre modelos de Nivel Gratuito (*Free Tier*, ej. `gemini-2.5-flash`, `deepseek/deepseek-chat:free`) y Nivel Superior (*Superior Tier*, ej. `gemini-2.5-pro`, `anthropic/claude-3.5-sonnet`, `llama-3.3-70b-versatile`).
+- **Botón "Probar Conexión":** Diagnóstico en vivo que envía una petición mínima de verificación (`POST /api/settings/test-connection`) para comprobar la validez de la clave y medir la latencia antes de persistir.
 - Las credenciales se almacenan cifradas localmente con una clave Fernet de 256 bits (`LocalKeyVault`).

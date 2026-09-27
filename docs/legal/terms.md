@@ -45,5 +45,5 @@ Al utilizar ThesisForge, el usuario acepta y declara expresamente que:
 
 ## 5. Licencia y Derechos de Propiedad Intelectual
 
-- **Código Fuente del Software:** Licenciado bajo [Apache License 2.0](../LICENSE).
+- **Código Fuente del Software:** Licenciado bajo [Apache License 2.0](https://github.com/oscarbol09/thesisforge/blob/main/LICENSE).
 - **Contenido Generado por el Usuario:** El usuario conserva la **plena e irrestricta titularidad de la propiedad intelectual** sobre todas las investigaciones, tesis, proyectos y documentos `.docx` compilados mediante esta herramienta. ThesisForge no reclama ningún derecho de propiedad, autoría ni regalía sobre los manuscritos del usuario.

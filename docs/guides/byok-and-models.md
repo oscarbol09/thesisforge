@@ -4,15 +4,47 @@ ThesisForge adopta una filosofía estricta de **Bring Your Own Key (BYOK)** y **
 
 ---
 
-## Proveedores Soportados
+## Catálogo Curado de Proveedores y Modelos
 
-| Proveedor | Modelos Recomendados | Nivel de Privacidad | Cómo Obtener Clave |
-|:----------|:---------------------|:-------------------:|:-------------------|
-| **Ollama (Local)** | `llama3.1:8b`, `mistral-nemo`, `qwen2.5:14b` | 100% Offline / Privado | No requiere clave ([ollama.ai](https://ollama.ai)) |
-| **OpenRouter** | `anthropic/claude-3.5-sonnet`, `meta-llama/llama-3.1-70b-instruct` | Cloud BYOK | [openrouter.ai/keys](https://openrouter.ai/keys) |
-| **Google Gemini** | `gemini-1.5-pro-latest`, `gemini-1.5-flash` | Cloud BYOK | [aistudio.google.com](https://aistudio.google.com/) |
-| **Groq Cloud** | `llama-3.1-70b-versatile`, `mixtral-8x7b-32768` | Cloud BYOK | [console.groq.com](https://console.groq.com) |
-| **OpenAI Compatible**| `gpt-4o`, `gpt-4o-mini`, vLLM, LM Studio endpoints | Según host | [platform.openai.com](https://platform.openai.com) |
+ThesisForge clasifica los modelos recomendados en opciones gratuitas (*Free / Open*) y modelos de alto rendimiento cognitivo (*Tier Superior*), asegurando que siempre utilices identificadores vigentes y compatibles:
+
+| Proveedor | Modelos Gratuitos (*Free Tier*) | Modelos Tier Superior (*High Capacity*) | Cómo Obtener Clave |
+| :--- | :--- | :--- | :--- |
+| **OpenRouter** | `meta-llama/llama-3.3-70b-instruct:free`<br>`google/gemini-2.0-flash-exp:free`<br>`qwen/qwen-2.5-72b-instruct:free` | `anthropic/claude-3.5-sonnet`<br>`openai/gpt-4o`<br>`deepseek/deepseek-r1` | [openrouter.ai/keys](https://openrouter.ai/keys) |
+| **Google Gemini** | `gemini-2.0-flash`<br>`gemini-1.5-flash` | `gemini-2.0-pro-exp-02-05`<br>`gemini-1.5-pro` | [aistudio.google.com](https://aistudio.google.com/) |
+| **Anthropic** | *(No ofrece free tier directo)* | `claude-3-7-sonnet-20250219`<br>`claude-3-5-sonnet-20241022` | [console.anthropic.com](https://console.anthropic.com/) |
+| **OpenAI** | *(No ofrece free tier directo)* | `gpt-4o`<br>`gpt-4o-mini`<br>`o3-mini` | [platform.openai.com](https://platform.openai.com/) |
+| **Groq Cloud** | `llama-3.3-70b-versatile`<br>`llama-3.1-8b-instant`<br>`mixtral-8x7b-32768` | `deepseek-r1-distill-llama-70b` | [console.groq.com](https://console.groq.com/) |
+| **Ollama (Local)** | `llama3.3:latest`<br>`qwen2.5:14b`<br>`deepseek-r1:14b`<br>`mistral-nemo:12b` | Ejecución en hardware local propio | [ollama.ai](https://ollama.ai/) |
+
+---
+
+## Verificación de Conexión en Tiempo Real
+
+La interfaz y la API de ThesisForge incluyen una utilidad para comprobar la validez de las credenciales y el estado del modelo antes de iniciar una sesión de redacción:
+
+```bash
+# Probar conexión con un modelo y proveedor específico
+POST /api/settings/test-connection
+Content-Type: application/json
+
+{
+  "provider": "openrouter",
+  "model": "meta-llama/llama-3.3-70b-instruct:free",
+  "api_key": "sk-or-v1-..."  # Opcional si ya está cifrada en la bóveda
+}
+```
+
+Respuesta estructurada:
+```json
+{
+  "status": "success",
+  "provider": "openrouter",
+  "model": "meta-llama/llama-3.3-70b-instruct:free",
+  "latency_ms": 420.5,
+  "message": "Conexión exitosa con OpenRouter (meta-llama/llama-3.3-70b-instruct:free) en 420.5 ms."
+}
+```
 
 ---
 

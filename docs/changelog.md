@@ -8,6 +8,32 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/
 
 ## [Unreleased]
 
+### Added
+- **Tratado Integral de Metodología de la Investigación Científica (`src/thesisforge/llm/prompts.py`, `src/thesisforge/drafting/templates.py`, `src/thesisforge/advisor/validators.py`):**
+  - **Capítulo I (Planteamiento del Problema):** Arquitectura en 8 movimientos, formulación de preguntas con 5 componentes anatómicos no dicotómicos, regla de oro de objetivos ($OG \equiv PG$), justificación en 4 dimensiones con formulación negativa y fórmula de limitaciones en 4 pasos.
+  - **Capítulo IV (Resultados y Discusión):** Distinción conceptual (*Resultado $\to$ Análisis $\to$ Discusión*), secuencia cuantitativa en 3 niveles, reporte APA 7 en 4 componentes ($M/DT$, estadístico con $gl$, $p$-exacto sin cero inicial, tamaño del efecto con IC 95%), análisis cualitativo en 4 movimientos con casos discrepantes, triangulación en 3 movimientos, *Joint Display* mixto dialógico y auditoría de los 20 errores metodológicos fatales de jurado.
+  - **Capítulo V (Conclusiones y Recomendaciones):** Cadena descendente (*Resultado $\to$ Conclusión $\to$ Implicación $\to$ Recomendación*), principio de correspondencia isomórfica ($N = N$), 3 tipos de conclusiones por certeza epistémica, recomendaciones en 4 componentes por destinatario explícito y sección canónica `sec_5_3` (Aportes a la ciencia y transferencia social / originalidad).
+- **Catálogo Curado de Modelos y Diagnóstico en Tiempo Real (`gui/js/model-catalog.js`, `src/thesisforge/api/routes_settings.py`):**
+  - Clasificación de modelos en *Free Tier* y *Tier Superior* para OpenRouter, Google Gemini, Anthropic, OpenAI, Groq y Ollama.
+  - Endpoint `POST /api/settings/test-connection` para probar credenciales y latencia en tiempo real.
+- **Ampliación de Reglas Detox Anti-Slop (`src/thesisforge/drafting/detox.py`):**
+  - Detección de inflación inferencial (`statistical_inflation`), errores de reporte de valor cero (`apa_statistical_zero`), sesgos frecuentistas (`frequentist_misconception`), recomendaciones vacuas (`vacuous_recommendation`) y niebla de atenuantes en conclusiones (`conclusions_evasion_fog`).
+- **Validadores Metodológicos Extendidos (`src/thesisforge/advisor/validators.py`):**
+  - Métodos `validate_conclusions_alignment` y `validate_recommendations` para auditar la coherencia capitular.
+- **Suite de Pruebas Ampliada:**
+  - 268 pruebas unitarias e integradas pasando al 100% con tipado estricto mypy y verificación de seguridad Bandit.
+
+### Fixed
+- **Preservación de Estado y Progresión en Asesor Metodológico (`src/thesisforge/advisor/service.py`):**
+  - Corregido el bug que devolvía al usuario a la Sección 3 tras guardar entradas, preservando íntegramente los campos de hipótesis, operacionalización de variables y categorías cualitativas.
+- **Conformidad CI / Quality Gate (`.github/workflows/ci.yml`):**
+  - Corrección de importaciones y reglas de formateo Ruff (`I001`, `SIM102`, `SIM105`), tipado mypy estricto sin errores.
+- **[CRITICAL] Concurrencia optimista en proyectos**: Añadida columna `version` a la tabla `projects` (migración v3). `PUT /api/projects/{id}` ahora acepta el header `X-Project-Version`; si la versión no coincide, devuelve HTTP 409 en lugar de sobrescribir silenciosamente cambios concurrentes de la GUI o los WebSockets (`project_repository.update_project_versioned`, `ProjectVersionConflictError`).
+- **[HIGH] KeyVault: eliminado fallback silencioso a clave en RAM**: `resolve_or_create_master_key()` ahora lanza `KeyVaultError` en lugar de continuar con una clave efímera cuando falla la escritura en disco. Esto evita que todos los secretos cifrados se vuelvan irrecuperables tras un reinicio.
+- **[HIGH] Streaming LLM: retry pre-primer-token**: `stream_completion()` ahora reintenta la conexión con la misma política de backoff exponencial que `complete()`, pero solo antes del primer token. Una vez iniciado el stream, los fallos se propagan inmediatamente como `LLMProviderError` para evitar contenido duplicado.
+- **[MEDIUM] Limpieza de ChromaDB al eliminar proyectos**: `DELETE /api/projects/{id}` ya limpiaba la colección Chroma; se clarificó el contrato en el docstring y se verificó la cadena completa de borrado.
+- **[MEDIUM] Versión del schema de la base de datos**: Añadida migración v3 (`_v3_add_version_column`) compatible con bases de datos existentes (usa `PRAGMA table_info` para no fallar en upgrades).
+
 ### Planned
 - Empaquetado ejecutable autónomo standalone (.exe, .dmg, AppImage) y distribución en PyPI (Sprint 6 / v1.0.0).
 

@@ -30,6 +30,11 @@ El **puntaje final** va de 0 a 100. Un borrador con puntaje ≥ 80 puede conside
 | `formulaic_closure` | *en resumen,*, *en conclusión,*, *a modo de conclusión,* |
 | `hyperbole` | *game changer*, *paradigma transformador*, *revolucionar el campo* |
 | `hedging_fog` | *se podría argumentar que potencialmente*, *uno podría considerar la posibilidad de que* |
+| `statistical_inflation` | *altamente significativo*, *muy significativo*, *significancia extrema* |
+| `apa_statistical_zero` | *p = 0.000*, *p = .000* (Debe reportarse como *p < .001*) |
+| `frequentist_misconception` | *la hipótesis se confirma al 95%*, *verificar la hipótesis con un 95%* |
+| `vacuous_recommendation` | *se recomienda mejorar la calidad educativa*, *es necesario concientizar a la comunidad*, *sería interesante seguir investigando* |
+| `conclusions_evasion_fog` | *se encontró evidencia que podría sugerir una posible mejora*, *parece haber indicios de que posiblemente* |
 
 ### Citas L3 — ¿qué son?
 

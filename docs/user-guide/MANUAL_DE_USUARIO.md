@@ -129,28 +129,30 @@ POST /api/literature/projects/{project_id}/verify-claim
 ThesisForge inicializa automáticamente la estructura estándar requerida por universidades de habla hispana:
 
 * **Capítulo I: Planteamiento del Problema**
-  * `sec_1_1`: Descripción de la realidad problemática
-  * `sec_1_2`: Formulación del problema (general y específicos)
-  * `sec_1_3`: Objetivos de la investigación
-  * `sec_1_4`: Justificación y viabilidad
-  * `sec_1_5`: Delimitación y limitaciones
-* **Capítulo II: Marco Teórico**
-  * `sec_2_1`: Antecedentes internacionales y nacionales
-  * `sec_2_2`: Bases teórico-científicas
+  * `sec_1_1`: Descripción de la realidad problemática (8 Movimientos del Problema)
+  * `sec_1_2`: Formulación del problema (Pregunta rectora con 5 componentes anatómicos y subpreguntas)
+  * `sec_1_3`: Objetivos de la investigación (Regla de Oro $OG \equiv PG$ y objetivos específicos por fases)
+  * `sec_1_4`: Justificación e importancia (4 dimensiones con Formulación Negativa)
+  * `sec_1_5`: Delimitación y limitaciones (Fórmula de limitaciones en 4 pasos)
+* **Capítulo II: Marco Teórico y Conceptual**
+  * `sec_2_1`: Antecedentes internacionales y nacionales (últimos 5 años)
+  * `sec_2_2`: Bases teórico-científicas y fundamentación conceptual
   * `sec_2_3`: Definición de términos básicos
-  * `sec_2_4`: Hipótesis y operacionalización de variables
-* **Capítulo III: Metodología**
-  * `sec_3_1`: Tipo, nivel y diseño de investigación
-  * `sec_3_2`: Población y muestra
-  * `sec_3_3`: Técnicas e instrumentos de recolección
-  * `sec_3_4`: Procedimientos de análisis de datos
-* **Capítulo IV: Resultados y Discusión**
-  * `sec_4_1`: Presentación de resultados descriptivos
-  * `sec_4_2`: Contrastación de hipótesis
-  * `sec_4_3`: Discusión de hallazgos frente a antecedentes
+  * `sec_2_4`: Hipótesis y operacionalización de variables (enfoques cuantitativo/mixto)
+* **Capítulo III: Marco Metodológico**
+  * `sec_3_1`: Enfoque, tipo, nivel y diseño de investigación
+  * `sec_3_2`: Población, muestra ($G*\text{Power}$) y unidad de análisis
+  * `sec_3_3`: Técnicas e instrumentos de recolección de datos (validez psicométrica y confiabilidad $\omega$)
+  * `sec_3_4`: Procedimientos de procesamiento y análisis de datos
+  * `sec_3_5`: Consideraciones éticas y rigor científico
+* **Capítulo IV: Presentación y Análisis de Resultados, Contrastación y Discusión**
+  * `sec_4_1`: Presentación y análisis de resultados (Secuencia en 3 niveles cuantitativos / 4 movimientos cualitativos con reporte APA 7 en 4 componentes)
+  * `sec_4_2`: Contrastación formal de hipótesis / Triangulación de datos en 3 movimientos / *Joint Display* mixto
+  * `sec_4_3`: Discusión de resultados en 4 movimientos (Convergencia, Divergencia obligatoria, Extensión e Implicaciones)
 * **Capítulo V: Conclusiones y Recomendaciones**
-  * `sec_5_1`: Conclusiones vinculadas a objetivos
-  * `sec_5_2`: Recomendaciones académicas y aplicadas
+  * `sec_5_1`: Conclusiones vinculadas isomórficamente a los objetivos ($N = N$) y Conclusión General en 3 movimientos
+  * `sec_5_2`: Recomendaciones operacionales en 4 componentes por destinatario explícito
+  * `sec_5_3`: Aportes a la comunidad científica, transferencia social y declaración de originalidad disciplinar
 
 ### Comandos CLI de Redacción
 ```bash
