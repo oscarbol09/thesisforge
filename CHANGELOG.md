@@ -76,8 +76,8 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/
   - Establecimiento de un umbral máximo de 50 MB (`MAX_PDF_UPLOAD_BYTES`) en `POST /api/literature/index-pdf` para mitigar ataques de denegación de servicio (DoS) por agotamiento de memoria.
 - **Defensa contra DNS Rebinding (TOCTOU) en SSRFGuard:**
   - Implementación de `CustomAsyncHTTPTransport` que enlaza el socket directamente a la IP validada pre-resuelta, eliminando la ventana de vulnerabilidad entre validación DNS y petición HTTP.
-- **Bóveda de Claves con Derivación de Sal Criptográfica Única:**
-  - Robustecimiento de `LocalKeyVault` para generar y persistir sales PBKDF2 únicas por secreto almacenado.
+- **Bóveda de Claves Criptográfica Autenticada:**
+  - Robustecimiento de `LocalKeyVault` con cifrado simétrico autenticado Fernet (AES-128-CBC + HMAC-SHA256), generando un vector de inicialización (IV) criptográfico aleatorio único y marca de tiempo por secreto almacenado.
 
 ### Fixed & Improved
 - **Manejo Resiliente de WebSockets (`src/thesisforge/api/routes_defense.py`):**

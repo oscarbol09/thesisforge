@@ -42,6 +42,7 @@ class RAGService:
         is_memory: bool = False,
         candidate_threshold: float = 0.25,
         support_threshold: float = 0.40,
+        embedding_provider: str | None = None,
     ) -> None:
         self.db = db_manager
         self.repo = project_repo
@@ -65,6 +66,7 @@ class RAGService:
             persist_directory=persist_dir,
             llm_router=self.llm,
             is_memory=is_memory,
+            embedding_provider=embedding_provider,
         )
         self.parser = PDFDocumentParser()
         self.citation_guard = CitationGuard(

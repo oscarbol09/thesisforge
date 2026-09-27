@@ -71,3 +71,19 @@ def test_get_settings_integration():
     assert settings.rag.chunk_size == 1500
     assert settings.rag.evidence_candidate_threshold == 0.25
     assert settings.rag.evidence_support_threshold == 0.40
+    assert settings.rag.embedding_provider == "fast_local"
+    assert settings.rag.academic_apis.get("openalex") is True
+
+
+def test_get_settings_fallback_warning(caplog: pytest.LogCaptureFixture):
+    """Test get_settings logs a warning when falling back to config.yaml.example."""
+    import logging
+
+    from thesisforge.config import get_settings
+
+    get_settings.cache_clear()
+    with caplog.at_level(logging.WARNING):
+        settings = get_settings("non_existent_config_file_9999.yaml")
+        assert settings is not None
+        assert "cargando configuración predeterminada desde 'config.yaml.example'" in caplog.text
+    get_settings.cache_clear()

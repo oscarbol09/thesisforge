@@ -8,7 +8,10 @@ import yaml
 from pydantic import BaseModel, ConfigDict, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from thesisforge.core.logging import get_logger
 from thesisforge.exceptions import ConfigurationError
+
+logger = get_logger(__name__)
 
 
 class ProviderSettings(BaseModel):
@@ -34,11 +37,13 @@ class RAGSettings(BaseModel):
     chroma_dir: str = "data/chroma"
     evidence_candidate_threshold: float = 0.25
     evidence_support_threshold: float = 0.40
+    embedding_provider: str = "fast_local"
     academic_apis: dict[str, bool] = Field(
         default_factory=lambda: {
             "semantic_scholar": True,
             "arxiv": True,
             "crossref": True,
+            "openalex": True,
         }
     )
 
@@ -118,6 +123,11 @@ def get_settings(config_yaml_path: str = "config.yaml") -> AppSettings:
     yaml_data = load_yaml_config(config_yaml_path)
     if not yaml_data:
         yaml_data = load_yaml_config("config.yaml.example")
+        if yaml_data:
+            logger.warning(
+                "No se encontró '%s'; cargando configuración predeterminada desde 'config.yaml.example'.",
+                config_yaml_path,
+            )
 
     if yaml_data:
         # Merge RAG settings if present

@@ -79,6 +79,7 @@ def get_rag_service(
         is_memory=settings.environment == "test",
         candidate_threshold=settings.rag.evidence_candidate_threshold,
         support_threshold=settings.rag.evidence_support_threshold,
+        embedding_provider=settings.rag.embedding_provider,
     )
 
 

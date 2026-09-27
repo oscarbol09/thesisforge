@@ -45,10 +45,17 @@ jobs:
         run: uv run bandit -r src/ -ll
 
       # pip-audit checks locked dependencies for known CVEs (OSV / PyPI Advisory DB).
+      # Vulnerability exclusion justifications:
+      # - PYSEC-2026-311: aiohttp transitive dependency advisory; mitigated by ThesisForge custom SSRFGuard and URL whitelisting.
+      # - PYSEC-2026-3813, PYSEC-2026-3814, PYSEC-2026-3815: litellm upstream telemetry and parsing advisories pending patch; non-exploitable in local-first execution.
       - name: pip-audit (CVE scan)
         run: |
           uv export --no-dev --no-hashes --output-file requirements-audit.txt
-          uv run pip-audit -r requirements-audit.txt --ignore-vuln PYSEC-2026-311 --ignore-vuln PYSEC-2026-3814 --ignore-vuln PYSEC-2026-3815 --ignore-vuln PYSEC-2026-3813
+          uv run pip-audit -r requirements-audit.txt \
+            --ignore-vuln PYSEC-2026-311 \
+            --ignore-vuln PYSEC-2026-3814 \
+            --ignore-vuln PYSEC-2026-3815 \
+            --ignore-vuln PYSEC-2026-3813
           rm requirements-audit.txt
 
       # Gitleaks scans the full commit history for accidentally committed secrets.
