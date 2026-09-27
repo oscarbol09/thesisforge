@@ -76,11 +76,13 @@ class HierarchicalMemoryManager:
 - Enfoque Metodológico: {approach_str}
 - Diseño: {methodology.design or "No especificado"}
 - Problema Principal: {project.research_problem or "No especificado"}
+- Justificación (4 Dimensiones): {project.justification or "No especificada"}
+- Delimitación y Limitaciones: {project.scope_limitations or "No especificadas"}
 - Pregunta Principal: {project.research_question or "No especificada"}
 - Objetivo General: {project.general_objective or "No especificado"}
 - Objetivos Específicos:
 {specific_objs_formatted}
-- Hipótesis: {project.hypothesis or "No aplica / No formulada"}
+- Hipótesis / Supuestos: {project.hypothesis or "No aplica / No formulada"}
 - Variables / Categorías de Análisis:
 {variables_formatted}
 - Población y Muestra: {methodology.population or "No especificada"} | Muestra: {methodology.sample or "No especificada"} (Muestreo: {sampling_str})

@@ -45,6 +45,31 @@ AI_SLOP_RULES: list[tuple[str, str, str]] = [
         "hedging_fog",
         "Niebla de ambigüedad protectora: Formular afirmaciones con el grado epistémico exacto según la evidencia.",
     ),
+    (
+        r"\b(?:altamente significativo|muy significativo|significancia extrema)\b",
+        "statistical_inflation",
+        "Inflación inferencial: La significancia estadística es binaria (decisión sobre H₀), no tiene grados. Emplear el tamaño del efecto (d, η², r) para reportar la magnitud.",
+    ),
+    (
+        r"\bp\s*=\s*(?:0\.000|\.000)\b",
+        "apa_statistical_zero",
+        "Error de reporte APA 7: Un valor p nunca puede ser cero. Reportar como 'p < .001'.",
+    ),
+    (
+        r"\b(?:la hip[oó]tesis (?:se confirma|es verdadera|qued[oó] demostrada) al \d+%|(?:confirmar|verificar) la hip[oó]tesis con un \d+%)",
+        "frequentist_misconception",
+        "Error epistemológico frecuentista: El p-valor no mide la probabilidad de verdad de la hipótesis, sino la probabilidad de los datos bajo H₀.",
+    ),
+    (
+        r"\b(?:se recomienda mejorar la calidad(?: educativa)?|es necesario concientizar a la (?:comunidad|población|sociedad)|sería interesante (?:seguir|continuar) investigando este tema|los docentes deberían reflexionar más sobre su práctica)\b",
+        "vacuous_recommendation",
+        "Recomendación vacua o genérica: Toda recomendación debe estructurarse con destinatario explícito, acción en infinitivo, hallazgo de origen e indicador de seguimiento.",
+    ),
+    (
+        r"\b(?:se encontr[oó] evidencia que podr[ií]a sugerir una posible mejora|parece haber indicios de que posiblemente)\b",
+        "conclusions_evasion_fog",
+        "Evasiva sintáctica en conclusión: Exprese la inferencia de manera afirmativa y directa, modulando la certeza a través del estatus epistémico declarado.",
+    ),
 ]
 
 # Regex detecting L3 Citation Anchors with explicit locators (e.g., p. 12, págs. 34-36, párr. 4, sec. 2.1)

@@ -72,3 +72,33 @@ def test_detoxify_text_removes_meta_fillers_and_capitalizes() -> None:
     assert "cabe destacar que" not in cleaned.lower()
     assert "es importante señalar que" not in cleaned.lower()
     assert cleaned.startswith("Los hallazgos")
+
+
+def test_audit_scholarly_draft_detects_chapter_4_statistical_slop() -> None:
+    """Test detection of statistical inflation, p=.000, and frequentist errors."""
+    stat_slop = (
+        "El tratamiento produjo un efecto altamente significativo en los estudiantes (p = .000). "
+        "Por ende, la hipótesis se confirma al 95% de certeza en la muestra evaluada."
+    )
+    result = audit_scholarly_draft(stat_slop)
+    assert result.slop_count >= 3
+    categories = [o.category for o in result.slop_occurrences]
+    assert "statistical_inflation" in categories
+    assert "apa_statistical_zero" in categories
+    assert "frequentist_misconception" in categories
+
+
+def test_audit_scholarly_draft_detects_chapter_5_conclusions_and_recommendations_slop() -> None:
+    """Test detection of vacuous recommendations and conclusions hedging soup."""
+    ch5_slop = (
+        "En cuanto a los resultados, se encontró evidencia que podría sugerir una posible mejora en las aulas. "
+        "Por tanto, se recomienda mejorar la calidad educativa en todas las instituciones. "
+        "Asimismo, sería interesante seguir investigando este tema en el futuro."
+    )
+    result = audit_scholarly_draft(ch5_slop)
+    assert result.slop_count >= 3
+    categories = [o.category for o in result.slop_occurrences]
+    assert "conclusions_evasion_fog" in categories
+    assert "vacuous_recommendation" in categories
+
+

@@ -59,6 +59,27 @@ INTERROGATIVE_STARTERS = [
     "hasta qué punto",
 ]
 
+DICHOTOMOUS_STARTER_PATTERN = re.compile(
+    r"^¿\s*(es|existe|existen|influye|influyen|afecta|afectan|tiene|tienen|hay|son|ser[aá])\b",
+    re.IGNORECASE,
+)
+
+PROCEDURAL_TASK_PATTERNS = [
+    re.compile(r"\b(revisar|consultar)\s+(la\s+)?(literatura|bibliograf[ií]a|fuentes|estado\s+del\s+arte)\b", re.IGNORECASE),
+    re.compile(r"\b(elaborar|construir|redactar)\s+(el\s+)?marco\s+te[oó]rico\b", re.IGNORECASE),
+    re.compile(r"\b(aplicar|administrar|pasar)\s+(las?\s+)?(encuestas?|cuestionarios?|entrevistas?|test)\b", re.IGNORECASE),
+    re.compile(r"\b(recolectar|recopilar|levantar)\s+(los\s+)?(datos|informaci[oó]n|muestras)\b", re.IGNORECASE),
+    re.compile(r"\b(diseñar|elaborar)\s+(los?\s+)?instrumentos?\s+de\s+recolecci[oó]n\b", re.IGNORECASE),
+]
+
+CAUSAL_VERB_PATTERNS = [
+    "demostrar",
+    "determinar el efecto",
+    "determinar la incidencia",
+    "comprobar el efecto",
+    "probar la causalidad",
+]
+
 
 class MethodologyValidator:
     """Scientific validator ensuring alignment between problem, questions, objectives, and methods."""
@@ -82,7 +103,7 @@ class MethodologyValidator:
 
     @classmethod
     def validate_research_question(cls, question: str) -> list[str]:
-        """Validate formal research question structure."""
+        """Validate formal research question structure and check for dichotomous formulation."""
         issues: list[str] = []
         cleaned = question.strip()
 
@@ -98,9 +119,14 @@ class MethodologyValidator:
         lower_q = cleaned.lower()
         has_starter = any(starter in lower_q for starter in INTERROGATIVE_STARTERS)
         if not has_starter:
-            issues.append(
-                "La pregunta debe iniciar con una partícula interrogativa formal (ej. '¿Cómo...', '¿En qué medida...', '¿Cuál...')."
-            )
+            if DICHOTOMOUS_STARTER_PATTERN.search(cleaned):
+                issues.append(
+                    "La pregunta de investigación es dicotómica (admite respuesta cerrada de Sí/No). Transfórmala usando partículas de alta resolución (ej. '¿En qué medida...', '¿De qué manera...', '¿Cómo...')."
+                )
+            else:
+                issues.append(
+                    "La pregunta debe iniciar con una partícula interrogativa formal (ej. '¿Cómo...', '¿En qué medida...', '¿Cuál...')."
+                )
 
         return issues
 
@@ -124,7 +150,7 @@ class MethodologyValidator:
 
     @classmethod
     def validate_specific_objectives(cls, objectives: list[str]) -> list[str]:
-        """Validate specific objectives count and infinitive verb starters."""
+        """Validate specific objectives count, infinitive verb starters, and prohibit procedural task-objectives."""
         issues: list[str] = []
         if len(objectives) < 2:
             issues.append(
@@ -136,12 +162,50 @@ class MethodologyValidator:
             if not cleaned:
                 issues.append(f"El objetivo específico #{idx} está vacío.")
                 continue
+
+            # Check for procedural tasks masquerading as research objectives
+            is_procedural = False
+            for pattern in PROCEDURAL_TASK_PATTERNS:
+                match = pattern.search(cleaned)
+                if match:
+                    issues.append(
+                        f"El objetivo específico #{idx} describe una tarea o actividad procedimental ('{match.group(0)}'). Los objetivos deben expresar metas cognitivas de conocimiento (ej. diagnosticar, caracterizar, correlacionar, validar), no actividades del cronograma."
+                    )
+                    is_procedural = True
+                    break
+
+            if is_procedural:
+                continue
+
             verb = cls.extract_first_word(cleaned)
             if verb not in VALID_ACADEMIC_VERBS:
                 issues.append(
                     f"El objetivo específico #{idx} debe iniciar con un verbo en infinitivo. Verbo detectado: '{verb}'."
                 )
 
+        return issues
+
+    @classmethod
+    def validate_justification(cls, justification: str) -> list[str]:
+        """Validate research justification substance and completeness."""
+        issues: list[str] = []
+        cleaned = justification.strip()
+        if cleaned and len(cleaned) < 40:
+            issues.append(
+                "La justificación es demasiado escueta (debe fundamentar al menos relevancia teórica, práctica o metodológica)."
+            )
+        return issues
+
+    @classmethod
+    def validate_scope_limitations(cls, scope_limitations: str) -> list[str]:
+        """Validate delimitations and limitations preventing rhetorical excuses."""
+        issues: list[str] = []
+        cleaned = scope_limitations.strip().lower()
+        if cleaned:
+            if re.search(r"\b(falta\s+de\s+tiempo|poco\s+tiempo|recursos\s+econ[oó]micos|falta\s+de\s+dinero)\b", cleaned) and len(cleaned) < 80:
+                issues.append(
+                    "Las limitaciones no deben ser excusas operativas personales (ej. falta de tiempo o dinero). Deben formularse como restricciones metodológicas reales con su efecto y estrategia de mitigación."
+                )
         return issues
 
     @classmethod
@@ -243,6 +307,66 @@ class MethodologyValidator:
         return issues
 
     @classmethod
+    def validate_conclusions_alignment(
+        cls,
+        conclusions: list[str],
+        specific_objectives: list[str],
+    ) -> list[str]:
+        """Validate isomorphism between specific objectives and specific conclusions."""
+        issues: list[str] = []
+        if not conclusions:
+            return issues
+
+        if specific_objectives and len(conclusions) != len(specific_objectives):
+            issues.append(
+                f"Discordancia en la correspondencia de conclusiones: Se declararon {len(specific_objectives)} objetivos específicos pero se formularon {len(conclusions)} conclusiones. Debe existir exactamente una conclusión por cada objetivo específico."
+            )
+
+        for idx, concl in enumerate(conclusions, start=1):
+            cleaned = concl.strip()
+            if len(cleaned) < 25:
+                issues.append(
+                    f"La conclusión #{idx} es demasiado escueta para sintetizar el significado de un objetivo específico."
+                )
+            if re.search(
+                r"\b(?:podr[ií]a sugerir una posible mejora|parece haber indicios de que posiblemente)\b",
+                cleaned,
+                re.IGNORECASE,
+            ):
+                issues.append(
+                    f"La conclusión #{idx} contiene evasivas sintácticas. Debe formularse de manera afirmativa y directa, modulando la certeza mediante el estatus epistémico."
+                )
+
+        return issues
+
+    @classmethod
+    def validate_recommendations(
+        cls,
+        recommendations: list[str],
+    ) -> list[str]:
+        """Validate that recommendations have explicit actors/recipients and actionable verbs."""
+        issues: list[str] = []
+        if not recommendations:
+            return issues
+
+        for idx, rec in enumerate(recommendations, start=1):
+            cleaned = rec.strip()
+            if len(cleaned) < 30:
+                issues.append(
+                    f"La recomendación #{idx} es demasiado breve. Debe incluir destinatario, acción en infinitivo, hallazgo de origen e indicador de seguimiento."
+                )
+            if re.search(
+                r"\b(?:se recomienda mejorar la calidad(?: educativa)?|es necesario concientizar a la (?:comunidad|población|sociedad)|sería interesante (?:seguir|continuar) investigando este tema)\b",
+                cleaned,
+                re.IGNORECASE,
+            ):
+                issues.append(
+                    f"La recomendación #{idx} es vacua o genérica. Debe dirigirse a un actor explícito con una acción concreta, viable y medible."
+                )
+
+        return issues
+
+    @classmethod
     def audit_project(cls, project: ProjectStateDTO) -> dict[str, Any]:
         """Run a full consistency matrix audit across the project's methodological fields."""
         problem_issues = cls.validate_problem_statement(project.research_problem)
@@ -264,11 +388,16 @@ class MethodologyValidator:
             project.qualitative_categories, project.methodology.approach
         )
 
+        justification_issues = cls.validate_justification(project.justification)
+        scope_issues = cls.validate_scope_limitations(project.scope_limitations)
+
         all_issues: list[str] = (
             problem_issues
             + question_issues
             + general_obj_issues
             + spec_obj_issues
+            + justification_issues
+            + scope_issues
             + hypo_issues
             + epistem_issues
             + op_issues
@@ -286,6 +415,10 @@ class MethodologyValidator:
         if spec_obj_issues:
             for iss in spec_obj_issues:
                 penalty += 15 if "al menos 2" in iss else 5
+        if justification_issues:
+            penalty += 5 * len(justification_issues)
+        if scope_issues:
+            penalty += 5 * len(scope_issues)
         if hypo_issues:
             penalty += 15 * len(hypo_issues)
         if epistem_issues:

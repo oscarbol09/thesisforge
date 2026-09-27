@@ -130,6 +130,8 @@ async def test_rag_claim_evidence_verification(in_memory_db: DatabaseManager):
 @pytest.mark.asyncio
 async def test_rag_add_citation_to_project(in_memory_db: DatabaseManager):
     """Verify adding validated citation appends APA 7 formatting to project state."""
+    from unittest.mock import AsyncMock, patch
+
     repo = ProjectRepository(in_memory_db)
     rag_service = RAGService(
         db_manager=in_memory_db,
@@ -145,14 +147,21 @@ async def test_rag_add_citation_to_project(in_memory_db: DatabaseManager):
     )
     await repo.create_project(project)
 
-    cit = await rag_service.add_citation_to_project(
-        project_id="proj-rag-test-03",
-        doi="10.1145/3397271.3401075",
-        title="Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks",
-        authors=["Lewis, Patrick", "Perez, Ethan"],
-        year=2020,
-        journal="Advances in Neural Information Processing Systems",
-    )
+    with (
+        patch.object(rag_service.citation_guard, "verify_doi", new_callable=AsyncMock) as mock_verify,
+        patch.object(rag_service.crossref, "resolve_doi", new_callable=AsyncMock) as mock_resolve,
+    ):
+        mock_verify.return_value = True
+        mock_resolve.return_value = None
+
+        cit = await rag_service.add_citation_to_project(
+            project_id="proj-rag-test-03",
+            doi="10.1145/3397271.3401075",
+            title="Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks",
+            authors=["Lewis, Patrick", "Perez, Ethan"],
+            year=2020,
+            journal="Advances in Neural Information Processing Systems",
+        )
 
     assert cit.apa_formatted.startswith("Lewis, P., & Perez, E. (2020).")
     assert "https://doi.org/10.1145/3397271.3401075" in cit.apa_formatted
