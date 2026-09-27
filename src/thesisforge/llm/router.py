@@ -3,6 +3,7 @@
 import json
 import os
 import re
+from pydantic import BaseModel, ValidationError
 from collections.abc import AsyncGenerator
 from typing import Any
 
@@ -190,8 +191,9 @@ class LLMRouter:
         model: str | None = None,
         provider: str | None = None,
         temperature: float = 0.2,
+        response_model: type[BaseModel] | None = None,
         **kwargs: Any,
-    ) -> dict[str, Any]:
+    ) -> dict[str, Any] | BaseModel:
         """Execute completion and parse result strictly as JSON dict."""
         raw_text = await self.complete(
             prompt=prompt,
@@ -214,20 +216,26 @@ class LLMRouter:
 
         try:
             parsed = json.loads(candidate)
-            if isinstance(parsed, dict):
-                return parsed
-            return {"data": parsed}
+            if not isinstance(parsed, dict):
+                parsed = {"data": parsed}
         except json.JSONDecodeError:
             try:
                 parsed = json.loads(cleaned)
-                if isinstance(parsed, dict):
-                    return parsed
-                return {"data": parsed}
+                if not isinstance(parsed, dict):
+                    parsed = {"data": parsed}
             except json.JSONDecodeError as err:
                 logger.warning(
                     "JSON decode failed on LLM response, attempting fallback extraction.",
                 )
                 raise LLMProviderError(f"El modelo no retornó un JSON válido: {err}") from err
+
+        if response_model:
+            try:
+                return response_model.model_validate(parsed)
+            except ValidationError as e:
+                logger.error(f"LLM Response failed Pydantic validation: {e}")
+                raise LLMProviderError(f"El esquema JSON del modelo es incorrecto: {e}") from e
+        return parsed
 
     async def stream_completion(
         self,
@@ -305,3 +313,5 @@ class LLMRouter:
             raise LLMProviderError(
                 f"Stream interrumpido en proveedor LLM ({resolved_model}): {err}"
             ) from err
+
+

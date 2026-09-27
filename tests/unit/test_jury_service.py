@@ -72,7 +72,7 @@ async def test_jury_service_audit_and_retrieval(
 ) -> None:
     """Test full project audit workflow via JuryService."""
     proj_repo = ProjectRepository(in_memory_db, "local")
-    jury_repo = JuryRepository(in_memory_db)
+    jury_repo = JuryRepository(in_memory_db, owner_id="local")
     await proj_repo.create_project(sample_project)
 
     service = JuryService(
@@ -113,7 +113,7 @@ async def test_jury_service_defense_workflow(
 ) -> None:
     """Test starting defense and completing all turns via JuryService."""
     proj_repo = ProjectRepository(in_memory_db, "local")
-    jury_repo = JuryRepository(in_memory_db)
+    jury_repo = JuryRepository(in_memory_db, owner_id="local")
     await proj_repo.create_project(sample_project)
 
     service = JuryService(
@@ -150,3 +150,4 @@ async def test_jury_service_defense_workflow(
     # Check project completed phase
     proj = await proj_repo.get_project("proj-service-test-01")
     assert proj.phase == ProjectPhase.COMPLETED
+

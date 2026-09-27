@@ -130,6 +130,9 @@ class RAGService:
 
         Useful for the UI to show PENDING / INDEXED / FAILED badges per document.
         """
+        # Validate ownership to prevent IDOR enumerating other tenants' documents
+        await self.repo.get_project(project_id)
+
         async with self.db.get_connection() as conn:
             cursor = await conn.execute(
                 """
@@ -413,6 +416,9 @@ class RAGService:
 
     async def delete_document(self, project_id: str, document_id: str) -> bool:
         """Remove an indexed document from ChromaDB, SQLite chunk tables, and project state."""
+        # 0. Validate ownership to prevent IDOR
+        project = await self.repo.get_project(project_id)
+
         # 1. Delete from ChromaDB
         await self.vector_store.delete_document(project_id=project_id, document_id=document_id)
 
@@ -429,7 +435,6 @@ class RAGService:
             await conn.commit()
 
         # 3. Update project master state
-        project = await self.repo.get_project(project_id)
         if document_id in project.indexed_documents:
             project.indexed_documents.remove(document_id)
         project.validated_citations = [

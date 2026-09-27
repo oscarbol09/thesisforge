@@ -353,7 +353,7 @@ async def _run_jury_audit_cli(project_id: str) -> None:
         from thesisforge.repository.jury_repository import JuryRepository
 
         repo = ProjectRepository(db, "local")
-        jury_repo = JuryRepository(db)
+        jury_repo = JuryRepository(db, "local")
         jury_service = JuryService(db_manager=db, project_repo=repo, jury_repo=jury_repo)
 
         with console.status(
@@ -454,7 +454,7 @@ async def _run_defense_start_cli(project_id: str) -> None:
         from thesisforge.repository.jury_repository import JuryRepository
 
         repo = ProjectRepository(db, "local")
-        jury_repo = JuryRepository(db)
+        jury_repo = JuryRepository(db, "local")
         jury_service = JuryService(db_manager=db, project_repo=repo, jury_repo=jury_repo)
 
         session = await jury_service.start_defense_session(project_id)
@@ -835,3 +835,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+

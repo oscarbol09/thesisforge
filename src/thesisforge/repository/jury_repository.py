@@ -13,7 +13,9 @@ logger = get_logger(__name__)
 class JuryRepository:
     """Async repository for persisting jury evaluation reports and oral defense sessions."""
 
-    def __init__(self, db_manager: DatabaseManager) -> None:
+    def __init__(self, db_manager: DatabaseManager, owner_id: str) -> None:
+        self.db = db_manager
+        self.owner_id = owner_id
         self.db = db_manager
 
     # --- Jury Evaluations ---
@@ -52,8 +54,8 @@ class JuryRepository:
         async with (
             self.db.get_connection() as db,
             db.execute(
-                "SELECT evaluation_json FROM jury_evaluations WHERE id = ?;",
-                (evaluation_id,),
+                "SELECT evaluation_json FROM jury_evaluations WHERE id = ? AND project_id IN (SELECT id FROM projects WHERE owner_id = ?);",
+                (evaluation_id, self.owner_id),
             ) as cursor,
         ):
             row = await cursor.fetchone()
@@ -74,11 +76,11 @@ class JuryRepository:
             db.execute(
                 """
                 SELECT evaluation_json FROM jury_evaluations
-                WHERE project_id = ?
+                WHERE project_id = ? AND project_id IN (SELECT id FROM projects WHERE owner_id = ?)
                 ORDER BY created_at DESC
                 LIMIT 1;
                 """,
-                (project_id,),
+                (project_id, self.owner_id),
             ) as cursor,
         ):
             row = await cursor.fetchone()
@@ -94,10 +96,10 @@ class JuryRepository:
             db.execute(
                 """
                 SELECT evaluation_json FROM jury_evaluations
-                WHERE project_id = ?
+                WHERE project_id = ? AND project_id IN (SELECT id FROM projects WHERE owner_id = ?)
                 ORDER BY created_at DESC;
                 """,
-                (project_id,),
+                (project_id, self.owner_id),
             ) as cursor,
         ):
             rows = await cursor.fetchall()
@@ -146,7 +148,7 @@ class JuryRepository:
                 """
                 UPDATE defense_sessions
                 SET status = ?, current_turn = ?, session_json = ?, updated_at = ?
-                WHERE id = ?;
+                WHERE id = ? AND project_id IN (SELECT id FROM projects WHERE owner_id = ?);
                 """,
                 (
                     session.status.value,
@@ -154,6 +156,7 @@ class JuryRepository:
                     session_json,
                     session.updated_at.isoformat(),
                     session.id,
+                    self.owner_id,
                 ),
             )
             if cursor.rowcount == 0:
@@ -176,8 +179,8 @@ class JuryRepository:
         async with (
             self.db.get_connection() as db,
             db.execute(
-                "SELECT session_json FROM defense_sessions WHERE id = ?;",
-                (session_id,),
+                "SELECT session_json FROM defense_sessions WHERE id = ? AND project_id IN (SELECT id FROM projects WHERE owner_id = ?);",
+                (session_id, self.owner_id),
             ) as cursor,
         ):
             row = await cursor.fetchone()
@@ -198,11 +201,11 @@ class JuryRepository:
             db.execute(
                 """
                 SELECT session_json FROM defense_sessions
-                WHERE project_id = ? AND status = 'in_progress'
+                WHERE project_id = ? AND project_id IN (SELECT id FROM projects WHERE owner_id = ?) AND status = 'in_progress'
                 ORDER BY updated_at DESC
                 LIMIT 1;
                 """,
-                (project_id,),
+                (project_id, self.owner_id),
             ) as cursor,
         ):
             row = await cursor.fetchone()
@@ -218,10 +221,10 @@ class JuryRepository:
             db.execute(
                 """
                 SELECT session_json FROM defense_sessions
-                WHERE project_id = ?
+                WHERE project_id = ? AND project_id IN (SELECT id FROM projects WHERE owner_id = ?)
                 ORDER BY created_at DESC;
                 """,
-                (project_id,),
+                (project_id, self.owner_id),
             ) as cursor,
         ):
             rows = await cursor.fetchall()
@@ -230,3 +233,5 @@ class JuryRepository:
                 data = json.loads(r["session_json"])
                 results.append(DefenseSessionDTO.model_validate(data))
             return results
+
+

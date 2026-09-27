@@ -110,9 +110,10 @@ def get_export_service(
 
 def get_jury_repository(
     db: DatabaseManager = Depends(get_db_manager),
+    owner_id: str = Depends(get_current_owner),
 ) -> JuryRepository:
     """Jury repository dependency."""
-    return JuryRepository(db)
+    return JuryRepository(db, owner_id)
 
 
 def get_jury_service(
@@ -135,3 +136,4 @@ def get_project_bundle_service(
 ) -> ProjectBundleService:
     """Project bundle service dependency for .thesisforge archives."""
     return ProjectBundleService(project_repo=project_repo)
+

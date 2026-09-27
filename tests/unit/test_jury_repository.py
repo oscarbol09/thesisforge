@@ -27,7 +27,7 @@ from thesisforge.repository.project_repository import ProjectRepository
 async def test_jury_evaluation_crud(in_memory_db: DatabaseManager) -> None:
     """Test saving, retrieving, and listing jury evaluation reports."""
     proj_repo = ProjectRepository(in_memory_db, "local")
-    jury_repo = JuryRepository(in_memory_db)
+    jury_repo = JuryRepository(in_memory_db, owner_id="local")
 
     project = ProjectStateDTO(
         id="proj-eval-001",
@@ -94,7 +94,7 @@ async def test_jury_evaluation_crud(in_memory_db: DatabaseManager) -> None:
 @pytest.mark.asyncio
 async def test_jury_evaluation_not_found(in_memory_db: DatabaseManager) -> None:
     """Verify JuryEvaluationError is raised when fetching a non-existent report."""
-    jury_repo = JuryRepository(in_memory_db)
+    jury_repo = JuryRepository(in_memory_db, owner_id="local")
     with pytest.raises(JuryEvaluationError):
         await jury_repo.get_evaluation("non-existent-eval")
 
@@ -103,7 +103,7 @@ async def test_jury_evaluation_not_found(in_memory_db: DatabaseManager) -> None:
 async def test_defense_session_crud_and_turn_progression(in_memory_db: DatabaseManager) -> None:
     """Test saving, updating, and querying interactive defense sessions."""
     proj_repo = ProjectRepository(in_memory_db, "local")
-    jury_repo = JuryRepository(in_memory_db)
+    jury_repo = JuryRepository(in_memory_db, owner_id="local")
 
     project = ProjectStateDTO(
         id="proj-def-001",
@@ -174,6 +174,7 @@ async def test_defense_session_crud_and_turn_progression(in_memory_db: DatabaseM
 @pytest.mark.asyncio
 async def test_defense_session_not_found(in_memory_db: DatabaseManager) -> None:
     """Verify DefenseSessionError is raised for non-existent session."""
-    jury_repo = JuryRepository(in_memory_db)
+    jury_repo = JuryRepository(in_memory_db, owner_id="local")
     with pytest.raises(DefenseSessionError):
         await jury_repo.get_defense_session("non-existent-session")
+

@@ -41,6 +41,14 @@ class AdvisorService:
         self.repo = project_repo
         self.llm = llm_router
 
+    @staticmethod
+    def _sanitize(text: str | None) -> str:
+        """Sanitize user input to prevent prompt injection."""
+        if not text:
+            return ""
+        # Remove triple quotes and XML tags that could break prompt structure
+        return text.replace('"""', '"').replace("<", "").replace(">", "").strip()
+
     async def get_interview_status(self, project_id: str) -> dict[str, Any]:
         """Fetch current interview progression for a given project."""
         project = await self.repo.get_project(project_id)
@@ -218,6 +226,7 @@ class AdvisorService:
         """Process a specific interview step with AI feedback and state update."""
         project = await self.repo.get_project(project_id)
         form = form_data or {}
+        safe_input = self._sanitize(user_input)
         system_prompt = ADVISOR_SYSTEM_PROMPT.format(academic_level=project.academic_level.value)
 
         # 1. Sync any passed form data immediately
@@ -226,25 +235,25 @@ class AdvisorService:
         ai_response: dict[str, Any] = {}
 
         if step == AdvisorStep.SETUP:
-            if user_input and not project.title:
-                project.title = user_input.strip()
+            if safe_input and not project.title:
+                project.title = safe_input
             ai_response = {
                 "message": f"Configuración inicial establecida para nivel '{project.academic_level.value}' y título '{project.title}'."
             }
 
         elif step == AdvisorStep.TOPIC_AND_AREA:
-            if user_input and not project.topic:
-                project.topic = user_input.strip()
+            if safe_input and not project.topic:
+                project.topic = safe_input
             ai_response = {
                 "message": f"Área '{project.area_of_study}' y tema '{project.topic}' registrados. Procedamos al planteamiento del problema."
             }
 
         elif step == AdvisorStep.PROBLEM_STATEMENT:
-            if user_input.strip():
+            if safe_input:
                 prompt = PROBLEM_FORMULATION_PROMPT.format(
                     area_of_study=project.area_of_study,
                     topic=project.topic,
-                    user_input=user_input,
+                    user_input=safe_input,
                     academic_level=project.academic_level.value,
                 )
                 try:
@@ -260,7 +269,7 @@ class AdvisorService:
                         extra={"error": str(e)},
                     )
                     if not project.research_problem:
-                        project.research_problem = user_input.strip()
+                        project.research_problem = safe_input
                     ai_response = {
                         "critique": "Problema registrado directamente.",
                         "refined_problem": project.research_problem,
@@ -275,8 +284,8 @@ class AdvisorService:
                 }
 
         elif step == AdvisorStep.RESEARCH_QUESTION:
-            if user_input.strip() and not project.research_question:
-                project.research_question = user_input.strip()
+            if safe_input and not project.research_question:
+                project.research_question = safe_input
             issues = MethodologyValidator.validate_research_question(project.research_question)
             ai_response = {
                 "question": project.research_question,
@@ -288,7 +297,7 @@ class AdvisorService:
             }
 
         elif step == AdvisorStep.OBJECTIVES:
-            if user_input.strip() and (
+            if safe_input and (
                 not project.general_objective or not project.specific_objectives
             ):
                 approach_val = (
@@ -301,7 +310,7 @@ class AdvisorService:
                     research_question=project.research_question,
                     approach=approach_val,
                     academic_level=project.academic_level.value,
-                    user_input=user_input,
+                    user_input=safe_input,
                 )
                 try:
                     ai_response = await self.llm.complete_json(prompt, system_prompt=system_prompt)
@@ -314,7 +323,7 @@ class AdvisorService:
                 except Exception as e:
                     logger.warning("LLM objective extraction fallback.", extra={"error": str(e)})
                     if not project.general_objective:
-                        project.general_objective = user_input.strip()
+                        project.general_objective = safe_input
                     ai_response = {"general_objective": project.general_objective}
 
             gen_issues = MethodologyValidator.validate_general_objective(
@@ -339,8 +348,8 @@ class AdvisorService:
                 ai_response["is_valid"] = len(all_obj_issues) == 0
 
         elif step == AdvisorStep.HYPOTHESIS:
-            if user_input.strip() and not project.hypothesis:
-                project.hypothesis = user_input.strip()
+            if safe_input and not project.hypothesis:
+                project.hypothesis = safe_input
             issues = MethodologyValidator.validate_hypothesis(
                 project.hypothesis, project.methodology.approach
             )
@@ -352,12 +361,12 @@ class AdvisorService:
             }
 
         elif step == AdvisorStep.METHODOLOGY_DESIGN:
-            if user_input.strip():
+            if safe_input:
                 prompt = METHODOLOGY_DESIGN_PROMPT.format(
                     academic_level=project.academic_level.value,
                     research_question=project.research_question,
                     general_objective=project.general_objective,
-                    user_input=user_input,
+                    user_input=safe_input,
                     approach=project.methodology.approach.value
                     if project.methodology.approach
                     else "cuantitativo",
@@ -402,7 +411,7 @@ class AdvisorService:
                 ai_response["is_valid"] = len(epistem_issues) == 0
 
         elif step == AdvisorStep.CONSISTENCY_AUDIT:
-            if user_input.strip():
+            if safe_input:
                 prompt = CONSISTENCY_AUDIT_PROMPT.format(
                     academic_level=project.academic_level.value,
                     title=project.title,
@@ -495,3 +504,5 @@ class AdvisorService:
             },
         )
         return matrix
+
+
