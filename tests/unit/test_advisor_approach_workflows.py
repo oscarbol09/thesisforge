@@ -200,8 +200,8 @@ async def test_advisor_service_approve_methodology_idempotent() -> None:
 
     db = DatabaseManager("sqlite+aiosqlite:///:memory:")
     await db.initialize()
-    repo = ProjectRepository(db)
-    llm = LLMRouter(AppSettings())
+    repo = ProjectRepository(db, "local")
+    llm = LLMRouter(AppSettings(), "local")
     service = AdvisorService(repo, llm)
 
     # Create fully consistent project

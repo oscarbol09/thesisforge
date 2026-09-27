@@ -124,7 +124,7 @@ def test_bibtex_exporter_academic_search_dto():
 @pytest.mark.asyncio
 async def test_export_service_bibtex(in_memory_db: DatabaseManager, tmp_path: Path):
     """Verify ExportService compiles and saves project bibliography as .bib file."""
-    repo = ProjectRepository(in_memory_db)
+    repo = ProjectRepository(in_memory_db, "local")
     project = ProjectStateDTO(
         id="proj-bib-test-01",
         title="Investigación de Modelos Fundacionales",
@@ -174,7 +174,7 @@ async def test_api_export_project_bibtex(in_memory_db: DatabaseManager):
 
     app.dependency_overrides[get_db_manager] = lambda: in_memory_db
     try:
-        repo = ProjectRepository(in_memory_db)
+        repo = ProjectRepository(in_memory_db, "local")
         project = ProjectStateDTO(
             id="proj-api-bib-01",
             title="Proyecto API BibTeX",

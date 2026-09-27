@@ -50,7 +50,7 @@ async def test_academic_capabilities_end_to_end(override_db: DatabaseManager) ->
         project_id = project_data["id"]
 
         # 2. Setup project with detailed methodology and variables
-        repo = ProjectRepository(override_db)
+        repo = ProjectRepository(override_db, "local")
         proj = await repo.get_project(project_id)
         proj.research_problem = (
             "La evaluación del desempeño docente requiere métricas rigurosas y validez empírica."

@@ -29,7 +29,7 @@ def override_db(in_memory_db: DatabaseManager):
 @pytest.mark.asyncio
 async def test_api_export_project_docx(override_db: DatabaseManager):
     """Verify POST /api/export/projects/{id}/docx returns valid Word file attachment."""
-    repo = ProjectRepository(override_db)
+    repo = ProjectRepository(override_db, "local")
     project = ProjectStateDTO(
         id="proj-export-api-01",
         title="Tesis de Exportación APA 7",
@@ -87,7 +87,7 @@ async def test_api_export_project_not_found(override_db: DatabaseManager):
 @pytest.mark.asyncio
 async def test_api_export_and_import_project_bundle(override_db: DatabaseManager):
     """Verify GET /api/export/projects/{id}/bundle and POST /api/export/bundle/import."""
-    repo = ProjectRepository(override_db)
+    repo = ProjectRepository(override_db, "local")
     project = ProjectStateDTO(
         id="proj-bundle-api-01",
         title="Tesis para Backup Completo",

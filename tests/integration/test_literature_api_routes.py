@@ -97,7 +97,7 @@ async def test_api_index_pdf_and_query_context(in_memory_db: DatabaseManager, va
     app.dependency_overrides[get_db_manager] = lambda: in_memory_db
     app.dependency_overrides[get_key_vault] = lambda: vault
 
-    repo = ProjectRepository(in_memory_db)
+    repo = ProjectRepository(in_memory_db, "local")
     proj = ProjectStateDTO(
         id="proj-api-rag-01",
         title="Estudio RAG API",

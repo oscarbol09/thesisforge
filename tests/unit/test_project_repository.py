@@ -15,7 +15,7 @@ async def test_project_crud_lifecycle(
     in_memory_db: DatabaseManager, sample_project: ProjectStateDTO
 ):
     """Verify transactional persistence, retrieval, modification, and deletion of research projects."""
-    repo = ProjectRepository(in_memory_db)
+    repo = ProjectRepository(in_memory_db, "local")
 
     created = await repo.create_project(sample_project)
     assert created.id == sample_project.id
@@ -50,7 +50,7 @@ async def test_project_crud_lifecycle(
 @pytest.mark.asyncio
 async def test_project_not_found_errors(in_memory_db: DatabaseManager):
     """Test that querying or modifying non-existent projects raises ProjectNotFoundError."""
-    repo = ProjectRepository(in_memory_db)
+    repo = ProjectRepository(in_memory_db, "local")
 
     with pytest.raises(ProjectNotFoundError):
         await repo.get_project("non-existent-id")
@@ -66,37 +66,38 @@ async def test_project_not_found_errors(in_memory_db: DatabaseManager):
 @pytest.mark.asyncio
 async def test_project_owner_isolation(in_memory_db: DatabaseManager):
     """Verify multi-tenant owner scoping prevents Insecure Direct Object References (IDOR)."""
-    repo = ProjectRepository(in_memory_db)
+    repo_alice = ProjectRepository(in_memory_db, "user_alice")
+    repo_bob = ProjectRepository(in_memory_db, "user_bob")
+
     proj_alice = ProjectStateDTO(
         id="proj-alice-01",
         title="Tesis de Alice",
-        owner_id="user_alice",
     )
-    await repo.create_project(proj_alice)
+    await repo_alice.create_project(proj_alice)
 
     # 1. Alice can access her own project
-    fetched = await repo.get_project("proj-alice-01", owner_id="user_alice")
+    fetched = await repo_alice.get_project("proj-alice-01")
     assert fetched.id == "proj-alice-01"
     assert fetched.owner_id == "user_alice"
 
     # 2. Bob cannot access Alice's project (IDOR blocked)
     with pytest.raises(ProjectNotFoundError):
-        await repo.get_project("proj-alice-01", owner_id="user_bob")
+        await repo_bob.get_project("proj-alice-01")
 
     # 3. Listing is scoped by owner
-    alice_list = await repo.list_projects(owner_id="user_alice")
+    alice_list = await repo_alice.list_projects()
     assert len(alice_list) == 1
     assert alice_list[0].id == "proj-alice-01"
 
-    bob_list = await repo.list_projects(owner_id="user_bob")
+    bob_list = await repo_bob.list_projects()
     assert len(bob_list) == 0
 
     # 4. Bob cannot delete Alice's project
     with pytest.raises(ProjectNotFoundError):
-        await repo.delete_project("proj-alice-01", owner_id="user_bob")
+        await repo_bob.delete_project("proj-alice-01")
 
     # 5. Alice can delete her own project
-    assert await repo.delete_project("proj-alice-01", owner_id="user_alice") is True
+    assert await repo_alice.delete_project("proj-alice-01") is True
 
 
 @pytest.mark.asyncio

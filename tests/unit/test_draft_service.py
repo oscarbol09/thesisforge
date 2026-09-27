@@ -42,7 +42,7 @@ async def test_draft_service_initialize_sections(
     mock_llm_router: LLMRouter,
 ):
     """Verify initialize_thesis_sections populates outline and advances phase to DRAFTING."""
-    repo = ProjectRepository(in_memory_db)
+    repo = ProjectRepository(in_memory_db, "local")
     project = ProjectStateDTO(
         id="proj-draft-01",
         title="Estudio de RAG en Tesis",
@@ -70,7 +70,7 @@ async def test_draft_service_get_section_and_not_found(
     mock_llm_router: LLMRouter,
 ):
     """Verify get_section returns target section and raises SectionNotFoundError on invalid ID."""
-    repo = ProjectRepository(in_memory_db)
+    repo = ProjectRepository(in_memory_db, "local")
     project = ProjectStateDTO(
         id="proj-draft-02",
         title="Estudio de RAG",
@@ -98,7 +98,7 @@ async def test_draft_service_generate_section_draft(
     mock_llm_router: LLMRouter,
 ):
     """Verify generate_section_draft calls LLM, updates word count, status, and version."""
-    repo = ProjectRepository(in_memory_db)
+    repo = ProjectRepository(in_memory_db, "local")
     project = ProjectStateDTO(
         id="proj-draft-03",
         title="Estudio de IA",
@@ -136,7 +136,7 @@ async def test_draft_service_stream_section_draft(
     mock_llm_router: LLMRouter,
 ):
     """Verify stream_section_draft yields start, token, and complete events."""
-    repo = ProjectRepository(in_memory_db)
+    repo = ProjectRepository(in_memory_db, "local")
     project = ProjectStateDTO(
         id="proj-draft-04",
         title="Streaming Test",
@@ -168,7 +168,7 @@ async def test_draft_service_revise_and_approve_section(
     mock_llm_router: LLMRouter,
 ):
     """Verify revise_section_draft and approve_section lifecycle."""
-    repo = ProjectRepository(in_memory_db)
+    repo = ProjectRepository(in_memory_db, "local")
     project = ProjectStateDTO(
         id="proj-draft-05",
         title="Approval Test",

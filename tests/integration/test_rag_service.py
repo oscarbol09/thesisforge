@@ -16,7 +16,7 @@ from thesisforge.repository.project_repository import ProjectRepository
 @pytest.mark.asyncio
 async def test_rag_pdf_indexing_and_vector_query(in_memory_db: DatabaseManager):
     """Verify PDF ingestion, SQLite chunk persistence, and ChromaDB vector retrieval."""
-    repo = ProjectRepository(in_memory_db)
+    repo = ProjectRepository(in_memory_db, "local")
     rag_service = RAGService(
         db_manager=in_memory_db,
         project_repo=repo,
@@ -73,7 +73,7 @@ async def test_rag_pdf_indexing_and_vector_query(in_memory_db: DatabaseManager):
 @pytest.mark.asyncio
 async def test_rag_claim_evidence_verification(in_memory_db: DatabaseManager):
     """Verify claim validation against indexed literature (DOI Valid != Claim Backed)."""
-    repo = ProjectRepository(in_memory_db)
+    repo = ProjectRepository(in_memory_db, "local")
     rag_service = RAGService(
         db_manager=in_memory_db,
         project_repo=repo,
@@ -132,7 +132,7 @@ async def test_rag_add_citation_to_project(in_memory_db: DatabaseManager):
     """Verify adding validated citation appends APA 7 formatting to project state."""
     from unittest.mock import AsyncMock, patch
 
-    repo = ProjectRepository(in_memory_db)
+    repo = ProjectRepository(in_memory_db, "local")
     rag_service = RAGService(
         db_manager=in_memory_db,
         project_repo=repo,

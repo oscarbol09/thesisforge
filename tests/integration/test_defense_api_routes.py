@@ -28,7 +28,7 @@ def override_deps(in_memory_db: DatabaseManager):
 
 @pytest.fixture
 async def seeded_defense_project(override_deps: DatabaseManager) -> ProjectStateDTO:
-    repo = ProjectRepository(override_deps)
+    repo = ProjectRepository(override_deps, "local")
     project = ProjectStateDTO(
         id="proj-api-def-01",
         title="Validación de Redes Neuronales Convolucionales en Detección de Plagas",

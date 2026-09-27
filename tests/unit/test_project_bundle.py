@@ -33,7 +33,7 @@ async def db_manager(tmp_path: Path):
 
 @pytest.fixture
 def project_repo(db_manager: DatabaseManager) -> ProjectRepository:
-    return ProjectRepository(db_manager)
+    return ProjectRepository(db_manager, "local")
 
 
 @pytest.fixture

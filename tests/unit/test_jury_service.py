@@ -71,7 +71,7 @@ async def test_jury_service_audit_and_retrieval(
     sample_project: ProjectStateDTO,
 ) -> None:
     """Test full project audit workflow via JuryService."""
-    proj_repo = ProjectRepository(in_memory_db)
+    proj_repo = ProjectRepository(in_memory_db, "local")
     jury_repo = JuryRepository(in_memory_db)
     await proj_repo.create_project(sample_project)
 
@@ -112,7 +112,7 @@ async def test_jury_service_defense_workflow(
     sample_project: ProjectStateDTO,
 ) -> None:
     """Test starting defense and completing all turns via JuryService."""
-    proj_repo = ProjectRepository(in_memory_db)
+    proj_repo = ProjectRepository(in_memory_db, "local")
     jury_repo = JuryRepository(in_memory_db)
     await proj_repo.create_project(sample_project)
 

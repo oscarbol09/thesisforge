@@ -57,7 +57,7 @@ def override_deps(in_memory_db: DatabaseManager, mock_llm_router: LLMRouter):
 @pytest.mark.asyncio
 async def test_api_jury_audit_flow(override_deps: DatabaseManager) -> None:
     """Verify full jury audit execution, latest retrieval, and listing via REST API."""
-    repo = ProjectRepository(override_deps)
+    repo = ProjectRepository(override_deps, "local")
     project = ProjectStateDTO(
         id="proj-api-jury-01",
         title="Evaluación de Algoritmos Genéticos en Optimización de Rutas",

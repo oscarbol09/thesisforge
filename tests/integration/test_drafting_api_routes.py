@@ -45,7 +45,7 @@ def override_deps(in_memory_db: DatabaseManager, mock_llm_router: LLMRouter):
 @pytest.mark.asyncio
 async def test_api_initialize_and_list_sections(override_deps: DatabaseManager):
     """Verify section initialization and listing via REST API."""
-    repo = ProjectRepository(override_deps)
+    repo = ProjectRepository(override_deps, "local")
     project = ProjectStateDTO(
         id="proj-api-draft-01",
         title="Tesis de Redacción Modular",
@@ -78,7 +78,7 @@ async def test_api_initialize_and_list_sections(override_deps: DatabaseManager):
 @pytest.mark.asyncio
 async def test_api_generate_and_refine_and_approve_section(override_deps: DatabaseManager):
     """Verify generating, manual editing, refining, and approving sections via REST API."""
-    repo = ProjectRepository(override_deps)
+    repo = ProjectRepository(override_deps, "local")
     project = ProjectStateDTO(
         id="proj-api-draft-02",
         title="Tesis de Validación",
@@ -130,7 +130,7 @@ def test_api_websocket_draft_stream(override_deps: DatabaseManager, mock_llm_rou
     """Verify real-time WebSocket token streaming for draft generation."""
     client = TestClient(app)
 
-    repo = ProjectRepository(override_deps)
+    repo = ProjectRepository(override_deps, "local")
     import asyncio
 
     project = ProjectStateDTO(

@@ -21,7 +21,7 @@ from thesisforge.repository.project_repository import ProjectRepository
 @pytest.mark.asyncio
 async def test_advisor_interview_progression_and_approval(in_memory_db: DatabaseManager):
     """Verify that a research project transitions through the full Socratic interview to approval."""
-    repo = ProjectRepository(in_memory_db)
+    repo = ProjectRepository(in_memory_db, "local")
     router = LLMRouter()
     service = AdvisorService(project_repo=repo, llm_router=router)
 
@@ -111,7 +111,7 @@ async def test_qualitative_interview_progression_skips_hypothesis(
     in_memory_db: DatabaseManager,
 ):
     """Verify that qualitative research projects properly skip hypothesis step in progress calculation."""
-    repo = ProjectRepository(in_memory_db)
+    repo = ProjectRepository(in_memory_db, "local")
     router = LLMRouter()
     service = AdvisorService(project_repo=repo, llm_router=router)
 

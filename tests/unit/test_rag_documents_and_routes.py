@@ -33,7 +33,7 @@ async def test_index_pdf_creates_citation_and_records_document_status(
     in_memory_db: DatabaseManager,
 ):
     """Verify that indexing a PDF creates a CitationDTO in project.validated_citations and persists document status."""
-    repo = ProjectRepository(in_memory_db)
+    repo = ProjectRepository(in_memory_db, "local")
     rag = RAGService(
         db_manager=in_memory_db,
         project_repo=repo,
@@ -107,7 +107,7 @@ async def test_add_and_delete_citation_lifecycle(
         },
     )
 
-    repo = ProjectRepository(in_memory_db)
+    repo = ProjectRepository(in_memory_db, "local")
     rag = RAGService(
         db_manager=in_memory_db,
         project_repo=repo,

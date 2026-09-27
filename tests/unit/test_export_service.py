@@ -22,7 +22,7 @@ from thesisforge.repository.project_repository import ProjectRepository
 @pytest.mark.asyncio
 async def test_export_service_compile_project_docx(in_memory_db: DatabaseManager):
     """Verify ExportService compiles project by ID from database."""
-    repo = ProjectRepository(in_memory_db)
+    repo = ProjectRepository(in_memory_db, "local")
     project = ProjectStateDTO(
         id="proj-export-svc-01",
         title="Tesis de Inteligencia Artificial",
@@ -51,7 +51,7 @@ async def test_export_service_compile_project_docx(in_memory_db: DatabaseManager
 @pytest.mark.asyncio
 async def test_export_service_project_not_found(in_memory_db: DatabaseManager):
     """Verify ExportService raises ProjectNotFoundError for non-existent ID."""
-    repo = ProjectRepository(in_memory_db)
+    repo = ProjectRepository(in_memory_db, "local")
     service = ExportService(db_manager=in_memory_db, project_repo=repo)
 
     with pytest.raises(ProjectNotFoundError):
@@ -61,7 +61,7 @@ async def test_export_service_project_not_found(in_memory_db: DatabaseManager):
 @pytest.mark.asyncio
 async def test_export_service_unsupported_format(in_memory_db: DatabaseManager):
     """Verify ExportService raises ExportError when unsupported format requested."""
-    repo = ProjectRepository(in_memory_db)
+    repo = ProjectRepository(in_memory_db, "local")
     service = ExportService(db_manager=in_memory_db, project_repo=repo)
     project = ProjectStateDTO(id="proj-format-01", title="Test Format")
 
@@ -72,7 +72,7 @@ async def test_export_service_unsupported_format(in_memory_db: DatabaseManager):
 @pytest.mark.asyncio
 async def test_export_service_save_project_docx(in_memory_db: DatabaseManager, tmp_path: Path):
     """Verify save_project_docx writes compiled document to target filesystem path."""
-    repo = ProjectRepository(in_memory_db)
+    repo = ProjectRepository(in_memory_db, "local")
     project = ProjectStateDTO(
         id="proj-export-save-01",
         title="Tesis Guardada en Disco",
