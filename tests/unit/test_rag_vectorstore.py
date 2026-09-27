@@ -168,3 +168,29 @@ def test_chroma_collection_name_sanitization():
     res = store._get_collection_name(long_name)
     assert len(res) <= 55
     assert res.startswith("proj_")
+
+
+def test_bm25_lexical_scoring_and_rrf():
+    """Verify BM25 lexical scorer and Reciprocal Rank Fusion calculations."""
+    from thesisforge.rag.vectorstore import compute_bm25_lexical_score, compute_rrf_rankings
+
+    # 1. BM25 scoring tests
+    score_high = compute_bm25_lexical_score(
+        query="CRISPR-Cas9 gene editing",
+        text="Recent advancements in CRISPR-Cas9 gene editing for therapeutic applications.",
+    )
+    score_zero = compute_bm25_lexical_score(
+        query="Quantum computing entanglement",
+        text="Photosynthesis in tropical rainforests.",
+    )
+    assert score_high > 0.0
+    assert score_zero == 0.0
+
+    # 2. RRF ranking fusion tests
+    dense_ranks = {"doc_a": 1, "doc_b": 2, "doc_c": 3}
+    lexical_ranks = {"doc_b": 1, "doc_a": 3, "doc_c": 2}
+
+    rrf = compute_rrf_rankings(dense_ranks, lexical_ranks, k=60)
+    # doc_b is 2nd in dense and 1st in lexical: (1/62) + (1/61) = ~0.0325
+    # doc_a is 1st in dense and 3rd in lexical: (1/61) + (1/63) = ~0.0322
+    assert rrf["doc_b"] > rrf["doc_a"] > rrf["doc_c"]

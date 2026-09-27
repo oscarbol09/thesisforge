@@ -192,6 +192,69 @@ def build_embedding_function(
     )
 
 
+def compute_bm25_lexical_score(
+    query: str,
+    text: str,
+    k1: float = 1.2,
+    b: float = 0.75,
+    avg_doc_len: float = 100.0,
+) -> float:
+    """Calculate BM25-style lexical matching score between query terms and chunk text.
+
+    Extracts terms with length >= 2, computes term frequency with document length
+    normalization, strongly boosting exact keywords, acronyms, author names, DOIs,
+    and specific domain terms that semantic embeddings might miss.
+    """
+    query_tokens = [t.lower() for t in re.findall(r"\b\w{2,}\b", query)]
+    if not query_tokens:
+        return 0.0
+    doc_tokens = [t.lower() for t in re.findall(r"\b\w{2,}\b", text)]
+    doc_len = len(doc_tokens)
+    if doc_len == 0:
+        return 0.0
+
+    tf_dict: dict[str, int] = {}
+    for t in doc_tokens:
+        tf_dict[t] = tf_dict.get(t, 0) + 1
+
+    score = 0.0
+    len_norm = 1.0 - b + b * (doc_len / max(1.0, avg_doc_len))
+    for q in query_tokens:
+        tf = tf_dict.get(q, 0)
+        if tf > 0:
+            term_score = (tf * (k1 + 1.0)) / (tf + k1 * len_norm)
+            score += term_score
+
+    return score
+
+
+def compute_rrf_rankings(
+    dense_ranks: dict[str, int],
+    lexical_ranks: dict[str, int],
+    k: int = 60,
+) -> dict[str, float]:
+    """Fuse dense and lexical rankings using standard Reciprocal Rank Fusion (RRF).
+
+    RRF(chunk_id) = 1 / (k + dense_rank) + 1 / (k + lexical_rank)
+
+    Args:
+        dense_ranks: Mapping of chunk_id to 1-based rank in dense retrieval.
+        lexical_ranks: Mapping of chunk_id to 1-based rank in lexical BM25 retrieval.
+        k: Smoothing constant (default 60).
+
+    Returns:
+        Mapping of chunk_id to fused RRF score.
+    """
+    all_ids = set(dense_ranks.keys()).union(lexical_ranks.keys())
+    scores: dict[str, float] = {}
+    for cid in all_ids:
+        r_dense = dense_ranks.get(cid, 999)
+        r_lex = lexical_ranks.get(cid, 999)
+        rrf = (1.0 / (k + r_dense)) + (1.0 / (k + r_lex))
+        scores[cid] = rrf
+    return scores
+
+
 # ---------------------------------------------------------------------------
 # ChromaDB vector store
 # ---------------------------------------------------------------------------
@@ -317,8 +380,13 @@ class ChromaVectorStore:
         top_k: int = 5,
         min_score: float = 0.0,
         section_filter: str | None = None,
+        hybrid: bool = True,
     ) -> list[DocumentChunkDTO]:
-        """Perform semantic similarity retrieval over indexed literature for a project."""
+        """Perform hybrid semantic and lexical retrieval with Reciprocal Rank Fusion (RRF).
+
+        Combines dense vector similarity with BM25 keyword matching to accurately
+        capture both conceptual semantics and exact terms (DOIs, acronyms, author names).
+        """
         clean_query = query.strip()
         if not clean_query:
             return []
@@ -333,17 +401,18 @@ class ChromaVectorStore:
             where_clause = {"section_name": section_filter}
 
         query_embeddings = self.embedding_function([clean_query])
+        # In hybrid mode, retrieve a wider candidate pool to allow RRF re-ranking
+        n_candidates = max(top_k * 3, 20) if hybrid else top_k
         try:
             results = collection.query(
                 query_embeddings=query_embeddings,
-                n_results=min(top_k, 20),
+                n_results=min(n_candidates, 50),
                 where=where_clause,
             )
         except Exception as err:
             logger.warning("ChromaDB query failed.", extra={"error": str(err)})
             return []
 
-        matched_chunks: list[DocumentChunkDTO] = []
         ids_raw = results.get("ids")
         if not ids_raw or not ids_raw[0]:
             return []
@@ -356,6 +425,7 @@ class ChromaVectorStore:
         dist_raw = results.get("distances")
         distances = dist_raw[0] if dist_raw and len(dist_raw) > 0 else []
 
+        candidate_chunks: list[tuple[DocumentChunkDTO, float, float]] = []
         for idx, chunk_id in enumerate(ids_list):
             doc_text = str(docs_list[idx]) if idx < len(docs_list) else ""
             meta_item = metas_list[idx] if idx < len(metas_list) else {}
@@ -390,9 +460,36 @@ class ChromaVectorStore:
                 char_start=int(meta.get("char_start", 0)),
                 char_end=int(meta.get("char_end", 0)),
             )
-            matched_chunks.append(chunk_dto)
 
-        return matched_chunks
+            lexical_score = compute_bm25_lexical_score(clean_query, doc_text)
+            candidate_chunks.append((chunk_dto, similarity, lexical_score))
+
+        if not candidate_chunks:
+            return []
+
+        if hybrid and len(candidate_chunks) > 1:
+            # Rank by dense similarity
+            dense_sorted = sorted(candidate_chunks, key=lambda x: x[1], reverse=True)
+            dense_ranks = {
+                chunk.id: rank for rank, (chunk, _, _) in enumerate(dense_sorted, start=1)
+            }
+
+            # Rank by lexical BM25
+            lexical_sorted = sorted(candidate_chunks, key=lambda x: x[2], reverse=True)
+            lexical_ranks = {
+                chunk.id: rank for rank, (chunk, _, _) in enumerate(lexical_sorted, start=1)
+            }
+
+            # Fuse with Reciprocal Rank Fusion (k=60)
+            rrf_scores = compute_rrf_rankings(dense_ranks, lexical_ranks, k=60)
+            fused_chunks = sorted(
+                candidate_chunks, key=lambda x: rrf_scores.get(x[0].id, 0.0), reverse=True
+            )
+            return [chunk for chunk, _, _ in fused_chunks[:top_k]]
+
+        # Non-hybrid or single result: return by dense similarity
+        dense_only = sorted(candidate_chunks, key=lambda x: x[1], reverse=True)
+        return [chunk for chunk, _, _ in dense_only[:top_k]]
 
     async def delete_document(self, project_id: str, document_id: str) -> int:
         """Delete all chunks for a specific document in a project."""
