@@ -4394,6 +4394,7 @@ dependencies = [
     { name = "python-multipart" },
     { name = "pywebview" },
     { name = "pyyaml" },
+    { name = "rich" },
     { name = "tenacity" },
     { name = "uvicorn" },
 ]
@@ -4445,6 +4446,7 @@ requires-dist = [
     { name = "pywebview", specifier = ">=5.0.0" },
     { name = "pyyaml", specifier = ">=6.0.1" },
     { name = "respx", marker = "extra == 'dev'", specifier = ">=0.21.1" },
+    { name = "rich", specifier = ">=13.7.0" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.4.0" },
     { name = "tenacity", specifier = ">=9.1.4" },
     { name = "types-pyyaml", marker = "extra == 'dev'", specifier = ">=6.0.12" },
