@@ -11,6 +11,24 @@ from hypothesis import HealthCheck, settings
 os.environ["THESISFORGE_ENVIRONMENT"] = "test"
 os.environ["LITELLM_LOCAL_MODEL_COST_MAP"] = "True"
 os.environ["LITELLM_TELEMETRY"] = "False"
+os.environ["ANONYMIZED_TELEMETRY"] = "False"
+os.environ["CHROMA_TELEMETRY"] = "False"
+os.environ["CHROMA_SERVER_NOFILE"] = "1"
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
+
+import aiosqlite.core  # noqa: E402
+
+# Ensure aiosqlite connection worker threads are daemonized in all tests
+_orig_aiosqlite_conn_init = aiosqlite.core.Connection.__init__
+
+
+def _daemon_aiosqlite_conn_init(self: aiosqlite.Connection, *args, **kwargs) -> None:
+    _orig_aiosqlite_conn_init(self, *args, **kwargs)
+    if hasattr(self, "_thread") and self._thread is not None:
+        self._thread.daemon = True
+
+
+aiosqlite.core.Connection.__init__ = _daemon_aiosqlite_conn_init  # type: ignore[method-assign]
 
 from thesisforge.config import get_settings  # noqa: E402
 from thesisforge.core.security import LocalKeyVault  # noqa: E402
@@ -149,3 +167,26 @@ def sample_project() -> ProjectStateDTO:
             ),
         ],
     )
+
+
+def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
+    """Diagnostic hook to inspect threads and guarantee clean teardown on exit."""
+    import threading
+
+    all_threads = threading.enumerate()
+    print(f"\n[ThesisForge SessionFinish] All threads at session finish ({len(all_threads)}):")
+    for t in all_threads:
+        print(f"  - Thread: {t.name}, daemon: {t.daemon}, alive: {t.is_alive()}, ident: {t.ident}")
+
+
+def pytest_unconfigure(config: pytest.Config) -> None:
+    """Called before pytest exits."""
+    import threading
+
+    non_daemon = [t for t in threading.enumerate() if not t.daemon and t != threading.main_thread()]
+    if non_daemon:
+        print(
+            f"\n[ThesisForge Unconfigure] Non-daemon threads preventing exit ({len(non_daemon)}):"
+        )
+        for t in non_daemon:
+            print(f"  - Thread: {t.name}, alive: {t.is_alive()}")

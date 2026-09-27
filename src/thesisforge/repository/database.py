@@ -3,12 +3,28 @@
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from pathlib import Path
+from typing import Any
 
 import aiosqlite
+import aiosqlite.core
 
 from thesisforge.core.logging import get_logger
 
 logger = get_logger(__name__)
+
+# Ensure aiosqlite connection worker threads are daemonized so they never block
+# clean process termination or hang CI runner environments upon test completion.
+_orig_aiosqlite_conn_init = aiosqlite.core.Connection.__init__
+
+
+def _daemon_aiosqlite_conn_init(self: aiosqlite.Connection, *args: Any, **kwargs: Any) -> None:
+    _orig_aiosqlite_conn_init(self, *args, **kwargs)
+    if hasattr(self, "_thread") and self._thread is not None:
+        self._thread.daemon = True
+
+
+aiosqlite.core.Connection.__init__ = _daemon_aiosqlite_conn_init  # type: ignore[method-assign]
+
 
 INIT_SCHEMA_SQL = """
 PRAGMA foreign_keys = ON;

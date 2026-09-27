@@ -94,4 +94,13 @@ jobs:
         run: uv sync --locked --extra dev
 
       - name: Run Pytest with Coverage
-        run: uv run pytest tests/ -v --cov=thesisforge --cov-report=xml
+        env:
+          ANONYMIZED_TELEMETRY: "False"
+          CHROMA_TELEMETRY: "False"
+          CHROMA_SERVER_NOFILE: "1"
+          LITELLM_TELEMETRY: "False"
+          LITELLM_LOCAL_MODEL_COST_MAP: "True"
+          TOKENIZERS_PARALLELISM: "false"
+          PYTHONUNBUFFERED: "1"
+        run: uv run pytest tests/ -v --cov=thesisforge --cov-report=xml --durations=10
+
