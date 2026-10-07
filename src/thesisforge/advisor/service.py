@@ -42,12 +42,11 @@ class AdvisorService:
         self.llm = llm_router
 
     @staticmethod
-    def _sanitize(text: str | None) -> str:
-        """Sanitize user input to prevent prompt injection."""
+    def quarantine_input(text: str | None) -> str:
+        """Quarantine user input using strong system isolation boundaries (Dual LLM Pattern) instead of regex."""
         if not text:
             return ""
-        # Remove triple quotes and XML tags that could break prompt structure
-        return text.replace('"""', '"').replace("<", "").replace(">", "").strip()
+        return f"<user_input>{text}</user_input>"
 
     async def get_interview_status(self, project_id: str) -> dict[str, Any]:
         """Fetch current interview progression for a given project."""
@@ -226,7 +225,7 @@ class AdvisorService:
         """Process a specific interview step with AI feedback and state update."""
         project = await self.repo.get_project(project_id)
         form = form_data or {}
-        safe_input = self._sanitize(user_input)
+        safe_input = self.quarantine_input(user_input)
         system_prompt = ADVISOR_SYSTEM_PROMPT.format(academic_level=project.academic_level.value)
 
         # 1. Sync any passed form data immediately

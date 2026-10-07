@@ -36,30 +36,13 @@ ABBREVIATION_PATTERN = re.compile(
 )
 
 
-def sanitize_extracted_text(text: str) -> str:
-    """Strip dangerous control characters and neutralize prompt injection delimiters."""
+def quarantine_extracted_text(text: str) -> str:
+    """Quarantine extracted text using strict boundaries (Dual LLM Pattern) instead of regex."""
     if not text:
         return ""
-    # Strip non-printable ASCII control characters except \n, \t, \r
-    cleaned = re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]", "", text)
-
-    # Neutralize prompt injection delimiter tokens
-    cleaned = re.sub(
-        r"</?(?:SYSTEM|RETRIEVED|RESEARCHER|INSTRUCTION)[^>]*>",
-        "[DELIMITER_REMOVED]",
-        cleaned,
-        flags=re.IGNORECASE,
-    )
-    cleaned = re.sub(
-        r"(?:ignore\s+previous\s+instructions|system\s+prompt\s+override)",
-        "[DISALLOWED_INSTRUCTION_REMOVED]",
-        cleaned,
-        flags=re.IGNORECASE,
-    )
-
     # Normalize excessive carriage returns
-    cleaned = cleaned.replace("\r\n", "\n").replace("\r", "\n")
-    return cleaned.strip()
+    cleaned = text.replace("\r\n", "\n").replace("\r", "\n").strip()
+    return f"<source>\n{cleaned}\n</source>"
 
 
 class SentenceAwareChunker:
@@ -114,7 +97,7 @@ class SentenceAwareChunker:
         year: int | None = None,
     ) -> list[DocumentChunkDTO]:
         """Segment input text into overlapping chunks without splitting sentences."""
-        clean_text = sanitize_extracted_text(text)
+        clean_text = quarantine_extracted_text(text)
         if not clean_text:
             return []
 
