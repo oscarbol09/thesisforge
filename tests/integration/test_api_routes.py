@@ -66,7 +66,7 @@ async def test_project_crud_and_advisor_endpoints(override_db: DatabaseManager):
             f"/api/advisor/{project_id}/step",
             json={
                 "step": "research_question",
-                "user_input": "¿Cómo optimizar la planificación de rutas mediante algoritmos genéticos híbridos?",
+                "user_input": "Efecto de algoritmos en optimizacion de rutas, con diseno cuantitativo usando G*Power con poder estadistico de 0.80?",
             },
         )
         assert step_resp.status_code == 200
