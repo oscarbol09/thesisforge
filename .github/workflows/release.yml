@@ -25,17 +25,17 @@ jobs:
           - os: macos-latest
             artifact_name: thesisforge-macos-universal
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           fetch-depth: 0
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@f677139bbe775c4228dd539a4a51d20f30d8eb33 # v5.3.0
         with:
           python-version: "3.12"
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@f94ec08e8c9a69070624021dd9229f60f6de9133 # v5.2.2
         with:
           enable-cache: true
 
@@ -56,6 +56,10 @@ jobs:
         run: |
           pyinstaller --noconfirm --onedir --windowed --name "${{ matrix.artifact_name }}" --collect-all chromadb --collect-all litellm --collect-all fitz --collect-all pymupdf --add-data "gui:gui" src/thesisforge/desktop/launcher.py
 
+      - name: Fix macOS dyld LC_UUID
+        if: matrix.os == 'macos-latest'
+        run: codesign -s - "dist/${{ matrix.artifact_name }}/${{ matrix.artifact_name }}" || true
+
       - name: Compress Desktop Binary
         shell: bash
         run: |
@@ -68,7 +72,7 @@ jobs:
           cd ..
 
       - name: Publish GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@c062e08bd532815e2082a85e87e3ef29c3e6d191 # v2.0.8
         with:
           files: |
             dist/*.whl
