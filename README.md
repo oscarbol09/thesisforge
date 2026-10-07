@@ -185,7 +185,7 @@ flowchart TD
     JURY --> DB
 ```
 
-Consulta [`ARCHITECTURE.md`](ARCHITECTURE.md) y [`docs/user-guide/MANUAL_DE_USUARIO.md`](docs/user-guide/MANUAL_DE_USUARIO.md) para un desglose exhaustivo.
+Consulta [`ARCHITECTURE.md`](ARCHITECTURE.md) y [`docs/user-guide/MANUAL_DE_USUARIO.md`](docs/user-guide/MANUAL_DE_USUARIO.md) para un desglose detallado.
 
 ---
 
@@ -211,7 +211,7 @@ Consulta [`ARCHITECTURE.md`](ARCHITECTURE.md) y [`docs/user-guide/MANUAL_DE_USUA
 
 - [x] **Sprint 0:** Fundaciones de seguridad, modelos Pydantic v2, configuración BYOK y repositorio base.
 - [x] **Sprint 1:** Router LLM multi-proveedor con reintentos Tenacity, máquina de estados del asesor metodológico y API REST.
-- [x] **Sprint 2:** Motor RAG de literatura académica (Semantic Scholar, ArXiv, CrossRef), extracción de PDFs con PyMuPDF, compuerta anti-alucinaciones e indexación local con ChromaDB (v0.2.0).
+- [x] **Sprint 2:** Motor RAG de literatura académica (Semantic Scholar, ArXiv, CrossRef), extracción de PDFs con PyMuPDF, búsqueda híbrida con Reciprocal Rank Fusion (RRF), flujo PRISMA 2020, compuerta anti-alucinaciones e indexación local con ChromaDB (v0.2.0).
 - [x] **Sprint 3:** Generador modular por capítulos con memoria acumulativa jerárquica, streaming por WebSockets, compilador APA 7 DOCX con defensa CWE-1236 y Manual de Usuario oficial (v0.3.0).
 - [x] **Sprint 4:** Panel multi-agente de simulación de jurado y defensa de tesis (v0.4.0).
 - [x] **Sprint 5:** Interfaz de usuario SPA con Tailwind CSS y lanzador de escritorio con PyWebView (v0.5.0).

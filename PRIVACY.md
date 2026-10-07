@@ -57,7 +57,7 @@ De conformidad con el Reglamento General de Protección de Datos (RGPD UE 2016/6
 
 ## 5. Seguridad de la Información y Bóveda Criptográfica
 
-ThesisForge implementa salvaguardas técnicas robustas:
+ThesisForge implementa las siguientes salvaguardas técnicas:
 - **Cifrado Fernet Autenticado:** Las claves de API se cifran localmente en reposo mediante Fernet (AES-128-CBC + HMAC-SHA256) con clave maestra aislada de 256 bits y permisos de archivo restrictivos (0o600 en POSIX).
 - **SSRF Guard:** Bloqueo estricto de peticiones hacia redes privadas (RFC 1918) y metadatos de computación en la nube.
 - **Sanitización de Logs (CWE-117):** Ofuscación automática de tokens y eliminación de caracteres de control en registros.

@@ -77,7 +77,7 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/
 - **Defensa contra DNS Rebinding (TOCTOU) en SSRFGuard:**
   - Implementación de `CustomAsyncHTTPTransport` que enlaza el socket directamente a la IP validada pre-resuelta, eliminando la ventana de vulnerabilidad entre validación DNS y petición HTTP.
 - **Bóveda de Claves Criptográfica Autenticada:**
-  - Robustecimiento de `LocalKeyVault` con cifrado simétrico autenticado Fernet (AES-128-CBC + HMAC-SHA256), generando un vector de inicialización (IV) criptográfico aleatorio único y marca de tiempo por secreto almacenado.
+  - Mejora de `LocalKeyVault` con cifrado simétrico autenticado Fernet (AES-128-CBC + HMAC-SHA256), generando un vector de inicialización (IV) criptográfico aleatorio único y marca de tiempo por secreto almacenado.
 
 ### Fixed & Improved
 - **Manejo Resiliente de WebSockets (`src/thesisforge/api/routes_defense.py`):**
@@ -99,7 +99,7 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/
   - Desduplicación estricta de referencias bibliográficas combinando normalización de DOIs y tuplas (primer autor, año, título).
   - Jerarquía de 5 niveles de encabezados según estándar APA 7.
 - **Evaluador de Jurados Multi-Agente (`src/thesisforge/jury/evaluator.py`):**
-  - Normalización robusta de roles contra diacríticos y variantes ortográficas.
+  - Normalización de roles contra diacríticos y variantes ortográficas.
   - Ponderaciones calibradas: Metodólogo 35%, Temático 25%, Estadístico 25%, Abogado del Diablo 15%.
   - Regla de veto y umbrales de dictamen alineados ($\ge 95, \ge 80, \ge 70, \ge 50, < 50$).
 - **Suite de Pruebas Automatizadas:**
@@ -218,7 +218,7 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/
   - Sanitización estricta contra Prompt Injection en texto extraído delimitado en prompts con etiquetas semánticas de aislamiento.
   - Motor vectorial local `ChromaVectorStore` sobre ChromaDB con soporte para colecciones por proyecto y embeddings ligeros deterministas (`FastLocalEmbeddingFunction`).
 - **Formateo APA 7ª Edición y Compuerta de Citación:**
-  - Formateador estricto `APA7Formatter` que genera citaciones parentéticas, narrativas y entradas de lista de referencias bajo normas APA 7 (manejo exhaustivo de 1, 2, 3-20 y 21+ autores).
+  - Formateador estricto `APA7Formatter` que genera citaciones parentéticas, narrativas y entradas de lista de referencias bajo normas APA 7 (manejo de 1, 2, 3-20 y 21+ autores).
   - Validador `CitationGuard` que asegura que los DOIs existan y verifica que los fragmentos recuperados realmente respalden las afirmaciones científicas (*claim-evidence grounding*) mediante análisis léxico y verificación asistida por LLM con umbrales configurables.
 - **Endpoints REST y Herramientas CLI:**
   - Rutas FastAPI bajo `/api/literature`: `/search`, `/verify-doi`, `/projects/{id}/documents` y `/projects/{id}/context`.

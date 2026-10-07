@@ -54,7 +54,7 @@ ThesisForge está diseñado bajo los siguientes principios arquitectónicos:
 ## 3. Componentes Principales
 
 ### 3.1 Core de Seguridad (`src/thesisforge/core/`)
-- **`assert_safe_academic_url`:** Previene ataques SSRF resolviendo el DNS y bloqueando rangos IP de subredes privadas RFC 1918, loopback IPv4/IPv6 (`127.0.0.1`, `::1`), direcciones link-local (`169.254.169.254`, `fe80::/10`) y subredes reservadas.
+- **`assert_safe_academic_url`:** Previene ataques SSRF mediante la resolución del DNS y el bloqueo de rangos IP de subredes privadas RFC 1918, loopback IPv4/IPv6 (`127.0.0.1`, `::1`), direcciones link-local (`169.254.169.254`, `fe80::/10`) y subredes reservadas.
 - **`LocalKeyVault`:** Implementa cifrado simétrico Fernet de 256 bits para proteger las claves de API de los usuarios en su base de datos local SQLite.
 - **`StructuredJsonFormatter`:** Emite logs en formato JSON de una sola línea sanitizados contra inyección de saltos de línea (CWE-117) y enmascara tokens sensibles (`sk-...`, `Bearer ...`).
 - **`utc_now`:** Garantiza el uso consistente de marcas de tiempo UTC con zona horaria explícita (`datetime.now(timezone.utc)`).
@@ -66,17 +66,17 @@ ThesisForge está diseñado bajo los siguientes principios arquitectónicos:
 - **`SectionDraftDTO`:** Borrador estructurado de cada capítulo con contador de palabras, citas vinculadas y versión.
 
 ### 3.3 Router LLM (`src/thesisforge/llm/`)
-- **`LLMRouter`:** Gestiona el despacho de peticiones a múltiples proveedores (OpenRouter, Gemini, Groq, Ollama, OpenAI, Anthropic) utilizando `litellm`.
-- **Estrategia de reintentos:** Implementa reintentos asíncronos con `tenacity.AsyncRetrying` y retroceso exponencial, desactivando la espera en entornos de prueba (`environment == "test"`).
-- **Modo JSON estructurado:** Valida y extrae cargas JSON limpiando automáticamente delimitadores de bloques de código markdown.
+- **`LLMRouter`:** Gestiona el despacho de peticiones a múltiples proveedores (OpenRouter, Gemini, Groq, Ollama, OpenAI, Anthropic) mediante `litellm`.
+- **Estrategia de reintentos:** Implementa reintentos asíncronos con `tenacity.AsyncRetrying` y retroceso exponencial, y desactiva la espera en entornos de prueba (`environment == "test"`).
+- **Modo JSON estructurado:** Valida y extrae cargas JSON y limpia automáticamente delimitadores de bloques de código markdown.
 
 ### 3.4 Asesor Metodológico (`src/thesisforge/advisor/`)
 - **`AdvisorStateMachine`:** Controla la secuencia de pasos de la entrevista y calcula el porcentaje de avance.
-- **`MethodologyValidator`:** Ejecuta auditorías de consistencia metodológica verificando la presencia de verbos taxonómicos en infinitivo, la formulación de preguntas y la coherencia de las hipótesis.
-- **`AdvisorService`:** Orquesta la interacción con el usuario y el LLM, actualizando el estado del proyecto en la base de datos.
+- **`MethodologyValidator`:** Ejecuta auditorías de consistencia metodológica y verifica la presencia de verbos taxonómicos en infinitivo, la formulación de preguntas y la coherencia de las hipótesis.
+- **`AdvisorService`:** Orquesta la interacción con el usuario y el LLM, y actualiza el estado del proyecto en la base de datos.
 
 ### 3.5 Persistencia (`src/thesisforge/repository/`)
-- **`DatabaseManager`:** Administra conexiones asíncronas SQLite mediante `aiosqlite`, activando el modo WAL (`journal_mode = WAL`) y el soporte de claves foráneas.
+- **`DatabaseManager`:** Administra conexiones asíncronas SQLite mediante `aiosqlite`, e inicializa el modo WAL (`journal_mode = WAL`) y el soporte de claves foráneas.
 - **`ProjectRepository`:** Proporciona operaciones CRUD transaccionales sobre la tabla `projects`.
 - **`SecureKeyStoreRepository`:** Almacena y recupera claves de API cifradas en la tabla `keystore`.
 
@@ -85,7 +85,8 @@ ThesisForge está diseñado bajo los siguientes principios arquitectónicos:
 - **`AcademicSearchAggregator`:** Orquesta búsquedas concurrentes multi-fuente y desduplica resultados por DOI canónico y firma autor-título-año.
 - **`LiteratureCache`:** Caché persistente en SQLite con TTL configurable (48h) y purga periódica para prevenir rate limits.
 - **`PDFDocumentParser`:** Extractor PyMuPDF con sanitización contra Prompt Injection y chunking estructurado por oraciones completas.
-- **`ChromaVectorStore`:** Motor de indexación vectorial local sobre ChromaDB con embeddings deterministas ligeros (`FastLocalEmbeddingFunction`).
+- **`ChromaVectorStore` y Búsqueda Híbrida RRF:** Motor de indexación vectorial local sobre ChromaDB con embeddings deterministas ligeros (`FastLocalEmbeddingFunction`), complementado con búsqueda híbrida densa/dispersa (BM25) fusionada mediante *Reciprocal Rank Fusion (RRF)*.
+- **Flujo PRISMA 2020:** Trazabilidad estricta de identificación, cribado, elegibilidad e inclusión de literatura científica siguiendo el estándar internacional PRISMA 2020.
 - **`APA7Formatter`:** Formateador estricto de citaciones parentéticas, narrativas y lista de referencias bajo normas APA 7ª edición.
 - **`CitationGuard`:** Validador de DOIs y verificador de respaldo de afirmaciones (*claim-evidence grounding*) con umbrales configurables.
 
