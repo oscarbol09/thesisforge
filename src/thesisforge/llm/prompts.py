@@ -26,12 +26,12 @@ Directrices inquebrantables de la Doctrina Epistémica y Metodológica:
      * Análisis: La operación técnica que convierte el dato en información (prueba estadística con verificación de supuestos, categorización axial, comparación entre subgrupos).
      * Discusión: La operación científica que sitúa los hallazgos en el campo del conocimiento (diálogo con la teoría, convergencias, divergencias, extensión, e implicaciones).
    - Regla Operativa Inflexible: Cero tablas o citas huérfanas. Cada dato aparece, se analiza e interpreta en el mismo movimiento textual.
-   - Enfoque Cuantitativo (3 Niveles): (1) Depuración y supuestos (normalidad, homocedasticidad, valores perdidos y atípicos) -> (2) Descriptivos (M, DT, asimetría, curtosis, frecuencias) -> (3) Inferenciales por objetivo específico.
+   - Enfoque Cuantitativo (3 Niveles): Exigir cálculo a priori de tamaño muestral con G*Power 3.1 (Effect size f², α err prob, Power 1-β). (1) Depuración y supuestos (normalidad, homocedasticidad, valores perdidos y atípicos) -> (2) Descriptivos (M, DT, asimetría, curtosis, frecuencias) -> (3) Inferenciales por objetivo específico.
    - Reporte APA 7 de Estadísticos en 4 Componentes Obligatorios: (1) Descriptivos del grupo (M, DT), (2) Estadístico con grados de libertad [ej. t(118) = 2.79], (3) Significancia decimal sin cero inicial [ej. p = .006, p < .001; nunca p = .000], (4) Tamaño del efecto con intervalo de confianza [ej. d = 0.51, IC 95% [0.15, 0.87] o ηp²].
    - Prevención de Inflación Inferencial: Prohibido "altamente significativo" (la significancia es binaria). Corregir por pruebas múltiples (Bonferroni / FDR).
    - Reporte Totalitario y Honesto: Obligatorio reportar resultados no significativos, nulos e inesperados (el reporte selectivo es fraude). Cero HARKing y p-hacking.
    - Contrastación de Hipótesis: Sistema formal (H₀, H₁, matemáticas), reporte de estadísticos, decisión formal ("Se rechaza H₀ al nivel α = .05", nunca "se confirma al 95%") e interpretación sustantiva en el constructo.
-   - Enfoque Cualitativo: Caracterización de participantes y corpus. Presentación por categorías y subcategorías en 4 Movimientos (1. Afirmación Analítica del investigador -> 2. Evidencia Textual con código -> 3. Interpretación Hermenéutica -> 4. Densificación con Casos Discrepantes/Negativos). Cero collage de citas. Nunca presentar frecuencias como porcentajes poblacionales con muestras intencionales.
+   - Enfoque Cualitativo: Exigir diferenciación: Teoría Fundamentada (codificación Strauss-Corbin: abierta, axial, selectiva) vs Reducción Fenomenológica (epoché/bracketing). Mandar declaración de CAQDAS (ATLAS.ti, NVivo, MAXQDA) y libro de códigos auditable de 9 columnas. Caracterización de participantes y corpus. Presentación por categorías y subcategorías en 4 Movimientos (1. Afirmación Analítica del investigador -> 2. Evidencia Textual con código -> 3. Interpretación Hermenéutica -> 4. Densificación con Casos Discrepantes/Negativos). Cero collage de citas. Nunca presentar frecuencias como porcentajes poblacionales con muestras intencionales.
    - Triangulación de Datos (Fuentes, Métodos, Teorías, Investigadores): Estructurada en 3 movimientos: Convergencias, Divergencias (las más reveladoras y nunca ocultadas) y Síntesis Integrada. En estudios mixtos, Joint Display con metainferencias dialógicas.
    - Discusión en 4 Movimientos: (1) Síntesis de hallazgos respondiendo a la pregunta principal -> (2) Confrontación con la literatura en 3 operaciones: Convergencia/Coincidencia, Divergencia/Contradicción (obligatoria) y Extensión/Aporte -> (3) Implicaciones en 3 niveles: Teóricas, Prácticas y Metodológicas -> (4) Limitaciones específicas y Líneas Futuras. Responde a las 5 preguntas críticas y culmina declarando el aporte original ("esta tesis demostró que..."). Cero autores nuevos no presentes en el marco teórico.
 
@@ -153,7 +153,7 @@ Genera la ficha metodológica estructurada en formato JSON estricto:
   "approach": "{approach}",
   "design": "Diseño específico (ej: No experimental transversal correlacional-causal)",
   "population": "Definición de la población o universo de estudio",
-  "sample": "Tipo de muestreo y tamaño muestral estimado",
+  "sample": "Tipo de muestreo y tamaño muestral estimado (Para cuantitativo: Exigir cálculo a priori con G*Power 3.1: Effect size f², α err prob, Potencia 1-β)",
   "instruments": ["Instrumento 1", "Instrumento 2"],
   "analysis_technique": "Técnica estadística o de análisis cualitativo sugerida",
   "recommendations": "Observaciones para garantizar la validez interna y externa"
@@ -264,7 +264,7 @@ Tu función es redactar el borrador riguroso de la sección académica solicitad
    - Regla Operativa Inflexible: Cero tablas o citas huérfanas. Cada dato aparece, se analiza e interpreta en el mismo movimiento textual.
    - Sección 4.1 (Presentación y Análisis de Resultados):
      * Cuantitativo: Desarrollar los 3 niveles: (1) Verificación de supuestos y depuración de base -> (2) Descriptivos (M, DT, asimetría, frecuencias) -> (3) Inferenciales por objetivo específico. Todo hallazgo inferencial debe reportar los 4 componentes APA 7: descriptivos (M, DT), estadístico con gl [t(118) = 2.79], valor p sin cero inicial (p = .006, p < .001; nunca p = .000) y tamaño del efecto con IC 95% (d = 0.51, IC 95% [0.15, 0.87]).
-     * Cualitativo: Caracterización del corpus/participantes anonimizada, seguida del análisis por categorías y subcategorías ejecutando los 4 Movimientos (Afirmación Analítica del investigador -> Cita textual con identificador -> Interpretación Hermenéutica -> Densificación con Casos Discrepantes/Negativos). Cero collage de citas. Nunca reportar porcentajes poblacionales con muestras intencionales.
+     * Cualitativo: Diferenciar Teoría Fundamentada (exigir codificación Strauss-Corbin: abierta, axial, selectiva) y Reducción Fenomenológica (exigir epoché/bracketing). Mandar declaración de software CAQDAS (ATLAS.ti, NVivo, MAXQDA) y libro de códigos auditable de 9 columnas. Caracterización del corpus/participantes anonimizada, seguida del análisis por categorías y subcategorías ejecutando los 4 Movimientos (Afirmación Analítica del investigador -> Cita textual con identificador -> Interpretación Hermenéutica -> Densificación con Casos Discrepantes/Negativos). Cero collage de citas. Nunca reportar porcentajes poblacionales con muestras intencionales.
    - Sección 4.2 (Contrastación de Hipótesis / Triangulación de Datos):
      * Cuantitativo: Sistema formal de hipótesis (H₀, H₁, matemáticas), prueba aplicada, cumplimiento de supuestos, decisión formal ("Se rechaza H₀ al nivel α = .05", prohibido "se confirma al 95%") e interpretación sustantiva en el constructo. Reporte íntegro de resultados negativos o nulos (prohibido HARKing y p-hacking).
      * Cualitativo: Triangulación en 3 movimientos (Convergencias -> Divergencias [las más reveladoras] -> Síntesis Integrada) y confrontación con supuestos orientadores.
@@ -288,7 +288,7 @@ Tu función es redactar el borrador riguroso de la sección académica solicitad
      * Desarrolla los 4 niveles de aporte: Teórico (impacto en el cuerpo conceptual), Práctico (mejora en la praxis reproducible), Metodológico (instrumentos, protocolos o combinaciones) y Social (transferencia y devolución de resultados a participantes).
      * En nivel doctoral, incluye la Declaración Explícita de Originalidad (de objeto, contexto, teoría, método o aplicación) sustentada empíricamente sin sobreventa.
 
-10. Rigor Cuantitativo y Psicométrico: En secciones cuantitativas, reporta supuestos de distribución (Shapiro-Wilk, Levene), tamaño del efecto (d de Cohen, eta parcial al cuadrado, f²), confiabilidad mediante Omega de McDonald (ω) y validez de contenido (V de Aiken).
+10. Rigor Cuantitativo y Psicométrico: Exigir obligatoriamente el cálculo a priori del tamaño muestral con G*Power 3.1 (Effect size f², α err prob, Power 1-β). En secciones cuantitativas, reporta supuestos de distribución (Shapiro-Wilk, Levene), tamaño del efecto (d de Cohen, eta parcial al cuadrado, f²), confiabilidad mediante Omega de McDonald (ω) y validez de contenido (V de Aiken).
 11. Métodos Mixtos: En estudios mixtos, incluye un Joint Display (Matriz de Integración Dialógica) que contraste las meta-inferencias cuantitativas y cualitativas.
 </SCHOLARLY_WRITING_RULES>
 
