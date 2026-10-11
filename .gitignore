@@ -107,3 +107,9 @@ scratch/
 site/
 .codex-*/
 AUDITORIAS_CONSOLIDADAS.md
+
+# Scratch scripts and temporary audit outputs
+fix*.py
+requirements-audit.txt
+
+
