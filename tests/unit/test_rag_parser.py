@@ -109,3 +109,26 @@ def test_pdf_document_parser_encrypted_pdf():
             title="Encrypted doc",
             year=2024,
         )
+
+
+def test_chunker_does_not_pollute_chunk_text_with_quarantine_tags():
+    """Verify that chunks contain clean textual sentences without leaking whole-document <source> tags."""
+    chunker = SentenceAwareChunker(target_chunk_size=300, chunk_overlap=50)
+    raw_doc = (
+        "Primer enunciado del documento académico sobre optimización de rutas. "
+        "Segundo enunciado detallando el método cuantitativo y la muestra probabilística. "
+        "Tercer enunciado que describe los instrumentos psicométricos aplicados. "
+        "Cuarto enunciado que analiza la correlación bivariada de Pearson entre las variables. "
+        "Quinto enunciado que concluye el análisis experimental con significancia p menor a 0.001."
+    )
+    chunks = chunker.chunk_text(
+        text=raw_doc,
+        project_id="p1",
+        document_id="d1",
+        title="Test Doc",
+    )
+    assert len(chunks) >= 2
+    for chunk in chunks:
+        assert "<source>" not in chunk.text
+        assert "</source>" not in chunk.text
+        assert chunk.text.strip().endswith(".")

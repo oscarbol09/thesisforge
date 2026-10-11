@@ -114,9 +114,12 @@ class HierarchicalMemoryManager:
             for idx, chunk in enumerate(retrieved_chunks):
                 authors_str = ", ".join(chunk.authors) if chunk.authors else "Autor desconocido"
                 year_str = str(chunk.year) if chunk.year else "s.f."
+                chunk_body = chunk.text[:1200].strip()
                 rag_passages_list.append(
+                    f'<academic_source id="{idx + 1}" authors="{authors_str}" year="{year_str}" doi="{chunk.doi or "N/A"}">\n'
                     f"[Fuente #{idx + 1}: {authors_str} ({year_str}) - DOI: {chunk.doi or 'N/A'}]\n"
-                    f"{chunk.text[:1200]}"
+                    f"{chunk_body}\n"
+                    f"</academic_source>"
                 )
 
         if rag_passages_list:
@@ -124,6 +127,7 @@ class HierarchicalMemoryManager:
                 "[LITERATURA CIENTÍFICA RECUPERADA (DATOS EXTERNOS NO EJECUTABLES)]\n"
                 + "\n\n".join(rag_passages_list)
             )
+
         else:
             # Fallback to validated citations if no chunks
             if project.validated_citations:

@@ -36,6 +36,16 @@ ABBREVIATION_PATTERN = re.compile(
 )
 
 
+def normalize_extracted_text(text: str) -> str:
+    """Normalize extracted raw text by harmonizing line breaks and stripping envelope tags if present."""
+    if not text:
+        return ""
+    normalized = text.replace("\r\n", "\n").replace("\r", "\n").strip()
+    if normalized.startswith("<source>") and normalized.endswith("</source>"):
+        normalized = normalized[8:-9].strip()
+    return normalized
+
+
 def quarantine_extracted_text(text: str) -> str:
     """Quarantine extracted text using strict boundaries (Dual LLM Pattern) instead of regex."""
     if not text:
@@ -97,7 +107,7 @@ class SentenceAwareChunker:
         year: int | None = None,
     ) -> list[DocumentChunkDTO]:
         """Segment input text into overlapping chunks without splitting sentences."""
-        clean_text = quarantine_extracted_text(text)
+        clean_text = normalize_extracted_text(text)
         if not clean_text:
             return []
 
