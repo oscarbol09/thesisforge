@@ -89,8 +89,9 @@ class FastLocalEmbeddingFunction(EmbeddingFunction[Documents]):
     def __call__(self, input: Documents) -> Any:  # noqa: A002
         embeddings: list[list[float]] = []
         for doc in input:
-            tokens = re.findall(r"\w+", str(doc).lower())
+            tokens = re.findall(r"\w+", doc.lower())
             vec = [0.0] * self.dimensions
+
             if not tokens:
                 embeddings.append(vec)
                 continue
@@ -149,8 +150,9 @@ class SentenceTransformerEmbeddingFunction(EmbeddingFunction[Documents]):
         return "sentence_transformer"
 
     def __call__(self, input: Documents) -> Any:  # noqa: A002
-        texts = [str(doc) for doc in input]
+        texts = list(input)
         embeddings = self._model.encode(texts, normalize_embeddings=True)
+
         return embeddings.tolist()
 
 
@@ -395,7 +397,12 @@ class ChromaVectorStore:
 
         try:
             collection = self._get_or_create_collection(project_id)
-        except Exception:
+        except Exception as err:
+            logger.error(
+                "Failed to access or initialize ChromaDB collection.",
+                extra={"project_id": project_id, "error": str(err)},
+                exc_info=True,
+            )
             return []
 
         where_clause: dict[str, Any] | None = None
@@ -422,16 +429,16 @@ class ChromaVectorStore:
 
         ids_list = ids_raw[0]
         docs_raw = results.get("documents")
-        docs_list = docs_raw[0] if docs_raw and len(docs_raw) > 0 else []
+        docs_list: list[Any] = docs_raw[0] if docs_raw and len(docs_raw) > 0 else []
         metas_raw = results.get("metadatas")
-        metas_list = metas_raw[0] if metas_raw and len(metas_raw) > 0 else []
+        metas_list: list[Any] = metas_raw[0] if metas_raw and len(metas_raw) > 0 else []
         dist_raw = results.get("distances")
-        distances = dist_raw[0] if dist_raw and len(dist_raw) > 0 else []
+        distances: list[Any] = dist_raw[0] if dist_raw and len(dist_raw) > 0 else []
 
         candidate_chunks: list[tuple[DocumentChunkDTO, float, float]] = []
         for idx, chunk_id in enumerate(ids_list):
             doc_text = str(docs_list[idx]) if idx < len(docs_list) else ""
-            meta_item = metas_list[idx] if idx < len(metas_list) else {}
+            meta_item = metas_list[idx] if idx < len(metas_list) else None
             meta: dict[str, Any] = dict(meta_item) if isinstance(meta_item, dict) else {}
 
             # Cosine distance to similarity score: similarity = 1 - distance
@@ -505,7 +512,12 @@ class ChromaVectorStore:
                 extra={"project_id": project_id, "document_id": document_id},
             )
             return 1
-        except Exception:
+        except Exception as err:
+            logger.warning(
+                "Could not delete document chunks from ChromaDB.",
+                extra={"project_id": project_id, "document_id": document_id, "error": str(err)},
+                exc_info=True,
+            )
             return 0
 
     async def delete_project_collection(self, project_id: str) -> None:

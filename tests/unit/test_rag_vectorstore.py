@@ -194,3 +194,53 @@ def test_bm25_lexical_scoring_and_rrf():
     # doc_b is 2nd in dense and 1st in lexical: (1/62) + (1/61) = ~0.0325
     # doc_a is 1st in dense and 3rd in lexical: (1/61) + (1/63) = ~0.0322
     assert rrf["doc_b"] > rrf["doc_a"] > rrf["doc_c"]
+
+
+@pytest.mark.asyncio
+async def test_chroma_query_chunks_logs_error_when_collection_fails(
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Verify that query_chunks logs an error with diagnostics instead of silently swallowing collection failures."""
+    import logging
+
+    store = ChromaVectorStore(is_memory=True)
+
+    def mock_get_col(project_id: str) -> None:
+        raise RuntimeError("ChromaDB storage engine crashed")
+
+    monkeypatch.setattr(store, "_get_or_create_collection", mock_get_col)
+
+    with caplog.at_level(logging.ERROR):
+        results = await store.query_chunks(project_id="proj_fail", query="Machine learning")
+        assert results == []
+
+    assert any(
+        "Failed to access or initialize ChromaDB collection" in record.message
+        for record in caplog.records
+    )
+
+
+@pytest.mark.asyncio
+async def test_chroma_delete_document_chunks_logs_warning_on_failure(
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Verify that delete_document_chunks logs warning diagnostics instead of silently swallowing delete errors."""
+    import logging
+
+    store = ChromaVectorStore(is_memory=True)
+
+    def mock_get_col(name: str) -> None:
+        raise RuntimeError("ChromaDB delete lock failure")
+
+    monkeypatch.setattr(store._client, "get_collection", mock_get_col)
+
+    with caplog.at_level(logging.WARNING):
+        res = await store.delete_document(project_id="proj_fail", document_id="doc_fail")
+        assert res == 0
+
+    assert any(
+        "Could not delete document chunks from ChromaDB" in record.message
+        for record in caplog.records
+    )
