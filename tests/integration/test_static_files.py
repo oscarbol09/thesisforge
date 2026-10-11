@@ -69,3 +69,28 @@ async def test_security_csp_headers_contain_spa_allowlists() -> None:
         assert "cdn.jsdelivr.net" in csp
         assert "cdnjs.cloudflare.com" in csp
         assert "connect-src" in csp
+
+
+@pytest.mark.asyncio
+async def test_index_html_meta_csp_matches_headers() -> None:
+    """Verify that gui/index.html's meta CSP tag explicitly includes required CDN domains."""
+    import re
+    from pathlib import Path
+
+    index_path = Path("gui/index.html")
+    assert index_path.is_file()
+    content = index_path.read_text(encoding="utf-8")
+
+    # Match content attribute of Content-Security-Policy meta tag
+    match = re.search(
+        r'<meta\s+http-equiv=["\']Content-Security-Policy["\']\s+content="([^"]+)"',
+        content,
+        re.IGNORECASE,
+    )
+    assert match is not None, "Content-Security-Policy meta tag not found in gui/index.html"
+    csp_meta = match.group(1)
+
+    # Required CDNs must be permitted in the meta CSP script-src
+    assert "https://cdn.tailwindcss.com" in csp_meta
+    assert "https://cdn.jsdelivr.net" in csp_meta
+    assert "https://cdnjs.cloudflare.com" in csp_meta
