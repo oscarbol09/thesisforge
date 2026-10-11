@@ -9,7 +9,11 @@ from urllib.parse import urlparse
 
 from cryptography.fernet import Fernet, InvalidToken
 
+from thesisforge.core.logging import get_logger
 from thesisforge.exceptions import KeyVaultError, SSRFBlockedError
+
+logger = get_logger(__name__)
+
 
 # Subnets explicitly blocked to eliminate Server-Side Request Forgery (SSRF)
 BLOCKED_SUBNETS = [
@@ -160,8 +164,20 @@ def resolve_or_create_master_key(
             content = target_path.read_bytes().strip()
             if content:
                 return content
-        except OSError:
-            pass
+            logger.warning(
+                "Master key file at '%s' is empty; generating a new key.",
+                target_path,
+            )
+        except OSError as err:
+            logger.error(
+                "Failed to read existing master key file at '%s'. Aborting to avoid accidental overwrite.",
+                target_path,
+                extra={"error": str(err)},
+            )
+            raise KeyVaultError(
+                f"No fue posible leer la clave maestra existente en '{target_path}'. "
+                f"Se detiene la ejecución para evitar la sobreescritura accidental de secretos. Causa: {err}"
+            ) from err
 
     new_key = Fernet.generate_key()
     try:

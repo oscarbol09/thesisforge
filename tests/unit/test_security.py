@@ -1,4 +1,4 @@
-"""Unit tests for security components: SSRF Guard, LocalKeyVault, and Logging."""
+from pathlib import Path
 
 import pytest
 
@@ -118,3 +118,23 @@ def test_assert_safe_academic_url_allowed(monkeypatch: pytest.MonkeyPatch):
     url = "https://api.semanticscholar.org/graph/v1/paper/search?query=RAG"
     validated = assert_safe_academic_url(url)
     assert validated == url
+
+
+def test_resolve_or_create_master_key_raises_on_unreadable_file(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Test that resolve_or_create_master_key fails securely when key file exists but cannot be read."""
+    from thesisforge.core.security import resolve_or_create_master_key
+
+    key_file = tmp_path / "master.key"
+    key_file.write_bytes(b"existing-secret-key")
+
+    def mock_read_bytes(self: Path) -> bytes:
+        if self == key_file:
+            raise OSError("Simulated disk read permission error")
+        return b""
+
+    monkeypatch.setattr(Path, "read_bytes", mock_read_bytes)
+
+    with pytest.raises(KeyVaultError, match="No fue posible leer la clave maestra existente"):
+        resolve_or_create_master_key(master_key=None, key_file_path=key_file)
