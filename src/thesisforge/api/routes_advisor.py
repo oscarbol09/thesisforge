@@ -64,3 +64,30 @@ async def get_consistency_matrix(
     """Retrieve or construct the 6-pillar methodological consistency matrix and validity audit."""
     matrix = await service.get_consistency_matrix(project_id)
     return matrix.model_dump()
+
+
+class AssistDraftRequest(BaseModel):
+    """Request payload for AI assisted drafting with cumulative context."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    component: str = Field(
+        description="Component name e.g. justification, objectives, scope_limitations"
+    )
+    user_instructions: str = Field(default="", max_length=10000)
+    auto_apply: bool = Field(default=True)
+
+
+@router.post("/{project_id}/assist-draft")
+async def assist_drafting(
+    project_id: str,
+    payload: AssistDraftRequest,
+    service: AdvisorService = Depends(get_advisor_service),
+) -> dict[str, Any]:
+    """Generate collaborative draft for research components using cumulative context injection."""
+    return await service.assist_drafting(
+        project_id=project_id,
+        component=payload.component,
+        user_instructions=payload.user_instructions,
+        auto_apply=payload.auto_apply,
+    )

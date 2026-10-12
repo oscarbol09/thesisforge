@@ -139,6 +139,83 @@ Genera una formulación coherente en formato JSON estricto:
 }}
 """
 
+JUSTIFICATION_ASSIST_PROMPT = """Redacta la Justificación e Importancia de la Investigación manteniendo coherencia acumulativa con el problema y el título definidos:
+
+Título: {title}
+Nivel Académico: {academic_level}
+Área y Tema: {area_of_study} - {topic}
+Planteamiento del Problema:
+\"\"\"
+{research_problem}
+\"\"\"
+Pregunta de Investigación: {research_question}
+
+Directrices adicionales del investigador:
+\"\"\"
+{user_instructions}
+\"\"\"
+
+Reglas metodológicas obligatorias:
+1. Desarrolla de forma articulada y fluida las cuatro dimensiones científicas:
+   - Dimensión Teórica: aportes a modelos, vacíos conceptuales o discusión disciplinar.
+   - Dimensión Práctica / Social: beneficiarios tangibles en el contexto local y solución a un dolor concreto.
+   - Dimensión Metodológica: aportes en instrumentos, protocolos de recolección o validaciones para futuras investigaciones.
+   - Dimensión Educativa / Institucional: alineación con prioridades académicas o institucionales.
+2. Cierra obligatoriamente con el párrafo de Formulación Negativa: qué consecuencias adversas, vacíos o costos persistirán si esta investigación NO se realiza.
+3. Prosa académica continua en español formal, densa y sin clichés de relleno.
+
+Genera una respuesta en formato JSON estricto:
+{{
+  "draft_text": "Texto completo y fluido de la justificación redactado en prosa académica continua...",
+  "dimensions": {{
+    "teorica": "Síntesis del aporte teórico...",
+    "practica_social": "Síntesis del beneficio social/práctico...",
+    "metodologica": "Síntesis del aporte metodológico...",
+    "educativa_institucional": "Síntesis de la relevancia institucional..."
+  }},
+  "formulacion_negativa": "Párrafo explícito de formulación negativa...",
+  "critique": "Evaluación metodológica de la solidez de la justificación redactada"
+}}
+"""
+
+SCOPE_LIMITATIONS_ASSIST_PROMPT = """Estructura la Delimitación y las Limitaciones de la Investigación a partir del problema y objetivos:
+
+Título: {title}
+Nivel Académico: {academic_level}
+Problema: {research_problem}
+Objetivo General: {general_objective}
+Enfoque: {approach}
+
+Directrices del estudiante:
+\"\"\"
+{user_instructions}
+\"\"\"
+
+Reglas metodológicas:
+1. Delimitaciones (fronteras voluntarias): espacial (lugar exacto), temporal (periodo), conceptual (variables eje) y poblacional (universo).
+2. Limitaciones (restricciones reales involuntarias): redactadas con la fórmula de 4 pasos (Restricción -> Efecto potencial -> Mitigación metodológica -> Afirmación explícita de lo que NO se hará).
+
+Genera una respuesta en formato JSON estricto:
+{{
+  "draft_text": "Texto completo integrando delimitaciones y limitaciones...",
+  "delimitations": {{
+    "espacial": "Delimitación espacial...",
+    "temporal": "Delimitación temporal...",
+    "conceptual": "Delimitación conceptual...",
+    "poblacional": "Delimitación poblacional..."
+  }},
+  "limitations": [
+    {{
+      "restriction": "Restricción identificada...",
+      "potential_effect": "Efecto potencial en los resultados...",
+      "mitigation": "Estrategia metodológica de mitigación...",
+      "explicit_exclusion": "Lo que explícitamente no se intentará generalizar o hacer..."
+    }}
+  ],
+  "critique": "Evaluación del rigor y honestidad epistemológica de las delimitaciones y limitaciones"
+}}
+"""
+
 METHODOLOGY_DESIGN_PROMPT = """Evalúa y estructura el marco metodológico:
 Nivel: {academic_level}
 Pregunta: {research_question}

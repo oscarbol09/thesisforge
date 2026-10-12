@@ -11,6 +11,7 @@ function advisorComponent() {
     isLoadingStatus: false,
     isProcessingStep: false,
     isApproving: false,
+    isAssistingDraft: false,
     userInput: '',
     advisorResponse: null,
 
@@ -318,6 +319,49 @@ function advisorComponent() {
       }
     },
 
+    async requestAssistedDraft(component) {
+      const project = Alpine.store('app').activeProject;
+      if (!project) return;
+      if (!this.formData.title && !project.title) {
+        Alpine.store('app').toast('warning', 'Prerrequisito Faltante', 'Define primero el título o área de investigación antes de solicitar la redacción asistida.');
+        return;
+      }
+      if (component === 'objectives' && !this.formData.research_question && !project.research_question) {
+        Alpine.store('app').toast('warning', 'Prerrequisito Faltante', 'Formula primero la Pregunta de Investigación en el Paso 4 para garantizar el isomorfismo metodológico (OG ≡ PG).');
+        return;
+      }
+
+      this.isAssistingDraft = true;
+      try {
+        const result = await Alpine.store('app').api(`/api/advisor/${project.id}/assist-draft`, {
+          method: 'POST',
+          body: JSON.stringify({
+            component: component,
+            user_instructions: this.userInput || '',
+            auto_apply: true,
+          })
+        });
+
+        if (component === 'justification' && result.draft_text) {
+          this.formData.justification = result.draft_text;
+        } else if (component === 'scope_limitations' && result.draft_text) {
+          this.formData.scope_limitations = result.draft_text;
+        } else if (component === 'objectives') {
+          if (result.general_objective) this.formData.general_objective = result.general_objective;
+          if (result.specific_objectives && result.specific_objectives.length > 0) {
+            this.formData.specific_objectives = [...result.specific_objectives];
+          }
+        }
+
+        Alpine.store('app').toast('success', 'Redacción Asistida Generada', `El apartado fue estructurado inyectando obligatoriamente el contexto ontológico previo.`);
+        await Alpine.store('app').refreshActiveProject();
+      } catch (err) {
+        // Error toast handled in api()
+      } finally {
+        this.isAssistingDraft = false;
+      }
+    },
+
     render() {
       const project = Alpine.store('app').activeProject;
       if (!project) {
@@ -478,7 +522,13 @@ function advisorComponent() {
                       <div>
                         <div class="flex items-center justify-between mb-1">
                           <label for="adv-justification" class="block text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">Justificación en 4 Dimensiones & Formulación Negativa</label>
-                          <span class="text-[11px] text-[var(--text-muted)]">Teórica • Práctica • Metodológica • Educativa</span>
+                          <div class="flex items-center gap-2">
+                            <span class="text-[11px] text-[var(--text-muted)]">Teórica • Práctica • Metodológica • Educativa</span>
+                            <button type="button" @click="requestAssistedDraft('justification')" :disabled="isAssistingDraft" class="btn btn-secondary btn-xs flex items-center gap-1 cursor-pointer">
+                              <svg class="w-3 h-3 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                              <span x-text="isAssistingDraft ? 'Generando...' : 'Asistir con IA'"></span>
+                            </button>
+                          </div>
                         </div>
                         <textarea id="adv-justification" x-model="formData.justification" rows="4" class="w-full text-sm leading-relaxed" placeholder="• Dimensión Teórica: Vacío conceptual y modelos a contrastar...&#10;• Dimensión Práctica/Social: Utilidad tangible para la población y resolución de problemas...&#10;• Dimensión Metodológica: Nuevos instrumentos, algoritmos o protocolos aportados...&#10;• Dimensión Educativa/Institucional: Impacto formativo u organizacional...&#10;• Formulación Negativa: ¿Qué consecuencias adversas, pérdidas o vacíos persistirán si este estudio NO se realiza?"></textarea>
                       </div>
@@ -486,7 +536,13 @@ function advisorComponent() {
                       <div>
                         <div class="flex items-center justify-between mb-1">
                           <label for="adv-scope" class="block text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">Delimitaciones & Limitaciones de la Investigación</label>
-                          <span class="text-[11px] text-[var(--text-muted)]">Fronteras Elegidas vs. Restricciones en 4 Pasos</span>
+                          <div class="flex items-center gap-2">
+                            <span class="text-[11px] text-[var(--text-muted)]">Fronteras Elegidas vs. Restricciones</span>
+                            <button type="button" @click="requestAssistedDraft('scope_limitations')" :disabled="isAssistingDraft" class="btn btn-secondary btn-xs flex items-center gap-1 cursor-pointer">
+                              <svg class="w-3 h-3 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                              <span x-text="isAssistingDraft ? 'Generando...' : 'Asistir con IA'"></span>
+                            </button>
+                          </div>
                         </div>
                         <textarea id="adv-scope" x-model="formData.scope_limitations" rows="3" class="w-full text-sm leading-relaxed" placeholder="• Delimitación: Espacial (ciudad/sede), Temporal (2025-2026), Poblacional (cohorte específica) y Conceptual.&#10;• Limitaciones (Fórmula de 4 pasos): 1. Declaración de la restricción real -> 2. Efecto potencial -> 3. Estrategia de mitigación -> 4. Afirmación que el estudio NO realizará."></textarea>
                       </div>
@@ -539,7 +595,13 @@ function advisorComponent() {
                             <span class="block text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">Objetivos Específicos (Secuencia Metodológica: 3 a 5 Objetivos)</span>
                             <span class="text-[11px] text-[var(--text-muted)]">1. Fase Diagnóstica/Caracterización → 2. Fase de Diseño/Intervención → 3. Fase de Evaluación/Impacto</span>
                           </div>
-                          <button type="button" class="btn btn-secondary btn-sm" @click="addSpecificObjective()">+ Agregar Objetivo</button>
+                          <div class="flex items-center gap-2">
+                            <button type="button" @click="requestAssistedDraft('objectives')" :disabled="isAssistingDraft" class="btn btn-secondary btn-xs flex items-center gap-1 cursor-pointer">
+                              <svg class="w-3 h-3 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                              <span x-text="isAssistingDraft ? 'Generando...' : 'Formular con IA'"></span>
+                            </button>
+                            <button type="button" class="btn btn-secondary btn-sm" @click="addSpecificObjective()">+ Agregar Objetivo</button>
+                          </div>
                         </div>
                         
                         <div class="space-y-2">

@@ -14,9 +14,11 @@ from thesisforge.exceptions import MethodologyValidationError
 from thesisforge.llm.prompts import (
     ADVISOR_SYSTEM_PROMPT,
     CONSISTENCY_AUDIT_PROMPT,
+    JUSTIFICATION_ASSIST_PROMPT,
     METHODOLOGY_DESIGN_PROMPT,
     OBJECTIVES_PROMPT,
     PROBLEM_FORMULATION_PROMPT,
+    SCOPE_LIMITATIONS_ASSIST_PROMPT,
 )
 from thesisforge.llm.router import LLMRouter
 from thesisforge.models import (
@@ -27,6 +29,7 @@ from thesisforge.models import (
     QualitativeCategoryDTO,
     ResearchApproach,
     SamplingTechnique,
+    SectionStatus,
     VariableOperationalizationDTO,
 )
 from thesisforge.repository.project_repository import ProjectRepository
@@ -501,3 +504,126 @@ class AdvisorService:
             },
         )
         return matrix
+
+    async def assist_drafting(
+        self,
+        project_id: str,
+        component: str,
+        user_instructions: str = "",
+        auto_apply: bool = True,
+    ) -> dict[str, Any]:
+        """Generate collaborative draft for research components with cumulative context injection.
+
+        Enforces epistemological coherence:
+        - Justification: 4 dimensions (theoretical, practical/social, methodological, educational/institutional) + negative formulation.
+        - Objectives: Isomorphic OG = PG in infinitive, Bloom taxonomy progression across 3 phases.
+        - Scope & Limitations: 4-boundary delimitations and 4-step involuntary limitations formula.
+        """
+        project = await self.repo.get_project(project_id)
+
+        # Validation of essential prerequisites
+        if not (
+            project.title
+            and (project.research_problem or project.research_question or project.topic)
+        ):
+            raise MethodologyValidationError(
+                "Faltan datos previos metodológicos (título y problema/pregunta) para asistir en la redacción."
+            )
+
+        sanitized_instructions = self.quarantine_input(user_instructions)
+        target_section_id: str | None = None
+        result: dict[str, Any]
+
+        if component == "justification":
+            prompt = JUSTIFICATION_ASSIST_PROMPT.format(
+                title=project.title or "Sin definir",
+                academic_level=project.academic_level.value
+                if hasattr(project.academic_level, "value")
+                else str(project.academic_level),
+                area_of_study=project.area_of_study or "Sin definir",
+                topic=project.topic or "Sin definir",
+                research_problem=project.research_problem or "Sin definir",
+                research_question=project.research_question or "Sin definir",
+                user_instructions=sanitized_instructions,
+            )
+            result = await self.llm.complete_json(
+                prompt=prompt, system_prompt=ADVISOR_SYSTEM_PROMPT
+            )
+            target_section_id = "sec_1_4"
+
+            if auto_apply:
+                draft_content = result.get("draft_text", "")
+                project.justification = draft_content
+
+        elif component == "objectives":
+            prompt = OBJECTIVES_PROMPT.format(
+                research_problem=project.research_problem or "Sin definir",
+                research_question=project.research_question or "Sin definir",
+                approach=project.methodology.approach.value
+                if project.methodology and project.methodology.approach
+                else "General",
+                academic_level=project.academic_level.value
+                if hasattr(project.academic_level, "value")
+                else str(project.academic_level),
+                user_input=sanitized_instructions,
+            )
+            result = await self.llm.complete_json(
+                prompt=prompt, system_prompt=ADVISOR_SYSTEM_PROMPT
+            )
+            target_section_id = "sec_1_3"
+
+            if auto_apply:
+                project.general_objective = result.get("general_objective", "")
+                project.specific_objectives = result.get("specific_objectives", [])
+                if not result.get("draft_text"):
+                    obj_lines = [
+                        f"Objetivo General:\n{project.general_objective}\n",
+                        "Objetivos Específicos:",
+                    ]
+                    for idx, spec in enumerate(project.specific_objectives, 1):
+                        obj_lines.append(f"{idx}. {spec}")
+                    result["draft_text"] = "\n".join(obj_lines)
+
+        elif component == "scope_limitations":
+            prompt = SCOPE_LIMITATIONS_ASSIST_PROMPT.format(
+                title=project.title or "Sin definir",
+                academic_level=project.academic_level.value
+                if hasattr(project.academic_level, "value")
+                else str(project.academic_level),
+                research_problem=project.research_problem or "Sin definir",
+                general_objective=project.general_objective or "Sin definir",
+                approach=project.methodology.approach.value
+                if project.methodology and project.methodology.approach
+                else "General",
+                user_instructions=sanitized_instructions,
+            )
+            result = await self.llm.complete_json(
+                prompt=prompt, system_prompt=ADVISOR_SYSTEM_PROMPT
+            )
+            target_section_id = "sec_1_5"
+
+        else:
+            raise MethodologyValidationError(
+                f"Componente de redacción asistida '{component}' no reconocido. "
+                "Valores admitidos: justification, objectives, scope_limitations."
+            )
+
+        if auto_apply and target_section_id:
+            draft_text = result.get("draft_text", "")
+            for sec in project.sections:
+                if sec.section_id == target_section_id:
+                    sec.content = draft_text
+                    sec.status = SectionStatus.READY_FOR_REVIEW
+                    break
+
+            await self.repo.update_project(project)
+            logger.info(
+                "Assisted draft automatically applied to project state and chapter sections.",
+                extra={
+                    "project_id": project_id,
+                    "component": component,
+                    "section_id": target_section_id,
+                },
+            )
+
+        return result
