@@ -14,6 +14,7 @@ from thesisforge.models import (
     CitationDTO,
     DocumentChunkDTO,
     EvidenceVerdictDTO,
+    LiteratureCategory,
 )
 from thesisforge.rag.apa_formatter import APA7Formatter
 from thesisforge.rag.service import RAGService
@@ -35,6 +36,7 @@ class QueryContextRequest(BaseModel):
     top_k: int = Field(default=5, ge=1, le=20)
     min_score: float = Field(default=0.0, ge=0.0, le=1.0)
     section_filter: str | None = None
+    categories: list[LiteratureCategory] | None = None
 
 
 class VerifyClaimRequest(BaseModel):
@@ -98,9 +100,10 @@ async def index_pdf_file(
     file: UploadFile = File(...),
     title: str | None = Form(None),
     doi: str | None = Form(None),
+    category: LiteratureCategory = Form(LiteratureCategory.GENERAL),
     rag: RAGService = Depends(get_rag_service),
 ) -> list[DocumentChunkDTO]:
-    """Upload and index a PDF research paper into the project's vector database."""
+    """Upload and index a PDF research paper into the project's vector database with category isolation."""
     if not file.filename or not file.filename.lower().endswith(".pdf"):
         raise DocumentProcessingError("El archivo debe ser un documento PDF válido (.pdf).")
 
@@ -126,6 +129,7 @@ async def index_pdf_file(
         pdf_bytes=pdf_bytes,
         title=doc_title,
         doi=doi,
+        category=category,
     )
 
 
@@ -141,6 +145,7 @@ async def query_relevant_context(
         top_k=request.top_k,
         min_score=request.min_score,
         section_filter=request.section_filter,
+        categories=request.categories,
     )
 
 
@@ -191,10 +196,11 @@ async def add_citation_to_project(
 @router.get("/projects/{project_id}/documents")
 async def get_project_documents(
     project_id: str,
+    category: str | None = Query(None, description="Filtrar por categoría académica"),
     rag: RAGService = Depends(get_rag_service),
 ) -> list[dict[str, Any]]:
-    """Retrieve all indexed documents and their ChromaDB status for a project."""
-    return await rag.get_document_index_statuses(project_id)
+    """Retrieve all indexed documents and their ChromaDB status for a project, optionally filtered by category."""
+    return await rag.get_document_index_statuses(project_id, category_filter=category)
 
 
 @router.delete("/projects/{project_id}/documents/{document_id}")

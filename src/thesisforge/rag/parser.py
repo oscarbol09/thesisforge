@@ -7,7 +7,7 @@ import pymupdf as fitz
 
 from thesisforge.core.logging import get_logger
 from thesisforge.exceptions import DocumentProcessingError
-from thesisforge.models import DocumentChunkDTO
+from thesisforge.models import DocumentChunkDTO, LiteratureCategory
 
 logger = get_logger(__name__)
 
@@ -215,6 +215,7 @@ class PDFDocumentParser:
         doi: str | None = None,
         authors: list[str] | None = None,
         year: int | None = None,
+        category: LiteratureCategory | str = LiteratureCategory.GENERAL,
     ) -> list[DocumentChunkDTO]:
         """Extract text page-by-page from raw PDF bytes and chunk into DocumentChunkDTOs."""
         if not pdf_bytes:
@@ -235,6 +236,7 @@ class PDFDocumentParser:
         all_chunks: list[DocumentChunkDTO] = []
         current_section = "Introduction"
         global_chunk_idx = 0
+        cat_enum = LiteratureCategory(category) if isinstance(category, str) else category
 
         try:
             for page_num in range(len(doc)):
@@ -258,6 +260,7 @@ class PDFDocumentParser:
 
                 for chunk in page_chunks:
                     chunk.chunk_index = global_chunk_idx
+                    chunk.category = cat_enum
                     global_chunk_idx += 1
                     all_chunks.append(chunk)
 

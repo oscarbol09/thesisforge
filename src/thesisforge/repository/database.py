@@ -90,6 +90,7 @@ CREATE TABLE IF NOT EXISTS document_index_status (
     chunk_count  INTEGER NOT NULL DEFAULT 0,
     title        TEXT NOT NULL DEFAULT '',
     doi          TEXT,
+    category     TEXT NOT NULL DEFAULT 'general',
     error_msg    TEXT,
     created_at   TEXT NOT NULL,
     updated_at   TEXT NOT NULL,
@@ -102,6 +103,9 @@ CREATE INDEX IF NOT EXISTS idx_doc_index_status_project
 
 CREATE INDEX IF NOT EXISTS idx_doc_index_status_status
     ON document_index_status(project_id, status);
+
+CREATE INDEX IF NOT EXISTS idx_doc_index_status_category
+    ON document_index_status(project_id, category);
 
 CREATE TABLE IF NOT EXISTS jury_evaluations (
     id TEXT PRIMARY KEY,

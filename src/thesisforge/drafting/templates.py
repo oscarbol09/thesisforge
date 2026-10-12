@@ -3,7 +3,13 @@
 from dataclasses import dataclass
 from typing import Literal
 
-from thesisforge.models import AcademicLevel, ResearchApproach, SectionDraftDTO, SectionStatus
+from thesisforge.models import (
+    AcademicLevel,
+    LiteratureCategory,
+    ResearchApproach,
+    SectionDraftDTO,
+    SectionStatus,
+)
 
 
 @dataclass(frozen=True)
@@ -30,6 +36,7 @@ class SectionTemplate:
     section_type: Literal["introduction", "theory", "methods", "results", "conclusions"] = (
         "introduction"
     )
+    allowed_literature_categories: tuple[LiteratureCategory, ...] = (LiteratureCategory.GENERAL,)
 
 
 CANONICAL_THESIS_OUTLINE: list[SectionTemplate] = [
@@ -89,6 +96,7 @@ CANONICAL_THESIS_OUTLINE: list[SectionTemplate] = [
         guidance="Estructura cada antecedente con autor, año, objetivo, metodología y aporte relevante.",
         requires_rag=True,
         section_type="theory",
+        allowed_literature_categories=(LiteratureCategory.ANTECEDENTES, LiteratureCategory.GENERAL),
     ),
     SectionTemplate(
         section_id="sec_2_2",
@@ -99,6 +107,10 @@ CANONICAL_THESIS_OUTLINE: list[SectionTemplate] = [
         guidance="Confronta posturas de autores clave y fundamenta el modelo conceptual adoptado.",
         requires_rag=True,
         section_type="theory",
+        allowed_literature_categories=(
+            LiteratureCategory.MARCO_TEORICO,
+            LiteratureCategory.GENERAL,
+        ),
     ),
     SectionTemplate(
         section_id="sec_2_3",
@@ -109,6 +121,11 @@ CANONICAL_THESIS_OUTLINE: list[SectionTemplate] = [
         guidance="Define con precisión técnica y respaldo bibliográfico los términos indispensables.",
         requires_rag=True,
         section_type="theory",
+        allowed_literature_categories=(
+            LiteratureCategory.MARCO_CONCEPTUAL,
+            LiteratureCategory.MARCO_TEORICO,
+            LiteratureCategory.GENERAL,
+        ),
     ),
     SectionTemplate(
         section_id="sec_2_4",
@@ -119,6 +136,11 @@ CANONICAL_THESIS_OUTLINE: list[SectionTemplate] = [
         guidance="Define variables independientes, dependientes e intervinientes con sus indicadores.",
         applicable_approaches=(ResearchApproach.CUANTITATIVO, ResearchApproach.MIXTO),
         section_type="theory",
+        allowed_literature_categories=(
+            LiteratureCategory.MARCO_TEORICO,
+            LiteratureCategory.METODOLOGIA,
+            LiteratureCategory.GENERAL,
+        ),
     ),
     # --- CAPÍTULO 3: MARCO METODOLÓGICO ---
     SectionTemplate(
@@ -129,6 +151,7 @@ CANONICAL_THESIS_OUTLINE: list[SectionTemplate] = [
         description="Justificación del paradigma epistemológico, alcance (descriptivo, correlacional, explicativo) y diseño.",
         guidance="Articula el método con la naturaleza de la pregunta de investigación.",
         section_type="methods",
+        allowed_literature_categories=(LiteratureCategory.METODOLOGIA, LiteratureCategory.GENERAL),
     ),
     SectionTemplate(
         section_id="sec_3_2",
@@ -138,6 +161,7 @@ CANONICAL_THESIS_OUTLINE: list[SectionTemplate] = [
         description="Caracterización del universo poblacional, cálculo muestral y criterios de inclusión/exclusión.",
         guidance="Detalla si el muestreo es probabilístico o no probabilístico y la representatividad.",
         section_type="methods",
+        allowed_literature_categories=(LiteratureCategory.METODOLOGIA, LiteratureCategory.GENERAL),
     ),
     SectionTemplate(
         section_id="sec_3_3",
@@ -147,6 +171,7 @@ CANONICAL_THESIS_OUTLINE: list[SectionTemplate] = [
         description="Descripción de cuestionarios, entrevistas, fichas de observación y pruebas de validez/confiabilidad.",
         guidance="Presenta el coeficiente Alfa de Cronbach / juicio de expertos o rigor cualitativo.",
         section_type="methods",
+        allowed_literature_categories=(LiteratureCategory.METODOLOGIA, LiteratureCategory.GENERAL),
     ),
     SectionTemplate(
         section_id="sec_3_4",
@@ -156,6 +181,7 @@ CANONICAL_THESIS_OUTLINE: list[SectionTemplate] = [
         description="Software estadístico o cualitativo utilizado y pruebas estadísticas aplicadas.",
         guidance="Describe pruebas de normalidad, contraste de hipótesis o análisis temático reflexivo.",
         section_type="methods",
+        allowed_literature_categories=(LiteratureCategory.METODOLOGIA, LiteratureCategory.GENERAL),
     ),
     SectionTemplate(
         section_id="sec_3_5",
@@ -165,6 +191,11 @@ CANONICAL_THESIS_OUTLINE: list[SectionTemplate] = [
         description="Consentimiento informado, confidencialidad, no maleficencia y trazabilidad.",
         guidance="Garantiza el cumplimiento de comités de ética institucionales.",
         section_type="methods",
+        allowed_literature_categories=(
+            LiteratureCategory.MARCO_LEGAL,
+            LiteratureCategory.METODOLOGIA,
+            LiteratureCategory.GENERAL,
+        ),
     ),
     # --- CAPÍTULO 4: RESULTADOS Y DISCUSIÓN ---
     SectionTemplate(
@@ -194,6 +225,11 @@ CANONICAL_THESIS_OUTLINE: list[SectionTemplate] = [
         guidance="Responde a las 5 preguntas de la discusión. Confronta divergencias con antecedentes y declara explícitamente el aporte original ('esta tesis demostró que...').",
         requires_rag=True,
         section_type="results",
+        allowed_literature_categories=(
+            LiteratureCategory.ANTECEDENTES,
+            LiteratureCategory.MARCO_TEORICO,
+            LiteratureCategory.GENERAL,
+        ),
     ),
     # --- CAPÍTULO 5: CONCLUSIONES Y RECOMENDACIONES ---
     SectionTemplate(

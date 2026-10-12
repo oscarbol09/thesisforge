@@ -151,6 +151,11 @@ V5_PROJECT_OWNER_ID = """
 CREATE TABLE IF NOT EXISTS _migration_v5_guard (id INTEGER PRIMARY KEY);
 """
 
+V6_DOCUMENT_CATEGORY = """
+-- Migration v6: Academic literature categorization for isolated RAG clustering
+CREATE TABLE IF NOT EXISTS _migration_v6_guard (id INTEGER PRIMARY KEY);
+"""
+
 
 async def _v3_add_version_column(db: aiosqlite.Connection) -> None:
     """Safely add the version column to projects if it does not already exist."""
@@ -169,6 +174,22 @@ async def _v5_add_owner_id_column(db: aiosqlite.Connection) -> None:
         await db.execute("ALTER TABLE projects ADD COLUMN owner_id TEXT NOT NULL DEFAULT 'local';")
         await db.execute("CREATE INDEX IF NOT EXISTS idx_projects_owner_id ON projects(owner_id);")
         logger.info("Migration v5: added 'owner_id' column and index to projects table.")
+
+
+async def _v6_add_category_column(db: aiosqlite.Connection) -> None:
+    """Safely add the category column to document_index_status if it does not already exist."""
+    async with db.execute("PRAGMA table_info(document_index_status);") as cursor:
+        cols = [row[1] async for row in cursor]
+    if "category" not in cols:
+        await db.execute(
+            "ALTER TABLE document_index_status ADD COLUMN category TEXT NOT NULL DEFAULT 'general';"
+        )
+        await db.execute(
+            "CREATE INDEX IF NOT EXISTS idx_doc_index_status_category ON document_index_status(project_id, category);"
+        )
+        logger.info(
+            "Migration v6: added 'category' column and index to document_index_status table."
+        )
 
 
 ALL_MIGRATIONS: list[Migration] = [
@@ -190,6 +211,12 @@ ALL_MIGRATIONS: list[Migration] = [
         name="v5_project_owner_id",
         up_sql=V5_PROJECT_OWNER_ID,
         up_callable=_v5_add_owner_id_column,
+    ),
+    Migration(
+        version=6,
+        name="v6_document_category",
+        up_sql=V6_DOCUMENT_CATEGORY,
+        up_callable=_v6_add_category_column,
     ),
 ]
 

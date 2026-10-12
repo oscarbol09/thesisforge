@@ -25,6 +25,7 @@ import asyncio
 import hashlib
 import math
 import re
+from collections.abc import Sequence
 from pathlib import Path
 from typing import Any, Protocol, runtime_checkable
 
@@ -35,7 +36,7 @@ from chromadb.config import Settings as ChromaSettings
 from thesisforge.core.logging import get_logger
 from thesisforge.exceptions import RAGIndexError
 from thesisforge.llm.router import LLMRouter
-from thesisforge.models import DocumentChunkDTO
+from thesisforge.models import DocumentChunkDTO, LiteratureCategory
 
 logger = get_logger(__name__)
 
@@ -343,6 +344,9 @@ class ChromaVectorStore:
         for chunk in chunks:
             ids.append(chunk.id)
             documents.append(chunk.text)
+            cat_val = (
+                chunk.category.value if hasattr(chunk.category, "value") else str(chunk.category)
+            )
             metadatas.append(
                 {
                     "project_id": chunk.project_id,
@@ -354,6 +358,7 @@ class ChromaVectorStore:
                     "page_number": chunk.page_number,
                     "chunk_index": chunk.chunk_index,
                     "section_name": chunk.section_name,
+                    "category": cat_val,
                     "char_start": chunk.char_start,
                     "char_end": chunk.char_end,
                 }
@@ -384,6 +389,7 @@ class ChromaVectorStore:
         top_k: int = 5,
         min_score: float = 0.0,
         section_filter: str | None = None,
+        categories: Sequence[LiteratureCategory | str] | None = None,
         hybrid: bool = True,
     ) -> list[DocumentChunkDTO]:
         """Perform hybrid semantic and lexical retrieval with Reciprocal Rank Fusion (RRF).
@@ -405,9 +411,22 @@ class ChromaVectorStore:
             )
             return []
 
-        where_clause: dict[str, Any] | None = None
+        where_conditions: list[dict[str, Any]] = []
         if section_filter:
-            where_clause = {"section_name": section_filter}
+            where_conditions.append({"section_name": section_filter})
+
+        if categories:
+            cat_strings = [c.value if hasattr(c, "value") else str(c) for c in categories]
+            if len(cat_strings) == 1:
+                where_conditions.append({"category": cat_strings[0]})
+            elif len(cat_strings) > 1:
+                where_conditions.append({"category": {"$in": cat_strings}})
+
+        where_clause: dict[str, Any] | None = None
+        if len(where_conditions) == 1:
+            where_clause = where_conditions[0]
+        elif len(where_conditions) > 1:
+            where_clause = {"$and": where_conditions}
 
         query_embeddings = self.embedding_function([clean_query])
         # In hybrid mode, retrieve a wider candidate pool to allow RRF re-ranking
@@ -455,6 +474,12 @@ class ChromaVectorStore:
             year_val = meta.get("year")
             year_int = int(year_val) if year_val else None
 
+            cat_raw = meta.get("category", meta.get("section_name", "general"))
+            try:
+                cat_enum = LiteratureCategory(cat_raw)
+            except ValueError:
+                cat_enum = LiteratureCategory.GENERAL
+
             chunk_dto = DocumentChunkDTO(
                 id=chunk_id,
                 document_id=str(meta.get("document_id", "")),
@@ -466,6 +491,7 @@ class ChromaVectorStore:
                 page_number=int(meta.get("page_number", 1)),
                 chunk_index=int(meta.get("chunk_index", 0)),
                 section_name=str(meta.get("section_name", "body")),
+                category=cat_enum,
                 text=doc_text,
                 char_start=int(meta.get("char_start", 0)),
                 char_end=int(meta.get("char_end", 0)),

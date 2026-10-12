@@ -2,6 +2,7 @@
 
 import asyncio
 import json
+from collections.abc import Sequence
 
 from thesisforge.core.logging import get_logger
 from thesisforge.core.time import format_iso_utc, utc_now
@@ -12,6 +13,7 @@ from thesisforge.models import (
     CitationDTO,
     DocumentChunkDTO,
     EvidenceVerdictDTO,
+    LiteratureCategory,
 )
 from thesisforge.rag.apa_formatter import APA7Formatter
 from thesisforge.rag.cache import LiteratureCache
@@ -88,6 +90,7 @@ class RAGService:
         chunk_count: int = 0,
         title: str = "",
         doi: str | None = None,
+        category: str = "general",
         error_msg: str | None = None,
     ) -> None:
         """Write or update a row in document_index_status.
@@ -100,14 +103,15 @@ class RAGService:
             await conn.execute(
                 """
                 INSERT INTO document_index_status
-                    (document_id, project_id, status, chunk_count, title, doi, error_msg,
+                    (document_id, project_id, status, chunk_count, title, doi, category, error_msg,
                      created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(document_id, project_id) DO UPDATE SET
                     status      = excluded.status,
                     chunk_count = excluded.chunk_count,
                     title       = excluded.title,
                     doi         = excluded.doi,
+                    category    = excluded.category,
                     error_msg   = excluded.error_msg,
                     updated_at  = excluded.updated_at
                 """,
@@ -118,6 +122,7 @@ class RAGService:
                     chunk_count,
                     title,
                     doi,
+                    category,
                     error_msg,
                     now_str,
                     now_str,
@@ -125,25 +130,31 @@ class RAGService:
             )
             await conn.commit()
 
-    async def get_document_index_statuses(self, project_id: str) -> list[dict[str, object]]:
+    async def get_document_index_statuses(
+        self, project_id: str, category_filter: str | None = None
+    ) -> list[dict[str, object]]:
         """Return indexing status for every document in a project.
 
-        Useful for the UI to show PENDING / INDEXED / FAILED badges per document.
+        Useful for the UI to show PENDING / INDEXED / FAILED badges per document,
+        optionally filtered by category cluster.
         """
         # Validate ownership to prevent IDOR enumerating other tenants' documents
         await self.repo.get_project(project_id)
 
+        query = """
+            SELECT document_id, status, chunk_count, title, doi, category, error_msg,
+                   created_at, updated_at
+            FROM document_index_status
+            WHERE project_id = ?
+        """
+        params: list[object] = [project_id]
+        if category_filter:
+            query += " AND category = ?"
+            params.append(category_filter)
+        query += " ORDER BY created_at DESC"
+
         async with self.db.get_connection() as conn:
-            cursor = await conn.execute(
-                """
-                SELECT document_id, status, chunk_count, title, doi, error_msg,
-                       created_at, updated_at
-                FROM document_index_status
-                WHERE project_id = ?
-                ORDER BY created_at DESC
-                """,
-                (project_id,),
-            )
+            cursor = await conn.execute(query, tuple(params))
             rows = await cursor.fetchall()
         return [dict(row) for row in rows]
 
@@ -236,6 +247,7 @@ class RAGService:
         doi: str | None = None,
         authors: list[str] | None = None,
         year: int | None = None,
+        category: LiteratureCategory | str = LiteratureCategory.GENERAL,
     ) -> list[DocumentChunkDTO]:
         """Extract text from PDF, chunk into sentence-aware units, and index into SQLite and ChromaDB.
 
@@ -247,6 +259,8 @@ class RAGService:
         # Ensure project exists
         await self.repo.get_project(project_id)
 
+        cat_str = category.value if hasattr(category, "value") else str(category)
+
         # Mark as PENDING so the UI knows indexing is in progress
         await self._upsert_index_status(
             project_id=project_id,
@@ -254,6 +268,7 @@ class RAGService:
             status="pending",
             title=title,
             doi=doi,
+            category=cat_str,
         )
 
         try:
@@ -266,6 +281,7 @@ class RAGService:
                 doi=doi,
                 authors=authors,
                 year=year,
+                category=category,
             )
         except Exception as err:
             await self._upsert_index_status(
@@ -274,6 +290,7 @@ class RAGService:
                 status="failed",
                 title=title,
                 doi=doi,
+                category=cat_str,
                 error_msg=f"PDF parsing failed: {err}",
             )
             raise DocumentProcessingError(
@@ -287,6 +304,7 @@ class RAGService:
                 status="failed",
                 title=title,
                 doi=doi,
+                category=cat_str,
                 error_msg="PDF yielded zero extractable text chunks.",
             )
             raise DocumentProcessingError(
@@ -308,6 +326,7 @@ class RAGService:
                         "doi": chunk.doi,
                         "authors": chunk.authors,
                         "year": chunk.year,
+                        "category": cat_str,
                         "char_start": chunk.char_start,
                         "char_end": chunk.char_end,
                     }
@@ -334,6 +353,7 @@ class RAGService:
                 chunk_count=len(chunks),
                 title=title,
                 doi=doi,
+                category=cat_str,
                 error_msg=f"SQLite persist failed: {err}",
             )
             raise DocumentProcessingError(
@@ -353,6 +373,7 @@ class RAGService:
                 chunk_count=len(chunks),
                 title=title,
                 doi=doi,
+                category=cat_str,
                 error_msg=f"ChromaDB indexing failed (SQLite chunks intact): {err}",
             )
             raise DocumentProcessingError(
@@ -367,6 +388,7 @@ class RAGService:
             chunk_count=len(chunks),
             title=title,
             doi=doi,
+            category=cat_str,
         )
 
         # Update master project state: record indexed document ID and auto-register citation
@@ -454,6 +476,7 @@ class RAGService:
         top_k: int = 5,
         min_score: float = 0.0,
         section_filter: str | None = None,
+        categories: Sequence[LiteratureCategory | str] | None = None,
     ) -> list[DocumentChunkDTO]:
         """Retrieve top semantic chunks matching a research question or topic."""
         return await self.vector_store.query_chunks(
@@ -462,6 +485,7 @@ class RAGService:
             top_k=top_k,
             min_score=min_score,
             section_filter=section_filter,
+            categories=categories,
         )
 
     async def add_citation_to_project(

@@ -113,11 +113,17 @@ class DraftService:
 
         template = HierarchicalMemoryManager.get_section_template(section.section_id)
         query_text = f"{section.title} {template.description if template else ''}"
+        categories = (
+            list(template.allowed_literature_categories)
+            if template and template.allowed_literature_categories
+            else None
+        )
         try:
             return await self.rag.query_relevant_chunks(
                 project_id=project.id,
                 query=query_text,
                 top_k=top_k,
+                categories=categories,
             )
         except Exception as e:
             logger.warning(

@@ -23,11 +23,13 @@ function literatureComponent() {
     pdfFile: null,
     pdfTitle: '',
     pdfDoi: '',
+    pdfCategory: 'general',
     isUploadingPdf: false,
     uploadProgressText: '',
 
     // Indexed Documents State
     indexedDocuments: [],
+    categoryFilter: 'all',
     isLoadingDocuments: false,
     deletingDocId: null,
 
@@ -55,12 +57,19 @@ function literatureComponent() {
       });
     },
 
-    async loadDocuments() {
+    async loadDocuments(category = null) {
       const project = Alpine.store('app').activeProject;
       if (!project) return;
+      if (category !== null) {
+        this.categoryFilter = category;
+      }
       this.isLoadingDocuments = true;
       try {
-        const docs = await Alpine.store('app').api(`/api/literature/projects/${project.id}/documents`, { silent: true });
+        let url = `/api/literature/projects/${project.id}/documents`;
+        if (this.categoryFilter && this.categoryFilter !== 'all') {
+          url += `?category=${encodeURIComponent(this.categoryFilter)}`;
+        }
+        const docs = await Alpine.store('app').api(url, { silent: true });
         this.indexedDocuments = docs || [];
       } catch (err) {
         // silent fallback
@@ -215,6 +224,7 @@ function literatureComponent() {
         const formData = new FormData();
         formData.append('project_id', project.id);
         formData.append('file', file);
+        formData.append('category', this.pdfCategory || 'general');
         if (this.pdfTitle.trim()) formData.append('title', this.pdfTitle.trim());
         if (this.pdfDoi.trim()) formData.append('doi', this.pdfDoi.trim());
 
@@ -223,10 +233,11 @@ function literatureComponent() {
           body: formData,
         });
 
-        Alpine.store('app').toast('success', 'PDF Indexado y Citado', `Se extrajeron ${chunks.length} fragmentos semánticos, guardados en ChromaDB y agregados a las citas del proyecto.`);
+        Alpine.store('app').toast('success', 'PDF Indexado y Segmentado', `Se extrajeron ${chunks.length} fragmentos clasificados como "${this.pdfCategory}", guardados en ChromaDB y citados.`);
         this.pdfFile = null;
         this.pdfTitle = '';
         this.pdfDoi = '';
+        this.pdfCategory = 'general';
         if (event.target) event.target.value = '';
         await this.loadDocuments();
         await Alpine.store('app').refreshActiveProject();
@@ -415,10 +426,21 @@ function literatureComponent() {
                 <span class="text-xs text-[var(--text-muted)]">Extracción con PyMuPDF + Chunking semántico</span>
               </div>
 
-              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
                 <div class="sm:col-span-1">
                   <label class="block text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-1">Archivo PDF *</label>
                   <input type="file" accept=".pdf" @change="uploadPdfFile($event)" :disabled="isUploadingPdf" class="w-full text-xs file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:bg-blue-50 file:text-blue-700 dark:file:bg-blue-950 dark:file:text-blue-300">
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-1">Categoría Académica *</label>
+                  <select x-model="pdfCategory" class="w-full text-xs">
+                    <option value="general">General</option>
+                    <option value="antecedentes">Antecedentes</option>
+                    <option value="marco_teorico">Marco Teórico</option>
+                    <option value="marco_conceptual">Marco Conceptual</option>
+                    <option value="marco_legal">Marco Legal</option>
+                    <option value="metodologia">Metodología</option>
+                  </select>
                 </div>
                 <div>
                   <label class="block text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-1">Título del Artículo (opcional)</label>
@@ -453,6 +475,17 @@ function literatureComponent() {
                 </button>
               </div>
 
+              <!-- Category Filter Tabs -->
+              <div class="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
+                <button @click="loadDocuments('all')" :class="categoryFilter === 'all' ? 'bg-indigo-600 text-white font-semibold' : 'bg-[var(--bg-subtle)] text-[var(--text-secondary)] hover:bg-[var(--bg-surface)]'" class="px-2.5 py-1 rounded text-xs transition-colors cursor-pointer">Todos</button>
+                <button @click="loadDocuments('antecedentes')" :class="categoryFilter === 'antecedentes' ? 'bg-indigo-600 text-white font-semibold' : 'bg-[var(--bg-subtle)] text-[var(--text-secondary)] hover:bg-[var(--bg-surface)]'" class="px-2.5 py-1 rounded text-xs transition-colors cursor-pointer">Antecedentes</button>
+                <button @click="loadDocuments('marco_teorico')" :class="categoryFilter === 'marco_teorico' ? 'bg-indigo-600 text-white font-semibold' : 'bg-[var(--bg-subtle)] text-[var(--text-secondary)] hover:bg-[var(--bg-surface)]'" class="px-2.5 py-1 rounded text-xs transition-colors cursor-pointer">Marco Teórico</button>
+                <button @click="loadDocuments('marco_conceptual')" :class="categoryFilter === 'marco_conceptual' ? 'bg-indigo-600 text-white font-semibold' : 'bg-[var(--bg-subtle)] text-[var(--text-secondary)] hover:bg-[var(--bg-surface)]'" class="px-2.5 py-1 rounded text-xs transition-colors cursor-pointer">Marco Conceptual</button>
+                <button @click="loadDocuments('marco_legal')" :class="categoryFilter === 'marco_legal' ? 'bg-indigo-600 text-white font-semibold' : 'bg-[var(--bg-subtle)] text-[var(--text-secondary)] hover:bg-[var(--bg-surface)]'" class="px-2.5 py-1 rounded text-xs transition-colors cursor-pointer">Marco Legal</button>
+                <button @click="loadDocuments('metodologia')" :class="categoryFilter === 'metodologia' ? 'bg-indigo-600 text-white font-semibold' : 'bg-[var(--bg-subtle)] text-[var(--text-secondary)] hover:bg-[var(--bg-surface)]'" class="px-2.5 py-1 rounded text-xs transition-colors cursor-pointer">Metodología</button>
+                <button @click="loadDocuments('general')" :class="categoryFilter === 'general' ? 'bg-indigo-600 text-white font-semibold' : 'bg-[var(--bg-subtle)] text-[var(--text-secondary)] hover:bg-[var(--bg-surface)]'" class="px-2.5 py-1 rounded text-xs transition-colors cursor-pointer">General</button>
+              </div>
+
               <!-- Empty State for Indexed Docs -->
               <div x-show="indexedDocuments.length === 0 && !isLoadingDocuments" class="p-6 text-center rounded-lg bg-[var(--bg-subtle)] border border-[var(--border-subtle)] space-y-2">
                 <svg class="w-8 h-8 text-[var(--text-muted)] mx-auto opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
@@ -471,6 +504,7 @@ function literatureComponent() {
                           :class="doc.status === 'indexed' ? 'badge-success' : (doc.status === 'pending' ? 'badge-warning' : 'badge-critical')"
                           x-text="doc.status === 'indexed' ? ('Indexado • ' + (doc.chunk_count || 0) + ' fragmentos') : (doc.status === 'pending' ? 'Procesando...' : 'Error')"
                         ></span>
+                        <span class="badge text-[10px] bg-purple-50 text-purple-700 dark:bg-purple-950 dark:text-purple-300 border border-purple-200 dark:border-purple-800 uppercase font-mono" x-text="(doc.category || 'general').replace('_', ' ')"></span>
                         <span x-show="doc.doi" class="text-[11px] font-mono text-[var(--text-muted)] truncate" x-text="'DOI: ' + doc.doi"></span>
                       </div>
                       <h4 class="text-sm font-semibold text-[var(--text-primary)] truncate" x-text="doc.title || doc.document_id"></h4>

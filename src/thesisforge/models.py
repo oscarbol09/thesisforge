@@ -18,6 +18,17 @@ class AcademicLevel(StrEnum):
     DOCTORADO = "doctorado"
 
 
+class LiteratureCategory(StrEnum):
+    """Academic destination and conceptual classification of indexed research documents."""
+
+    ANTECEDENTES = "antecedentes"
+    MARCO_TEORICO = "marco_teorico"
+    MARCO_CONCEPTUAL = "marco_conceptual"
+    MARCO_LEGAL = "marco_legal"
+    METODOLOGIA = "metodologia"
+    GENERAL = "general"
+
+
 class ResearchApproach(StrEnum):
     """Methodological approach."""
 
@@ -156,6 +167,7 @@ class CitationDTO(BaseModel):
     # Evidence traceability fields (Sprint 2)
     chunk_id: str | None = Field(default=None, max_length=100)
     section_name: str | None = Field(default=None, max_length=200)
+    category: LiteratureCategory = Field(default=LiteratureCategory.GENERAL)
     page_number: int | None = Field(default=None, ge=1)
     relevance_score: float | None = Field(default=None, ge=0.0, le=1.0)
     supports_claim: bool = False
@@ -184,6 +196,7 @@ class DocumentChunkDTO(BaseModel):
     page_number: int = Field(default=1, ge=1)
     chunk_index: int = Field(default=0, ge=0)
     section_name: str = Field(default="body", max_length=200)
+    category: LiteratureCategory = Field(default=LiteratureCategory.GENERAL)
     text: str = Field(min_length=1)
     char_start: int = 0
     char_end: int = 0
