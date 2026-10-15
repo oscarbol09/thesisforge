@@ -47,14 +47,30 @@ logger = get_logger(__name__)
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     """Inject strict security headers into all HTTP responses.
 
-    CSP rationale
-    -------------
-    - script-src: 'self' + the three trusted CDNs used in gui/index.html.
-      No 'unsafe-inline': all JS is in external files under gui/js/.
-    - style-src: 'unsafe-inline' is kept for now because Tailwind CDN injects
-      dynamic <style> tags at runtime.  A future build step (tailwindcss CLI)
-      would eliminate this.
-    - connect-src includes ws:/wss: for potential WebSocket support.
+    Content-Security-Policy (CSP) Architecture & Rationale:
+    -------------------------------------------------------
+    - default-src 'self': Restricts fallback resource loading strictly to same-origin.
+    - script-src:
+      * 'self' + trusted CDNs (Tailwind CDN, Cloudflare CDN, jsDelivr CDN).
+      * 'unsafe-eval' (Justification): Required by Alpine.js (v3.x) core reactivity
+        engine. Alpine evaluates DOM directive expressions (`x-data`, `x-if`, `@click`,
+        `x-text`) at runtime using dynamic JavaScript Function constructors.
+      * No 'unsafe-inline': Scripts are separated into external files under `gui/js/`.
+    - style-src:
+      * 'unsafe-inline' (Justification): The Tailwind CSS Play CDN script dynamically
+        scans DOM classnames and injects runtime `<style>` elements into `<head>`.
+      * Google Fonts (`fonts.googleapis.com`) for typography.
+    - font-src: Google Fonts CDN (`fonts.gstatic.com`) and same-origin fonts.
+    - connect-src: API queries and WebSocket telemetry channels (`ws:`, `wss:`).
+
+    v1.0.0 Packaged Deployment Migration Plan:
+    ------------------------------------------
+    In the forthcoming v1.0.0 production package, ThesisForge will transition from CDN-based
+    prototyping to a hermetic local build pipeline (Tailwind CLI + Vite/esbuild + Alpine CSP build).
+    This transition will:
+      1. Precompile all Tailwind utilities into a single static CSS bundle (eliminating 'unsafe-inline').
+      2. Bundle vendor scripts and utilize Alpine's CSP-compliant build (eliminating 'unsafe-eval').
+      3. Eliminate all runtime CDN external domain dependencies for fully offline, air-gapped security.
     """
 
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
@@ -68,14 +84,17 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["Content-Security-Policy"] = (
             "default-src 'self'; "
             "img-src 'self' data: https:; "
-            # No 'unsafe-inline' — all scripts are in external files under gui/js/.
-            # 'unsafe-eval' is required by Alpine.js for reactive expression parsing.
+            # Script-src rationale:
+            # - No 'unsafe-inline' for scripts; all GUI logic resides in external files (gui/js/).
+            # - 'unsafe-eval' is required by Alpine.js v3 runtime expression evaluation.
+            # - In v1.0.0 packaged release, a local pre-bundled build will remove 'unsafe-eval' and CDNs.
             "script-src 'self' 'unsafe-eval' "
             "https://cdn.tailwindcss.com "
             "https://cdnjs.cloudflare.com "
             "https://cdn.jsdelivr.net; "
-            # 'unsafe-inline' kept only for style-src: Tailwind CDN injects <style> tags.
-            # Remove once the project migrates to a proper CSS build pipeline.
+            # Style-src rationale:
+            # - 'unsafe-inline' is temporarily required because Tailwind CDN injects dynamic <style> tags.
+            # - In v1.0.0, Tailwind CLI will compile static CSS, removing 'unsafe-inline'.
             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
             "font-src 'self' https://fonts.gstatic.com; "
             "connect-src 'self' ws: wss: https:;"

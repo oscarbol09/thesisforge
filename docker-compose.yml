@@ -7,8 +7,29 @@ services:
       dockerfile: Dockerfile
     container_name: thesisforge-server
     restart: unless-stopped
+    # -------------------------------------------------------------------------
+    # SECURITY & LOCAL-FIRST NETWORK POSTURE (Auditoría Hallazgos 6, 7 & 8):
+    #
+    # 1. Enlace Local Estricto (Host Port Binding):
+    #    Por defecto, enlazamos exclusivamente a 127.0.0.1 (localhost).
+    #    Esto previene la exposición accidental del servidor en todas las
+    #    interfaces de red del host (0.0.0.0), protegiendo la API en redes
+    #    públicas o compartidas.
+    #
+    # 2. Modelo de Seguridad y Almacenamiento Criptográfico:
+    #    ThesisForge opera bajo un modelo local-first / single-tenant. El token
+    #    de instancia (master authentication) y las claves del vault de cifrado
+    #    (Fernet) se persisten en el volumen 'thesisforge_home'.
+    #
+    # 3. Despliegue en Redes Externas / Producción:
+    #    Si requiere acceso multi-usuario o exposición a redes corporativas/Internet:
+    #    - NO exponga el puerto 8000 directamente a 0.0.0.0 sin intermediarios.
+    #    - Despliegue obligatoriamente un Reverse Proxy perimetral (Nginx, Caddy
+    #      o Traefik) con terminación TLS/HTTPS y autenticación corporativa
+    #      (OAuth2/OIDC, Basic Auth o mTLS).
+    # -------------------------------------------------------------------------
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
     environment:
       - THESISFORGE_HOST=0.0.0.0
       - THESISFORGE_PORT=8000
