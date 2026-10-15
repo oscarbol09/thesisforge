@@ -213,6 +213,12 @@ class EvidenceVerdictDTO(BaseModel):
     confidence_score: float = Field(ge=0.0, le=1.0)
     supporting_chunks: list[CitationDTO] = Field(default_factory=list)
     refuting_or_missing_reason: str = ""
+    epistemic_notice: str = Field(
+        default=(
+            "Evaluación heurística y semántica en fragmentos indexados. "
+            "No constituye verificación ontológica ni validación metodológica concluyente del estudio original."
+        )
+    )
 
 
 class AcademicSearchResultDTO(BaseModel):
@@ -451,6 +457,8 @@ class JurorDimensionScoreDTO(BaseModel):
     feedback: str = Field(default="", max_length=3000)
     strengths: list[str] = Field(default_factory=list)
     flaws: list[str] = Field(default_factory=list)
+    is_fallback: bool = Field(default=False)
+    is_synthetic_persona: bool = Field(default=True)
 
 
 class JuryEvaluationReportDTO(BaseModel):
@@ -470,6 +478,20 @@ class JuryEvaluationReportDTO(BaseModel):
     ai_failure_gate_passed: bool = True
     ai_failure_risk_score: float = 0.0
     ai_failure_findings: list[dict[str, Any]] = Field(default_factory=list)
+    scoring_rubric: dict[str, float] = Field(
+        default_factory=lambda: {
+            "methodology": 0.35,
+            "literature": 0.25,
+            "empirical": 0.25,
+            "critical": 0.15,
+        }
+    )
+    rubric_notice: str = Field(
+        default=(
+            "Puntuación heurística orientativa con fines pedagógicos de autoevaluación. "
+            "No constituye certificación psicométrica estandarizada ni dictamen oficial universitario."
+        )
+    )
     created_at: datetime = Field(default_factory=utc_now)
 
 
