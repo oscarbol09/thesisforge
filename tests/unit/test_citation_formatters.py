@@ -1,9 +1,12 @@
 """Comprehensive unit and property tests for IEEE and Vancouver citation formatters."""
 
+import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 
-from thesisforge.models import CitationDTO
+from thesisforge.models import CitationDTO, DocumentChunkDTO
+from thesisforge.rag.citation_guard import CitationGuard
+from thesisforge.rag.clients.crossref import CrossRefClient
 from thesisforge.rag.ieee_formatter import IEEEFormatter, _is_corporate_author, _parse_ieee_author
 from thesisforge.rag.vancouver_formatter import (
     VancouverFormatter,
@@ -426,3 +429,100 @@ def test_property_vancouver_reference_entry_invariants(
     assert str(year) in entry
     if len(authors) > 6:
         assert ", et al." in entry
+
+
+# ---------------------------------------------------------------------------
+# Unit Tests: CitationGuard Epistemic Notice & Negation Asymmetry
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_citation_guard_verdict_includes_epistemic_notice() -> None:
+    """Verify verify_claim_evidence includes the epistemic notice in verdicts."""
+    crossref = CrossRefClient()
+    guard = CitationGuard(crossref_client=crossref)
+
+    verdict_empty = await guard.verify_claim_evidence(claim="", retrieved_chunks=[])
+    assert verdict_empty.epistemic_notice is not None
+    assert "ontológica" in verdict_empty.epistemic_notice
+
+    verdict_no_chunks = await guard.verify_claim_evidence(
+        claim="El modelo converge en grafos densos", retrieved_chunks=[]
+    )
+    assert verdict_no_chunks.epistemic_notice is not None
+    assert "ontológica" in verdict_no_chunks.epistemic_notice
+
+    chunk = DocumentChunkDTO(
+        id="c_epi",
+        document_id="d_epi",
+        project_id="p_epi",
+        text="El modelo converge en grafos densos de manera eficiente y robusta.",
+    )
+    verdict_grounded = await guard.verify_claim_evidence(
+        claim="El modelo converge en grafos densos",
+        retrieved_chunks=[chunk],
+    )
+    assert verdict_grounded.epistemic_notice is not None
+    assert "ontológica" in verdict_grounded.epistemic_notice
+
+    await crossref.close()
+
+
+@pytest.mark.asyncio
+async def test_citation_guard_negation_asymmetry_penalizes_overlap() -> None:
+    """Negation asymmetry between claim and chunk must penalize score to avoid false support."""
+    crossref = CrossRefClient()
+    guard = CitationGuard(crossref_client=crossref)
+
+    # 1. Claim has 'no', chunk is affirmative
+    chunk_affirmative = DocumentChunkDTO(
+        id="c_aff",
+        document_id="d_aff",
+        project_id="p_aff",
+        text="Las redes neuronales profundas con regularización dropout reducen el sobreajuste significativamente.",
+    )
+    claim_negative = "Las redes neuronales con dropout no reducen el sobreajuste."
+    score_neg_claim = guard._compute_lexical_grounding(claim_negative, chunk_affirmative.text)
+    assert score_neg_claim < 0.25
+
+    verdict_neg_claim = await guard.verify_claim_evidence(
+        claim=claim_negative,
+        retrieved_chunks=[chunk_affirmative],
+    )
+    assert verdict_neg_claim.is_supported is False
+
+    # 2. Chunk has 'no', claim is affirmative
+    chunk_negative = DocumentChunkDTO(
+        id="c_neg",
+        document_id="d_neg",
+        project_id="p_neg",
+        text="Las redes neuronales profundas con regularización dropout no reducen el sobreajuste en muestras pequeñas.",
+    )
+    claim_affirmative = "Las redes neuronales con dropout reducen el sobreajuste."
+    score_neg_chunk = guard._compute_lexical_grounding(claim_affirmative, chunk_negative.text)
+    assert score_neg_chunk < 0.25
+
+    verdict_neg_chunk = await guard.verify_claim_evidence(
+        claim=claim_affirmative,
+        retrieved_chunks=[chunk_negative],
+    )
+    assert verdict_neg_chunk.is_supported is False
+
+    # 3. Symmetric negation in English ('never', 'without'): both negative -> overlap maintained
+    chunk_en_neg = DocumentChunkDTO(
+        id="c_en",
+        document_id="d_en",
+        project_id="p_en",
+        text="The gradient optimization algorithm never converges without careful learning rate scheduling.",
+    )
+    claim_en_neg = "The gradient optimization algorithm never converges without learning rate scheduling."
+    score_sym_neg = guard._compute_lexical_grounding(claim_en_neg, chunk_en_neg.text)
+    assert score_sym_neg >= 0.40
+
+    verdict_sym_neg = await guard.verify_claim_evidence(
+        claim=claim_en_neg,
+        retrieved_chunks=[chunk_en_neg],
+    )
+    assert verdict_sym_neg.is_supported is True
+
+    await crossref.close()

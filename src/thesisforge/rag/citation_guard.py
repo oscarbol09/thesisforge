@@ -38,17 +38,77 @@ class CitationGuard:
         result = await self.crossref.resolve_doi(doi)
         return result is not None and result.doi is not None
 
-    @staticmethod
-    def _compute_lexical_grounding(claim: str, chunk_text: str) -> float:
-        """Calculate word overlap and key term presence between claim and source passage."""
-        claim_words = set(re.findall(r"\b\w{4,}\b", claim.lower()))
-        chunk_words = set(re.findall(r"\b\w{4,}\b", chunk_text.lower()))
+    NEGATION_TERMS: frozenset[str] = frozenset(
+        {
+            "no",
+            "sin",
+            "nunca",
+            "jamás",
+            "jamas",
+            "not",
+            "never",
+            "neither",
+            "none",
+            "without",
+        }
+    )
+
+    @classmethod
+    def _check_negation_in_proximity(
+        cls, tokens: list[str], keywords: set[str], window: int = 2
+    ) -> bool:
+        """Check if any negation term immediately precedes (within window tokens) any keyword.
+
+        Negation particles in Spanish and English ('no', 'not', 'never', 'sin', 'without')
+        are prepositive and directly modify the following verb or predicate.
+        """
+        n_tokens = len(tokens)
+        for idx, token in enumerate(tokens):
+            if token in keywords:
+                start = max(0, idx - window)
+                for j in range(start, idx):
+                    tok = tokens[j]
+                    if tok in cls.NEGATION_TERMS:
+                        # Exclude Spanish adversative idiom 'sin embargo'
+                        if tok == "sin" and j + 1 < n_tokens and tokens[j + 1] == "embargo":
+                            continue
+                        return True
+        return False
+
+    @classmethod
+    def _compute_lexical_grounding(cls, claim: str, chunk_text: str) -> float:
+        """Calculate word overlap and key term presence between claim and source passage.
+
+        Detects polarity and negation asymmetries to prevent false grounding.
+        """
+        claim_lower = claim.lower()
+        chunk_lower = chunk_text.lower()
+
+        claim_tokens = re.findall(r"\b[\wáéíóúüñ]+\b", claim_lower)
+        chunk_tokens = re.findall(r"\b[\wáéíóúüñ]+\b", chunk_lower)
+
+        claim_words = {w for w in claim_tokens if len(w) >= 4 and w not in cls.NEGATION_TERMS}
+        chunk_words = {w for w in chunk_tokens if len(w) >= 4 and w not in cls.NEGATION_TERMS}
 
         if not claim_words:
             return 0.0
 
         intersection = claim_words.intersection(chunk_words)
-        return len(intersection) / len(claim_words)
+        if not intersection:
+            return 0.0
+
+        raw_score = len(intersection) / len(claim_words)
+
+        # Polarity & negation asymmetry detection
+        claim_has_neg = cls._check_negation_in_proximity(claim_tokens, intersection, window=4)
+        chunk_has_neg = cls._check_negation_in_proximity(chunk_tokens, intersection, window=4)
+
+        if claim_has_neg != chunk_has_neg:
+            # Asymmetry detected: one negates while the other affirms.
+            # Penalize overlap score heavily (0.2x multiplier) to prevent false positives.
+            return round(raw_score * 0.2, 3)
+
+        return round(raw_score, 3)
 
     async def verify_claim_evidence(
         self,
