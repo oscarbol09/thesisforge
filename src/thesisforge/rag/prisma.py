@@ -66,6 +66,14 @@ class PRISMAFlowReport(BaseModel):
     project_id: str
     query_string: str = ""
     search_timestamp: str = Field(default_factory=lambda: utc_now().isoformat())
+    is_exploratory_synthesis: bool = False
+    protocol_notice: str = Field(
+        default=(
+            "Diagrama de flujo exploratorio de fuentes indexadas. "
+            "Para una revisión sistemática conforme a PRISMA 2020 se requiere registro de protocolo (PROSPERO), "
+            "cribado ciego independiente y evaluación formal de riesgo de sesgo."
+        )
+    )
     identification: PRISMAIdentificationPhase = Field(default_factory=PRISMAIdentificationPhase)
     screening: PRISMAScreeningPhase = Field(default_factory=PRISMAScreeningPhase)
     eligibility: PRISMAEligibilityPhase = Field(default_factory=PRISMAEligibilityPhase)
@@ -136,7 +144,19 @@ class PRISMAFlowReport(BaseModel):
             or "No especificado"
         )
 
-        return f"""# Diagrama de Flujo PRISMA 2020
+        title = (
+            "# Diagrama de Flujo de Literatura (Inspirado en PRISMA 2020 - Síntesis Exploratoria)"
+            if self.is_exploratory_synthesis
+            else "# Diagrama de Flujo PRISMA 2020"
+        )
+        notice_block = (
+            f"\n> **Nota Metodológica Transparente**: {self.protocol_notice}\n"
+            if self.is_exploratory_synthesis
+            else ""
+        )
+
+        return f"""{title}
+{notice_block}
 
 ```text
 ================================================================================

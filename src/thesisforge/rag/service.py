@@ -593,8 +593,9 @@ class RAGService:
             )
         else:
             # Derive from project's validated citations
+            report.is_exploratory_synthesis = True
             val_cits = project.validated_citations
-            report.record_database_search("manual_o_rag", len(val_cits))
+            report.record_database_search("citas_indexadas_proyecto", len(val_cits))
             report.record_deduplication(0)
             report.record_screening(len(val_cits), 0)
 
