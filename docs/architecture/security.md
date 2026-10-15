@@ -62,6 +62,7 @@ ThesisForge protege todos los endpoints HTTP y WebSockets mediante un modelo de 
 - **Generación y Resolución:** En el arranque, si no se especifica `THESISFORGE_INSTANCE_TOKEN` en el entorno, el sistema genera automáticamente un token seguro mediante `secrets.token_urlsafe(32)`.
 - **Compatibilidad Universal HTTP/WS:** Starlette WebSockets no heredan de `Request`, por lo que el validador opera sobre `starlette.requests.HTTPConnection`, extrayendo el token tanto de cabeceras `Authorization: Bearer <token>` como de parámetros de consulta (`?token=<token>`).
 - **Aislamiento Multi-Proyecto:** Los proyectos están asociados a un `owner_id` en `ProjectStateDTO` para garantizar la segregación de datos en entornos monousuario o multi-sesión.
+- **Perímetro de Red y Docker Binding Seguro:** El archivo `docker-compose.yml` restringe por defecto el binding a `127.0.0.1:8000:8000`. Exponer la API a `0.0.0.0` en redes públicas o corporativas sin un Reverse Proxy perimetral (TLS + Auth corporativa) expone el token de instancia y los secretos cifrados del usuario local.
 - **Rutas Públicas y Bypass de Test:** Endpoints de infraestructura (`/health`, `/favicon.ico`, `/assets/...`) están exentos, y es posible desactivar la autenticación en suites de pruebas unitarias mediante `THESISFORGE_AUTH_DISABLED=true`.
 
 ---
@@ -70,8 +71,11 @@ ThesisForge protege todos los endpoints HTTP y WebSockets mediante un modelo de 
 
 El middleware de seguridad (`src/thesisforge/api/security_middleware.py`) inyecta defensas estándar de la industria en cada respuesta HTTP:
 
-- **Política CSP Estricta:** `default-src 'self'`, `script-src 'self' 'nonce-...' https://cdn.tailwindcss.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net`, `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com`, `font-src 'self' https://fonts.gstatic.com`.
-- **Eliminación de `'unsafe-inline'` en Scripts:** Las configuraciones de Tailwind y librerías dinámicas se externalizan en módulos estáticos dedicados (`gui/js/tailwind-config.js`) validados por nonce criptográfico por petición.
+- **Política CSP Aplicada:** `default-src 'self'`, `script-src 'self' 'unsafe-eval' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net`, `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com`, `font-src 'self' https://fonts.gstatic.com`, `connect-src 'self' ws: wss: https:`.
+- **Justificación Técnica de Directivas Reactivas:**
+  - `'unsafe-eval'`: Necesario para el parser de reactividad en tiempo de ejecución de Alpine.js (`Function constructor` para directivas como `x-data`, `@click`, `x-if`).
+  - `'unsafe-inline'` en `style-src`: Requerido temporalmente por el runtime de Tailwind Play CDN, que inyecta etiquetas `<style>` dinámicas en el DOM.
+  - **Hoja de Ruta v1.0.0:** En el empaquetado autónomo para distribución en producción, la interfaz migrará a un bundle compilado herméticamente (Tailwind CLI + build de Alpine), eliminando CDNs externas y removiendo tanto `'unsafe-eval'` como `'unsafe-inline'`.
 - **Cabeceras Anti-Clickjacking y MIME Sniffing:**
   - `X-Content-Type-Options: nosniff`
   - `X-Frame-Options: DENY`

@@ -9,14 +9,14 @@ Asistente y forjador de proyectos de investigación académica con inteligencia 
 ThesisForge es una herramienta de ingeniería académica diseñada para abordar tres limitaciones críticas del uso de LLMs en investigación:
 
 1. **Formulación metodológica guiada:** Estructuración de preguntas de investigación, hipótesis contrastables y taxonomía de objetivos (Bloom) mediante una máquina de estados finita.
-2. **Literatura científica verificada (Anti-Alucinaciones):** Recuperación aumentada (RAG) contra fuentes indexadas (Semantic Scholar, ArXiv, CrossRef) y extracción de documentos PDF locales.
+2. **Literatura científica indexada y verificación de citas:** Recuperación aumentada (RAG) contra fuentes abiertas (Semantic Scholar, ArXiv, CrossRef), validación de metadatos DOI, detección de polaridad y claim grounding asistido con avisos epistémicos.
 3. **Coherencia inter-capítulo:** Memoria contextual jerárquica que asegura que el marco teórico, el diseño metodológico y las conclusiones mantengan alineación estricta con el problema formulado.
 
 ```mermaid
 graph LR
     A["1. Asesor Metodológico\n(Entrevista guiada)"] --> B["2. Literatura Real (RAG)\n(Semantic Scholar / ArXiv)"]
     B --> C["3. Redacción Modular\n(Memoria contextual)"]
-    C --> D["4. Jurado & Defensa Oral\n(Tribunal 4 roles + Socrático)"]
+    C --> D["4. Jurado & Defensa Oral\n(Simulador 4 roles + Socrático)"]
     D --> E["5. Exportación DOCX\n(APA 7ª edición)"]
 ```
 
@@ -29,7 +29,7 @@ graph LR
 - **Auditoría Anti-Slop y Detox de Redacción:** Detección de clichés sintéticos de IA, variabilidad de ritmo sintáctico, anclaje de citas L3 con localizador de página/párrafo, eliminación de inflación inferencial (*"altamente significativo"*), mitigación de concepciones erróneas frecuentistas y bloqueo de recomendaciones vacuas.
 - **Seguridad en reposo y de red:** Cifrado simétrico de claves mediante Fernet (AES-128-CBC + HMAC-SHA256), protección contra Server-Side Request Forgery (SSRF) con bloqueo estricto de rangos privados, neutralización de inyección de fórmulas (CWE-1236) y sanitización de logs CWE-117.
 - **Distribución dual:** Servidor web asíncrono con FastAPI y SPA moderna (Tailwind CSS + Alpine.js) junto a un lanzador de escritorio nativo con PyWebView.
-- **Tribunal Multi-Agente & Defensa Socrática:** 4 perfiles de jurado académico con auditoría híbrida (20 errores metodológicos fatales + compuerta de 7 modos de fallo de IA) y réplicas interactivas por WebSockets.
+- **Simulador de Jurado Multi-Agente & Defensa Socrática:** 4 perfiles formativos de examinador simulado con auditoría híbrida (20 errores metodológicos fatales + compuerta de 7 modos de fallo de IA), rúbrica ponderada transparente y réplicas interactivas por WebSockets.
 - **Exportación estructurada en Word:** Generación directa de archivos `.docx` formateados con normas APA 7ª edición (portada, márgenes de 2.54 cm, sangría francesa, índice dinámico TOC y referencias desduplicadas).
 
 ---

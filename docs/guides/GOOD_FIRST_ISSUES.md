@@ -9,9 +9,9 @@ Este documento contiene la definición completa de tareas diseñadas específica
 * **Etiquetas:** `good first issue`, `help wanted`, `rag`, `enhancement`
 * **Nivel de dificultad:** Fácil / Intermedio
 * **Archivos a modificar:**
-  - [`src/thesisforge/rag/clients/openalex.py`](file:///c:/Users/dario/OneDrive/Documentos/Repositorio_Ayuda/ThesisForge/src/thesisforge/rag/clients/openalex.py) (Nuevo)
-  - [`src/thesisforge/rag/clients/__init__.py`](file:///c:/Users/dario/OneDrive/Documentos/Repositorio_Ayuda/ThesisForge/src/thesisforge/rag/clients/__init__.py)
-  - [`src/thesisforge/rag/clients/aggregator.py`](file:///c:/Users/dario/OneDrive/Documentos/Repositorio_Ayuda/ThesisForge/src/thesisforge/rag/clients/aggregator.py)
+  - `src/thesisforge/rag/clients/openalex.py` (Nuevo)
+  - `src/thesisforge/rag/clients/__init__.py`
+  - `src/thesisforge/rag/clients/aggregator.py`
   - `tests/unit/test_openalex_client.py` (Nuevo)
 
 ### Descripción:
@@ -30,8 +30,8 @@ Actualmente ThesisForge busca literatura a través de Semantic Scholar, ArXiv y 
 * **Etiquetas:** `good first issue`, `help wanted`, `export`, `cli`
 * **Nivel de dificultad:** Fácil
 * **Archivos a modificar:**
-  - [`src/thesisforge/export/bibtex_formatter.py`](file:///c:/Users/dario/OneDrive/Documentos/Repositorio_Ayuda/ThesisForge/src/thesisforge/export/bibtex_formatter.py) (Nuevo)
-  - [`src/thesisforge/cli.py`](file:///c:/Users/dario/OneDrive/Documentos/Repositorio_Ayuda/ThesisForge/src/thesisforge/cli.py)
+  - `src/thesisforge/export/bibtex_formatter.py` (Nuevo)
+  - `src/thesisforge/cli.py`
   - `tests/unit/test_bibtex_export.py` (Nuevo)
 
 ### Descripción:
@@ -49,9 +49,9 @@ Permitir que los investigadores exporten toda la bibliografía recopilada e inde
 * **Etiquetas:** `good first issue`, `help wanted`, `rag`, `academic`
 * **Nivel de dificultad:** Fácil
 * **Archivos a modificar:**
-  - [`src/thesisforge/rag/ieee_formatter.py`](file:///c:/Users/dario/OneDrive/Documentos/Repositorio_Ayuda/ThesisForge/src/thesisforge/rag/ieee_formatter.py) (Nuevo)
-  - [`src/thesisforge/rag/vancouver_formatter.py`](file:///c:/Users/dario/OneDrive/Documentos/Repositorio_Ayuda/ThesisForge/src/thesisforge/rag/vancouver_formatter.py) (Nuevo)
-  - [`src/thesisforge/rag/apa_formatter.py`](file:///c:/Users/dario/OneDrive/Documentos/Repositorio_Ayuda/ThesisForge/src/thesisforge/rag/apa_formatter.py) (Como referencia)
+  - `src/thesisforge/rag/ieee_formatter.py` (Nuevo)
+  - `src/thesisforge/rag/vancouver_formatter.py` (Nuevo)
+  - `src/thesisforge/rag/apa_formatter.py` (Como referencia)
   - `tests/unit/test_citation_formatters.py` (Nuevo)
 
 ### Descripción:
@@ -69,8 +69,8 @@ ThesisForge actualmente cuenta con un formateador estricto para APA 7ª edición
 * **Etiquetas:** `good first issue`, `help wanted`, `cli`, `ux`
 * **Nivel de dificultad:** Fácil
 * **Archivos a modificar:**
-  - [`src/thesisforge/cli.py`](file:///c:/Users/dario/OneDrive/Documentos/Repositorio_Ayuda/ThesisForge/src/thesisforge/cli.py)
-  - [`pyproject.toml`](file:///c:/Users/dario/OneDrive/Documentos/Repositorio_Ayuda/ThesisForge/pyproject.toml) (si se requiere `rich`)
+  - `src/thesisforge/cli.py`
+  - `pyproject.toml` (si se requiere `rich`)
 
 ### Descripción:
 Al buscar literatura con `thesisforge search-papers` o indexar PDFs pesados en ChromaDB, la consola actualmente imprime texto plano. Agregar indicadores visuales con la biblioteca `rich` mejorará notablemente la experiencia de usuario en terminal.

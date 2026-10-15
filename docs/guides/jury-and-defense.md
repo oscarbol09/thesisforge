@@ -2,6 +2,9 @@
 
 Esta guía detalla el funcionamiento del sistema de evaluación por jurado multi-agente y el simulador de defensa oral socrática introducido en ThesisForge v0.4.0.
 
+> [!NOTE] Carácter Formativo y Orientativo
+> El panel de evaluación por jurado multi-agente y el simulador de defensa oral socrática son herramientas de asistencia heurística y entrenamiento formativo. No constituyen un tribunal oficial ni tienen validez institucional vinculante.
+
 ---
 
 ## 1. El Tribunal Académico Multi-Agente
@@ -15,6 +18,9 @@ ThesisForge modela un tribunal colegiado de cuatro examinadores con criterios de
 | **Dr. Camilo Restrepo** | Auditor Estadístico | Muestreo, análisis de datos, potencia estadística e inferencias | 25% |
 | **Dr. Demetrio Sotomayor** | Abogado del Diablo | Causalidades espurias, variables confusoras y sesgos argumentativos | 15% |
 
+> [!NOTE] Rúbrica Transparente y Personas Sintéticas
+> Los cuatro jurados evaluadores son personificaciones sintéticas (`is_synthetic_persona = True`) diseñadas para estructurar la deliberación académica formativa. El reporte (`JuryEvaluationReportDTO`) expone la matriz de ponderación completa (`scoring_rubric`) y un aviso formal (`rubric_notice`) recordando que la puntuación global es un indicador orientativo pedagógico y no una medición psicométrica estandarizada.
+
 ---
 
 ## 2. Motor de Auditoría Científica Híbrida
@@ -26,10 +32,11 @@ La auditoría se ejecuta mediante dos capas complementarias:
 - **Taxonomía de Objetivos**: Exige la presencia de un objetivo general y al menos un objetivo específico redactados con verbos de desempeño evaluables.
 - **Densidad Bibliográfica**: Se comprueba la existencia de citas indexadas bajo norma APA 7ª edición.
 
-### B. Deliberación Cualitativa de LLM
+### B. Deliberación Cualitativa de LLM y Manejo de Fallbacks
 Cada jurado evalúa el proyecto y emite:
 - **Puntuación Dimensional (0–100)** con justificación académica fundamentada.
 - **Observaciones Tipadas**: Clasificadas por severidad (`CRITICAL`, `MAJOR`, `MINOR`, `NOTE`) y tipo (`METHODOLOGICAL_INCONSISTENCY`, `UNSUPPORTED_CLAIM`, `SAMPLING_BIAS`, `INVALID_INSTRUMENT`, `MISSING_LIMITATIONS`, etc.).
+- **Trazabilidad de Fallbacks (`is_fallback`)**: Si el proveedor LLM omite la evaluación de alguno de los cuatro roles, el motor inyecta un evaluador estándar con nota `75.0`, marcando explícitamente `is_fallback = True` y registrando el feedback: *"Evaluación heurística por omisión del modelo (sin objeciones críticas generadas en esta dimensión)"*. Esto previene dictámenes fantasma o falsas apariencias de aprobación humana.
 
 ### C. Veredictos Formales y Regla de Veto
 - **Aprobado con Distinción** ($\ge 95.0$ puntos y 0 fallos críticos).

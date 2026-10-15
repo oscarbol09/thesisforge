@@ -9,6 +9,15 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/
 ## [Unreleased]
 
 ### Added
+- **Rigor Epistémico & Grounding Negation-Aware (`src/thesisforge/rag/citation_guard.py`):**
+  - Implementación de `_check_negation_in_proximity` con tokens prepositivos (`window=2`) para verbos y predicados (`no`, `sin`, `nunca`, `jamás`, `not`, `never`, etc.), penalizando severamente (factor `0.2x`) asimetrías de polaridad para impedir falsos positivos en afirmaciones contradichas por la literatura.
+  - Incorporación de `epistemic_notice` en `EvidenceVerdictDTO` advirtiendo formalmente que la correspondencia léxica/semántica no sustituye la validación ontológica ni metodológica concluyente del estudio original.
+- **Transparencia en Flujo PRISMA 2020 (`src/thesisforge/rag/prisma.py`, `src/thesisforge/rag/service.py`):**
+  - Adición de `is_exploratory_synthesis: bool` y `protocol_notice` en `PRISMAFlowReport`.
+  - Rotulación explícita como `# Diagrama de Flujo de Literatura (Inspirado en PRISMA 2020 - Síntesis Exploratoria)` cuando el flujo se deriva de citas ya indexadas sin búsqueda estructurada previa, documentando los requisitos para revisiones sistemáticas formales (PROSPERO, cribado ciego y análisis RoB).
+- **Transparencia en Jurado Evaluador & Scoring Heurístico (`src/thesisforge/jury/evaluator.py`, `src/thesisforge/models.py`):**
+  - Etiquetado explícito con `is_fallback=True` e `is_synthetic_persona=True` en jurados omitidos y evaluaciones basadas en reglas.
+  - Exposición de la matriz de ponderación (`scoring_rubric`: Metodología 35%, Literatura 25%, Empírico 25%, Crítico 15%) y aviso formal `rubric_notice` en `JuryEvaluationReportDTO`, clarificando su naturaleza pedagógica orientativa.
 - **Tratado Integral de Metodología de la Investigación Científica (`src/thesisforge/llm/prompts.py`, `src/thesisforge/drafting/templates.py`, `src/thesisforge/advisor/validators.py`):**
   - **Capítulo I (Planteamiento del Problema):** Arquitectura en 8 movimientos, formulación de preguntas con 5 componentes anatómicos no dicotómicos, regla de oro de objetivos ($OG \equiv PG$), justificación en 4 dimensiones con formulación negativa y fórmula de limitaciones en 4 pasos.
   - **Capítulo IV (Resultados y Discusión):** Distinción conceptual (*Resultado $\to$ Análisis $\to$ Discusión*), secuencia cuantitativa en 3 niveles, reporte APA 7 en 4 componentes ($M/DT$, estadístico con $gl$, $p$-exacto sin cero inicial, tamaño del efecto con IC 95%), análisis cualitativo en 4 movimientos con casos discrepantes, triangulación en 3 movimientos, *Joint Display* mixto dialógico y auditoría de los 20 errores metodológicos fatales de jurado.
@@ -21,7 +30,13 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/
 - **Validadores Metodológicos Extendidos (`src/thesisforge/advisor/validators.py`):**
   - Métodos `validate_conclusions_alignment` y `validate_recommendations` para auditar la coherencia capitular.
 - **Suite de Pruebas Ampliada:**
-  - 268 pruebas unitarias e integradas pasando al 100% con tipado estricto mypy y verificación de seguridad Bandit.
+  - 315 pruebas unitarias, integradas y de propiedades pasando al 100% con tipado estricto mypy y verificación de seguridad Bandit.
+
+### Security & Hardening
+- **Endurecimiento de Despliegue Local (`docker-compose.yml`):**
+  - Enlace por defecto restringido a `127.0.0.1:8000:8000` para proteger contra exposición inadvertida en interfaces de red del host en despliegues monousuario.
+- **Transparencia y Hoja de Ruta de CSP (`src/thesisforge/api/app.py`):**
+  - Documentación técnica exhaustiva de la necesidad de `'unsafe-eval'` (Alpine.js) y `'unsafe-inline'` (Tailwind CDN) con hoja de ruta hacia el empaquetado v1.0.0 sin CDNs.
 
 ### Fixed
 - **Preservación de Estado y Progresión en Asesor Metodológico (`src/thesisforge/advisor/service.py`):**

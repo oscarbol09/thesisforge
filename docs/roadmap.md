@@ -6,7 +6,7 @@ Este documento describe el plan estratégico de desarrollo técnico y evolución
 
 ## Declaración de Visión
 
-Permitir a estudiantes de pregrado, posgrado e investigadores estructurar proyectos de grado rigurosos, libres de alucinaciones y con coherencia metodológica estricta mediante IA explicable, búsqueda indexada de literatura científica real (RAG), redacción modular asistida y control total de sus datos (BYOK y local-first).
+Permitir a estudiantes de pregrado, posgrado e investigadores estructurar proyectos de grado rigurosos, con verificación de metadatos DOI, trazabilidad de literatura indexada y coherencia metodológica estricta mediante IA explicable, búsqueda indexada de literatura científica real (RAG), redacción modular asistida y control total de sus datos (BYOK y local-first).
 
 ---
 
@@ -33,7 +33,7 @@ gantt
 ---
 
 ### Fase 1: Fundaciones y Asesor Metodológico (v0.1.0) — [Completada]
-- [x] Arquitectura asíncrona moderna con FastAPI, Pydantic v2 y SQLAlchemy 2.0 / aiosqlite.
+- [x] Arquitectura asíncrona moderna con FastAPI, Pydantic v2 y aiosqlite directo (sin capa ORM, persistencia SQLite asíncrona con modo WAL).
 - [x] Asesor Metodológico guiado por máquina de estados determinista para planteamiento del problema, objetivos y consistencia de hipótesis.
 - [x] Router LLM multi-proveedor BYOK (LiteLLM, OpenRouter, Gemini, Groq, Ollama, OpenAI, Anthropic) con políticas de reintento.
 - [x] Core de seguridad AppSec: SSRF Guard, cifrado local de claves con Fernet y logging estructurado JSON con prevención CWE-117.
@@ -45,7 +45,7 @@ gantt
 - [x] Conectores asíncronos directos para **Semantic Scholar Graph API**, **ArXiv** y **CrossRef**.
 - [x] Almacenamiento vectorial local (ChromaDB) para artículos PDF cargados por el usuario.
 - [x] Chunking contextual léxico y semántico (1500 caracteres, 200 de solapamiento).
-- [x] Compuerta anti-alucinaciones con verificación de DOI antes de sugerir citas y evaluación de evidencia.
+- [x] Mitigación y compuerta de citas con verificación de metadatos DOI antes de sugerir citas y evaluación de evidencia (*claim grounding*).
 - [x] Formateador estricto de citaciones en texto y referencias bajo normas APA 7ª edición.
 
 ---
@@ -61,10 +61,11 @@ gantt
 ---
 
 ### Fase 4: Simulación de Jurado y Defensa de Tesis (v0.4.0) — [Completada]
-- [x] Panel multi-agente de 4 jurados evaluadores (Metodólogo, Especialista Temático, Auditor Estadístico y Abogado del Diablo).
+> *Nota: El sistema de jurado y defensa es un simulador socrático y panel de auditoría heurística dimensional con fines formativos y pedagógicos, no un tribunal institucional oficial ni vinculante.*
+- [x] Panel multi-agente de 4 jurados evaluadores formativos (Metodólogo, Especialista Temático, Auditor Estadístico y Abogado del Diablo) para auditoría heurística dimensional.
 - [x] Detección automatizada de sesgos metodológicos, inconsistencias de hipótesis, contradicciones conceptuales y literatura insuficiente.
 - [x] Simulación interactiva de ronda de preguntas orales y sustentación socrática de tesis por turnos (`/api/defense/*` y WebSockets).
-- [x] Rúbrica dimensional cuantitativa (0-100) y cualitativa con dictámenes oficiales académicos (*Aprobado con Distinción, Aprobado, Modificaciones Menores/Mayores, No Aprobado*).
+- [x] Rúbrica dimensional cuantitativa (0-100) y cualitativa con dictámenes formativos de referencia (*Aprobado con Distinción, Aprobado, Modificaciones Menores/Mayores, No Aprobado*).
 - [x] Subcomandos de consola CLI: `thesisforge jury-audit` y `thesisforge defense-start`.
 
 ---

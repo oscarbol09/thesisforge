@@ -87,6 +87,8 @@ print(report.to_markdown_flowchart())
 
 | Campo | Descripción |
 | :--- | :--- |
+| `is_exploratory_synthesis` | Booleano indicando si el flujo es una síntesis exploratoria basada en citas indexadas (`True`) o deriva de una búsqueda sistemática estructurada (`False`). |
+| `protocol_notice` | Advertencia metodológica recordando los requerimientos de una revisión formal (registro PROSPERO, cribado ciego y análisis de riesgo de sesgo RoB). |
 | `identification.database_counts` | Registros por fuente (p. ej. `{"semantic_scholar": 120}`) |
 | `identification.duplicate_records_removed` | Duplicados eliminados antes del cribado |
 | `screening.records_excluded` | Excluidos por título/resumen con causas |
@@ -94,12 +96,19 @@ print(report.to_markdown_flowchart())
 | `included.new_studies_included` | Estudios finales incluídos en la síntesis |
 | `included.included_citation_ids` | IDs de las citas registradas en el proyecto |
 
+> [!NOTE] Distinción Metodológica en PRISMA
+> Cuando el flujo se genera a partir de citas ya validadas sin una búsqueda previa documentada, el sistema rotula el diagrama como `# Diagrama de Flujo de Literatura (Inspirado en PRISMA 2020 - Síntesis Exploratoria)`, garantizando transparencia y evitando confundir una recopilación bibliográfica asistida con un metaanálisis o revisión sistemática preregistrada.
+
 ---
 
-## 4. Filtro Anti-Alucinaciones y Claim Grounding
+## 4. Filtro de Integridad Bibliográfica y Claim Grounding
 
 Antes de redactar cualquier sección bibliográfica:
 
-1. **Identificadores Verificados:** Toda cita debe tener un identificador verificado (DOI oficial, ArXiv ID o identificador de documento local cargado).
-2. **Comprobación de Respaldo (*Claim-Evidence Grounding* con `CitationGuard`):** El sistema analiza la correspondencia léxica y semántica entre la afirmación del borrador y el contenido de los fragmentos recuperados. Si una afirmación carece de evidencia fáctica en la literatura, el evaluador emite una observación tipada `UNSUPPORTED_CLAIM`.
-3. **Formateo APA 7 Automático:** Las citas se formatean en el cuerpo del texto según la normativa APA 7ª edición (`(Apellido, Año)` o `Apellido (Año)`), manejando exhaustivamente 1, 2, 3-20 y 21+ autores.
+1. **Identificadores Verificados:** Toda cita debe tener un identificador verificado (DOI oficial, ArXiv ID o identificador de documento local cargado en el vault).
+2. **Comprobación de Respaldo (*Claim-Evidence Grounding* con `CitationGuard`):**
+   - El sistema analiza la correspondencia léxica y semántica entre la afirmación del borrador y el contenido de los fragmentos recuperados de la literatura indexada.
+   - **Detección de Polaridad y Negación Prepositiva:** Mediante `_check_negation_in_proximity` (`window=2`), el evaluador detecta si la afirmación o el fragmento niega la acción (`no`, `sin`, `nunca`, `jamás`, `not`, `never`, etc.). Si hay una asimetría de polaridad (uno afirma y el otro niega), se penaliza severamente el puntaje (factor `0.2x`) para evitar falsos positivos por simple solapamiento léxico.
+   - Si una afirmación carece de evidencia fáctica en la literatura, el evaluador emite una observación tipada `UNSUPPORTED_CLAIM`.
+3. **Aviso Epistémico Transparente:** La respuesta `EvidenceVerdictDTO` incluye siempre el campo `epistemic_notice`, advirtiendo al investigador que la similitud léxica/semántica asiste en la detección de contradicciones pero no sustituye la lectura crítica ni la validación ontológica del paper original.
+4. **Formateo APA 7 Automático:** Las citas se formatean en el cuerpo del texto según la normativa APA 7ª edición (`(Apellido, Año)` o `Apellido (Año)`), manejando exhaustivamente 1, 2, 3-20 y 21+ autores.

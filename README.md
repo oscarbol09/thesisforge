@@ -9,7 +9,7 @@
 <h1 align="center">ThesisForge</h1>
 
 <p align="center">
-  <em>Asistente y forjador de proyectos de investigación académica con inteligencia artificial, búsqueda de literatura real indexada (RAG) y redacción modular por capítulos bajo normas APA 7ª edición. 100% compatible con tus propias claves de API (BYOK) y modelos locales.</em>
+  <em>Asistente y forjador de proyectos de investigación académica con inteligencia artificial, mitigación de alucinaciones mediante búsqueda de literatura real indexada (RAG) y redacción modular por capítulos bajo normas APA 7ª edición. Diseñado con puntos de control humano donde la verificación científica final recae siempre en el autor. 100% compatible con tus propias claves de API (BYOK) y modelos locales.</em>
 </p>
 
 <p align="center">
@@ -28,7 +28,7 @@
 Los estudiantes de pregrado, posgrado e investigadores enfrentan tres fricciones fundamentales al apoyarse en modelos de lenguaje comerciales para redactar trabajos de grado:
 
 1. **Enfoque metodológico endeble:** Dificultad para delimitar preguntas de investigación, hipótesis contrastables y taxonomía de objetivos coherentes con el diseño del estudio.
-2. **Referencias bibliográficas alucinadas:** Los LLMs generalistas inventan autores, años y DOIs inexistentes, invalidando el rigor científico del manuscrito.
+2. **Riesgo de alucinaciones bibliográficas:** Los LLMs generalistas tienden a inventar autores, años y DOIs inexistentes cuando carecen de anclaje documental. ThesisForge ayuda a mitigar alucinaciones mediante búsqueda indexada en Semantic Scholar, CrossRef y ArXiv, junto con la comprobación de metadatos de DOIs reales; no obstante, el software no promete infalibilidad y la verificación científica, metodológica y contextual final recae siempre en el autor humano.
 3. **Pérdida de coherencia inter-capítulo:** Generar documentos de 50 o 100 páginas en un único prompt satura la ventana de contexto y desconecta las conclusiones del marco teórico.
 
 ThesisForge estructura la elaboración del proyecto a través de cuatro etapas secuenciales con puntos de control humanos obligatorios:
@@ -44,9 +44,9 @@ $$\text{Asesor Metodológico} \longrightarrow \text{Literatura RAG} \longrightar
 | **Control de claves (BYOK)** | Sí (OpenRouter, Gemini, Groq, Ollama) | No (Ecosistema Google) | No (Suscripción propietaria) | No (Suscripción propietaria) |
 | **Modelos locales (Ollama)** | Soportado | No | No | No |
 | **Entrevista metodológica guiada** | Sí (Máquina de estados finita) | No (Prompt libre) | Parcial | No |
-| **Verificación bibliográfica** | RAG con Semantic Scholar / CrossRef | Parcial | Sí | Alucinaciones frecuentes |
+| **Verificación bibliográfica** | RAG indexado (Semantic Scholar / CrossRef / ArXiv) + validación DOI (asistencia heurística) | Parcial | Sí | Alucinaciones frecuentes |
 | **Contexto jerárquico por capítulos** | Sí (Memoria de 4 capas por sección) | No (Chat plano) | Parcial | Pérdida de contexto |
-| **Jurado multi-agente & defensa oral** | Sí (4 roles académicos + Socrático) | No | No | No |
+| **Jurado multi-agente & defensa oral** | Sí (Simulador formativo: 4 roles + interrogatorio socrático; no vinculante) | No | No | No |
 | **Formato de exportación** | Word (`.docx`) APA 7ª edición estructurado | Markdown plano | Limitado en plan gratuito | Texto sin formato |
 | **Licencia de software** | Código abierto (Apache 2.0) | Propietario / Freemium | Comercial (\$12–\$30/mes) | Comercial (\$20/mes) |
 
@@ -201,6 +201,8 @@ Consulta [`ARCHITECTURE.md`](ARCHITECTURE.md) y [`docs/user-guide/MANUAL_DE_USUA
 
 ## Limitaciones conocidas y trade-offs
 
+- **Evaluación heurística y probabilística:** La validación de citas, el motor RAG y el panel de jurado evaluador son herramientas de asistencia formativa y detección heurística de inconsistencias; no constituyen jueces ontológicos de validez científica, ni sustituyen la revisión por pares, el juicio crítico del investigador o tribunales con validez legal/institucional.
+- **Despliegue local-first monousuario:** La arquitectura de persistencia en SQLite (`aiosqlite`), el sistema de token de instancia y la bóveda de claves simétricas (`LocalKeyVault`) están diseñados y optimizados exclusivamente para el trabajo local individual en escritorio o servidor autónomo, no como plataforma SaaS cloud multi-usuario concurrente.
 - **Persistencia en nodo único:** El almacenamiento utiliza SQLite local con WAL mode; está optimizado para flujos monousuario de escritorio y servidores autónomos, no para clústeres distribuidos multirregión.
 - **Límites de peticiones en APIs académicas:** Las consultas a Semantic Scholar y CrossRef dependen de los límites de velocidad (*rate limits*) de sus endpoints públicos sin autenticación institucional.
 - **Soporte de sistemas operativos para PyWebView:** La versión de escritorio empaquetada como ejecutable autónomo requiere WebView2 en Windows y WebKit2GTK en Linux.

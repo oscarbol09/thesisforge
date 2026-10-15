@@ -76,7 +76,7 @@ ThesisForge está diseñado bajo los siguientes principios arquitectónicos:
 - **`AdvisorService`:** Orquesta la interacción con el usuario y el LLM, y actualiza el estado del proyecto en la base de datos.
 
 ### 3.5 Persistencia (`src/thesisforge/repository/`)
-- **`DatabaseManager`:** Administra conexiones asíncronas SQLite mediante `aiosqlite`, e inicializa el modo WAL (`journal_mode = WAL`) y el soporte de claves foráneas.
+- **`DatabaseManager`:** Administra conexiones asíncronas SQLite directamente mediante `aiosqlite` (sin capa de abstracción ORM para máximo rendimiento y control directo de consultas), inicializando el modo WAL (`journal_mode = WAL`), sincronización normal y soporte de claves foráneas.
 - **`ProjectRepository`:** Proporciona operaciones CRUD transaccionales sobre la tabla `projects`.
 - **`SecureKeyStoreRepository`:** Almacena y recupera claves de API cifradas en la tabla `keystore`.
 
@@ -86,7 +86,7 @@ ThesisForge está diseñado bajo los siguientes principios arquitectónicos:
 - **`LiteratureCache`:** Caché persistente en SQLite con TTL configurable (48h) y purga periódica para prevenir rate limits.
 - **`PDFDocumentParser`:** Extractor PyMuPDF con sanitización contra Prompt Injection y chunking estructurado por oraciones completas.
 - **`ChromaVectorStore` y Búsqueda Híbrida RRF:** Motor de indexación vectorial local sobre ChromaDB con embeddings deterministas ligeros (`FastLocalEmbeddingFunction`), complementado con búsqueda híbrida densa/dispersa (BM25) fusionada mediante *Reciprocal Rank Fusion (RRF)*.
-- **Flujo PRISMA 2020:** Trazabilidad estricta de identificación, cribado, elegibilidad e inclusión de literatura científica siguiendo el estándar internacional PRISMA 2020.
+- **Flujo PRISMA 2020:** Herramienta de asistencia y trazabilidad metodológica para las fases de identificación, cribado, elegibilidad e inclusión de literatura científica siguiendo el estándar internacional PRISMA 2020; proporciona el marco formal de registro mientras que el criterio cualitativo final de inclusión o exclusión reside siempre en el investigador.
 - **`APA7Formatter`:** Formateador estricto de citaciones parentéticas, narrativas y lista de referencias bajo normas APA 7ª edición.
 - **`CitationGuard`:** Validador de DOIs y verificador de respaldo de afirmaciones (*claim-evidence grounding*) con umbrales configurables.
 
@@ -101,8 +101,8 @@ ThesisForge está diseñado bajo los siguientes principios arquitectónicos:
 - **`ExportService`:** Servicio asíncrono para exportación directa a memoria (`bytes`) y almacenamiento en disco.
 
 ### 3.9 Tribunal Académico Multi-Agente & Sustentación Oral Socrática (`src/thesisforge/jury/`)
-- **`MultiAgentJuryEngine`:** Panel doctoral multi-perspectiva (Metodólogo, Especialista Temático, Auditor Estadístico, Abogado del Diablo) que combina auditorías deterministas de consistencia con evaluación cualitativa profunda asistida por LLM para calificar el proyecto (0.0 a 100.0) y emitir dictámenes oficiales.
-- **`ThesisDefenseSimulator`:** Simulador interactivo de sustentación oral por turnos que genera rondas de preguntas incisivas y evalúa la solidez argumentativa, pertinencia empírica y reconocimiento de limitaciones de las réplicas del tesista.
+- **`MultiAgentJuryEngine`:** Panel multi-agente formativo (Metodólogo, Especialista Temático, Auditor Estadístico, Abogado del Diablo) que combina auditorías heurísticas y deterministas con deliberación asistida por LLM para calificar dimensionalmente el proyecto (0.0 a 100.0) y emitir dictámenes formativos de referencia (*Aprobado con Distinción, Aprobado, Modificaciones, No Aprobado*), orientados a la preparación previa del tesista y sin validez institucional legal ni sustitución del tribunal universitario real.
+- **`ThesisDefenseSimulator`:** Simulador socrático interactivo de sustentación oral por turnos para entrenamiento formativo; genera rondas de preguntas incisivas y evalúa la solidez argumentativa, pertinencia empírica y reconocimiento de limitaciones de las réplicas del tesista.
 - **`JuryService`:** Fachada de orquestación que administra el ciclo de vida de auditorías, sesiones de defensa oral y transiciones de fase del proyecto a `REVIEW` y `COMPLETED`.
 - **`JuryRepository`:** Persistencia transaccional SQLite para informes de jurado (`jury_evaluations`) y sesiones de defensa (`defense_sessions`).
 

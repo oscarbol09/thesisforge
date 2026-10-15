@@ -121,6 +121,9 @@ POST /api/literature/projects/{project_id}/verify-claim
 }
 ```
 
+### Asistencia en Revisiones Sistemáticas (Flujo PRISMA 2020)
+ThesisForge integra soporte metodológico para el estándar internacional PRISMA 2020 (Page et al., 2021) como herramienta de asistencia y registro auditable. El sistema permite estructurar y documentar las etapas de identificación, desduplicación, cribado y elegibilidad documental; la decisión crítica y cualitativa final sobre la inclusión o exclusión de cada artículo es siempre responsabilidad del investigador.
+
 ---
 
 ## 6. Fase 3: Redacción Modular por Capítulos
@@ -227,10 +230,13 @@ curl -X POST "http://localhost:8000/api/export/projects/proj_abc123/docx" \
 
 ---
 
-## 8. Fase 4: Tribunal Multi-Agente y Simulador de Defensa Socrática
+## 8. Fase 4: Panel Multi-Agente de Jurado Formativo y Simulador Socrático de Defensa
 
-### Composición del Tribunal Académico
-ThesisForge somete la tesis a una evaluación multidisciplinaria conformada por cuatro perfiles académicos rigurosos:
+> [!NOTE] Naturaleza Formativa y Asistencial del Jurado
+> El panel multi-agente y el simulador socrático son herramientas heurísticas de entrenamiento y diagnóstico pedagógico. No sustituyen al tribunal examinador institucional, a la asesoría metodológica universitaria ni a los comités de titulación oficiales.
+
+### Composición del Panel Evaluador Formativo
+ThesisForge somete la tesis a una evaluación multidisciplinaria formativa conformada por cuatro perfiles académicos rigurosos:
 
 1. **Dr. Arístides Valenzuela (Metodólogo Principal)**: Evalúa la alineación epistemológica entre el problema, los objetivos, la hipótesis y el diseño metodológico.
 2. **Dra. Beatriz Salamanca (Especialista Temática)**: Revisa la densidad teórica, la relevancia empírica del marco conceptual y la pertinencia de los antecedentes.
@@ -241,17 +247,17 @@ ThesisForge somete la tesis a una evaluación multidisciplinaria conformada por 
 El motor de evaluación combina:
 * **Reglas Deterministas**: Verificación formal de matrices de consistencia, correspondencia entre enfoque cuantitativo e hipótesis explícitas, y umbral mínimo de citas APA 7.
 * **Deliberación Cualitativa**: Dictámenes analíticos con ponderaciones de 0 a 100 y clasificación de observaciones (`CRITICAL`, `MAJOR`, `MINOR`, `SUGGESTION`).
-* **Veredictos Oficiales**: `APROBADO_CON_DISTINCION`, `APROBADO`, `MODIFICACIONES_MENORES`, `MODIFICACIONES_MAYORES`, `NO_APROBADO` (con regla estricta de veto automático ante anomalías críticas).
+* **Dictámenes Formativos de Referencia**: `APROBADO_CON_DISTINCION`, `APROBADO`, `MODIFICACIONES_MENORES`, `MODIFICACIONES_MAYORES`, `NO_APROBADO` (indicadores formativos basados en rúbricas universitarias con regla de veto ante inconsistencias críticas; tienen propósito pedagógico preparatorio y carecen de validez legal/institucional).
 
 ### Simulador Socrático de Defensa Oral
-Permite al tesista ensayar la sustentación de su trabajo frente al tribunal:
-* **Generación de Preguntas Calibradas**: Basadas en las debilidades reales detectadas durante la auditoría del proyecto.
+Permite al tesista ensayar la sustentación de su trabajo y robustecer sus réplicas argumentativas:
+* **Generación de Preguntas Calibradas**: Basadas en las debilidades reales detectadas durante la auditoría formativa del proyecto.
 * **Evaluación de Réplicas por Turnos**: Calificación de respuestas (0–100) con retroalimentación detallada y rúbricas formativas.
 * **Sesiones en Tiempo Real vía WebSocket**: Conexión bidireccional continua en `/api/defense/ws/{session_id}`.
 
 ### Comandos de Consola (CLI)
 ```bash
-# Ejecutar auditoría completa del jurado y guardar acta formal
+# Ejecutar auditoría completa del jurado formativo y guardar reporte
 thesisforge jury-audit --project-id "proj_abc123" --save
 
 # Iniciar simulación interactiva de sustentación en la terminal
@@ -279,14 +285,14 @@ thesisforge gui --port 8080 --debug
 * **Literatura & RAG**: Búsqueda federada (Semantic Scholar, ArXiv, CrossRef), indexación de PDFs con PyMuPDF y verificación de afirmaciones (*claim grounding*).
 * **Estudio de Redacción Modular**: Esquema canónico de 5 capítulos, streaming en tiempo real vía WebSockets y aprobación de secciones con síntesis en memoria jerárquica.
 * **Compilación Word APA 7**: Configuración de metadatos institucionales y descarga directa de archivos `.docx` formateados.
-* **Tribunal y Sustentación**: Deliberación doctoral multi-agente y simulador interactivo de defensa oral.
+* **Tribunal y Sustentación**: Deliberación formativa multi-agente y simulador interactivo de defensa oral.
 * **Configuración BYOK**: Modal seguro para registrar claves de API locales cifradas (OpenRouter, Google Gemini, OpenAI, Groq, NVIDIA NIM, Ollama).
 
 ---
 
 ## 10. Seguridad y Privacidad
 
-* **Cero Fuga de Datos**: Las claves de API se almacenan localmente en la base de datos SQLite cifradas con una clave maestra local AES-256 (`LocalKeyVault`).
+* **Cero Fuga de Datos**: Las claves de API se almacenan localmente en la base de datos SQLite asíncrona (`aiosqlite` directo sin ORM, en modo WAL) cifradas con una clave maestra local AES-256 (`LocalKeyVault`).
 * **Protección SSRF**: Cualquier descarga de artículos remotos pasa por filtros que bloquean direcciones IP privadas, de enlace local (`169.254.169.254`), bucles locales y esquemas inseguros (`file://`, `gopher://`).
 * **Defensa CWE-1236**: Los datos contenidos en tablas se escapan ante fórmulas maliciosas de Excel/Word (`=`, `+`, `-`, `@`, `\t`, `\r`).
 
