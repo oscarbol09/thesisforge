@@ -211,7 +211,7 @@ async def test_llm_panel_audit_with_mock(sample_complete_project: ProjectStateDT
     assert len(mock_router.recorded_prompts) == 1
 
 
-def test_normalize_juror_role():
+def test_normalize_juror_role() -> None:
     """Verify normalize_juror_role correctly maps variations with accents and casing."""
     assert normalize_juror_role("Metodólogo") == JurorRole.METODOLOGO
     assert normalize_juror_role("metodologo") == JurorRole.METODOLOGO
@@ -223,3 +223,102 @@ def test_normalize_juror_role():
     assert normalize_juror_role("Abogado del Diablo") == JurorRole.ABOGADO_DEL_DIABLO
     assert normalize_juror_role("devil_advocate") == JurorRole.ABOGADO_DEL_DIABLO
     assert normalize_juror_role(JurorRole.AUDITOR_ESTADISTICO) == JurorRole.AUDITOR_ESTADISTICO
+
+
+@pytest.mark.asyncio
+async def test_rule_based_audit_transparency_and_rubric(sample_complete_project: ProjectStateDTO) -> None:
+    """Verify that rule-based fallback marks all evaluations as fallback synthetic personas and includes rubric."""
+    engine = MultiAgentJuryEngine(llm_router=None)
+    report = await engine.evaluate_project(sample_complete_project)
+
+    assert len(report.juror_evaluations) == 4
+    for je in report.juror_evaluations:
+        assert je.is_fallback is True
+        assert je.is_synthetic_persona is True
+
+    expected_rubric = {
+        "methodology": 0.35,
+        "literature": 0.25,
+        "empirical": 0.25,
+        "critical": 0.15,
+    }
+    assert report.scoring_rubric == expected_rubric
+    assert "autoevaluación" in report.rubric_notice.lower()
+
+
+@pytest.mark.asyncio
+async def test_llm_audit_omitted_juror_marked_as_fallback(sample_complete_project: ProjectStateDTO) -> None:
+    """Verify that when the LLM omits a juror, the default-injected juror has is_fallback=True and proper feedback."""
+    mock_router = FakeLLMRouter()
+    # Provide response with only 3 jurors, omitting Abogado del Diablo
+    mock_router.canned_json_response = {
+        "overall_score": 88.0,
+        "verdict": "aprobado",
+        "summary_dictamen": "Aprobado preliminar.",
+        "juror_evaluations": [
+            {
+                "juror_role": "metodologo",
+                "juror_name": "Dr. Arístides Valenzuela",
+                "dimension_name": "Consistencia Metodológica",
+                "score": 90.0,
+                "criteria_evaluation": "Coherente.",
+                "feedback": "Buen planteamiento.",
+                "strengths": ["Objetivos claros"],
+                "flaws": [],
+            },
+            {
+                "juror_role": "especialista_tematico",
+                "juror_name": "Dra. Beatriz Salamanca",
+                "dimension_name": "Marco Teórico",
+                "score": 85.0,
+                "criteria_evaluation": "Adecuado.",
+                "feedback": "Citas pertinentes.",
+                "strengths": [],
+                "flaws": [],
+            },
+            {
+                "juror_role": "auditor_estadistico",
+                "juror_name": "Dr. Camilo Restrepo",
+                "dimension_name": "Rigor Empírico",
+                "score": 88.0,
+                "criteria_evaluation": "Diseño aceptable.",
+                "feedback": "Muestra razonable.",
+                "strengths": [],
+                "flaws": [],
+            },
+        ],
+        "issues": [],
+        "mandatory_fixes": [],
+        "recommended_improvements": [],
+    }
+
+    engine = MultiAgentJuryEngine(llm_router=mock_router)
+    report = await engine.evaluate_project(sample_complete_project)
+
+    assert len(report.juror_evaluations) == 4
+    eval_by_role = {je.juror_role: je for je in report.juror_evaluations}
+
+    # The 3 returned jurors should have is_fallback=False
+    assert eval_by_role[JurorRole.METODOLOGO].is_fallback is False
+    assert eval_by_role[JurorRole.METODOLOGO].is_synthetic_persona is True
+    assert eval_by_role[JurorRole.ESPECIALISTA_TEMATICO].is_fallback is False
+    assert eval_by_role[JurorRole.AUDITOR_ESTADISTICO].is_fallback is False
+
+    # The omitted juror (Abogado del Diablo) must have is_fallback=True and specific feedback
+    omitted = eval_by_role[JurorRole.ABOGADO_DEL_DIABLO]
+    assert omitted.is_fallback is True
+    assert omitted.is_synthetic_persona is True
+    assert omitted.score == 75.0
+    assert omitted.feedback == (
+        "Evaluación heurística por omisión del modelo (sin objeciones críticas generadas en esta dimensión)."
+    )
+
+    # Check report rubric
+    assert report.scoring_rubric == {
+        "methodology": 0.35,
+        "literature": 0.25,
+        "empirical": 0.25,
+        "critical": 0.15,
+    }
+    assert report.rubric_notice
+

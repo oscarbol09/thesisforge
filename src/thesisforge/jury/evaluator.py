@@ -41,6 +41,19 @@ JUROR_DEFAULTS: dict[JurorRole, tuple[str, str]] = {
     ),
 }
 
+DEFAULT_SCORING_RUBRIC: dict[str, float] = {
+    "methodology": 0.35,
+    "literature": 0.25,
+    "empirical": 0.25,
+    "critical": 0.15,
+}
+
+DEFAULT_RUBRIC_NOTICE: str = (
+    "Puntuación heurística orientativa con fines pedagógicos de autoevaluación. "
+    "No constituye certificación psicométrica estandarizada ni dictamen oficial universitario."
+)
+
+
 
 def normalize_juror_role(raw_role: str | JurorRole) -> JurorRole:
     """Normalize raw juror role strings (with or without accents/variations) into canonical JurorRole."""
@@ -263,6 +276,8 @@ class MultiAgentJuryEngine:
                     for i in issues
                     if i.issue_type == AuditIssueType.METHODOLOGICAL_INCONSISTENCY
                 ],
+                is_fallback=True,
+                is_synthetic_persona=True,
             ),
             JurorDimensionScoreDTO(
                 juror_role=JurorRole.ESPECIALISTA_TEMATICO,
@@ -283,6 +298,8 @@ class MultiAgentJuryEngine:
                     for i in issues
                     if i.issue_type == AuditIssueType.UNSUPPORTED_CLAIM
                 ],
+                is_fallback=True,
+                is_synthetic_persona=True,
             ),
             JurorDimensionScoreDTO(
                 juror_role=JurorRole.AUDITOR_ESTADISTICO,
@@ -304,6 +321,8 @@ class MultiAgentJuryEngine:
                     if i.issue_type
                     in (AuditIssueType.SAMPLING_BIAS, AuditIssueType.INVALID_INSTRUMENT)
                 ],
+                is_fallback=True,
+                is_synthetic_persona=True,
             ),
             JurorDimensionScoreDTO(
                 juror_role=JurorRole.ABOGADO_DEL_DIABLO,
@@ -322,14 +341,16 @@ class MultiAgentJuryEngine:
                     for i in issues
                     if i.issue_type == AuditIssueType.MISSING_LIMITATIONS
                 ],
+                is_fallback=True,
+                is_synthetic_persona=True,
             ),
         ]
 
         overall_score = round(
-            (methodology_score * 0.35)
-            + (literature_score * 0.25)
-            + (empirical_score * 0.25)
-            + (critical_score * 0.15),
+            (methodology_score * DEFAULT_SCORING_RUBRIC["methodology"])
+            + (literature_score * DEFAULT_SCORING_RUBRIC["literature"])
+            + (empirical_score * DEFAULT_SCORING_RUBRIC["empirical"])
+            + (critical_score * DEFAULT_SCORING_RUBRIC["critical"]),
             1,
         )
 
@@ -374,6 +395,8 @@ class MultiAgentJuryEngine:
                 ai_failure_gate_passed=ai_gate_report.passed,
                 ai_failure_risk_score=ai_gate_report.risk_score,
                 ai_failure_findings=[f.model_dump() for f in ai_gate_report.findings],
+                scoring_rubric=DEFAULT_SCORING_RUBRIC,
+                rubric_notice=DEFAULT_RUBRIC_NOTICE,
                 created_at=utc_now(),
             )
 
@@ -451,6 +474,8 @@ class MultiAgentJuryEngine:
                 ai_failure_gate_passed=ai_gate_report.passed,
                 ai_failure_risk_score=ai_gate_report.risk_score,
                 ai_failure_findings=[f.model_dump() for f in ai_gate_report.findings],
+                scoring_rubric=DEFAULT_SCORING_RUBRIC,
+                rubric_notice=DEFAULT_RUBRIC_NOTICE,
                 created_at=utc_now(),
             )
 
@@ -522,6 +547,8 @@ class MultiAgentJuryEngine:
                         feedback=str(raw_eval.get("feedback", "")),
                         strengths=[str(s) for s in raw_eval.get("strengths", [])],
                         flaws=[str(f) for f in raw_eval.get("flaws", [])],
+                        is_fallback=False,
+                        is_synthetic_persona=True,
                     )
                 )
             except Exception as err:
@@ -538,9 +565,11 @@ class MultiAgentJuryEngine:
                         dimension_name=default_dim,
                         score=75.0,
                         criteria_evaluation="Evaluación estándar completada.",
-                        feedback="El jurado evaluador no emitió objeciones críticas adicionales.",
+                        feedback="Evaluación heurística por omisión del modelo (sin objeciones críticas generadas en esta dimensión).",
                         strengths=[],
                         flaws=[],
+                        is_fallback=True,
+                        is_synthetic_persona=True,
                     )
                 )
 
@@ -584,5 +613,7 @@ class MultiAgentJuryEngine:
             ai_failure_findings=[f.model_dump() for f in ai_gate_report.findings]
             if ai_gate_report
             else [],
+            scoring_rubric=data.get("scoring_rubric", DEFAULT_SCORING_RUBRIC),
+            rubric_notice=data.get("rubric_notice", DEFAULT_RUBRIC_NOTICE),
             created_at=utc_now(),
         )
