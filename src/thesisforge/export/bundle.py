@@ -107,9 +107,9 @@ class ProjectBundleService:
             buffer = io.BytesIO(bundle_bytes)
             with zipfile.ZipFile(buffer, mode="r") as zf:
                 infolist = zf.infolist()
-                if len(infolist) > 20:
+                if len(infolist) > 100:
                     raise ExportError(
-                        f"El paquete contiene demasiados archivos ({len(infolist)} > 20)."
+                        f"El paquete contiene demasiados archivos ({len(infolist)} > 100)."
                     )
 
                 total_uncompressed = 0
@@ -137,6 +137,12 @@ class ProjectBundleService:
                 manifest_raw = zf.read("manifest.json").decode("utf-8")
                 manifest = ProjectBundleManifest.model_validate_json(manifest_raw)
 
+                # Validate format version compatibility
+                if not manifest.format_version.startswith("1."):
+                    raise ExportError(
+                        f"Versión de formato no soportada en el paquete .thesisforge: '{manifest.format_version}'."
+                    )
+
                 project_raw_bytes = zf.read("project.json")
                 calculated_sha256 = hashlib.sha256(project_raw_bytes).hexdigest()
 
@@ -156,6 +162,24 @@ class ProjectBundleService:
                         f"El manifiesto declara project_id '{manifest.project_id}' "
                         f"pero project.json tiene '{project.id}'."
                     )
+                if manifest.title != (project.title or "Proyecto de Tesis"):
+                    raise ExportError(
+                        f"Incoherencia estructural en el paquete .thesisforge: "
+                        f"El manifiesto declara título '{manifest.title}' "
+                        f"pero project.json tiene '{project.title}'."
+                    )
+                if manifest.academic_level != project.academic_level.value:
+                    raise ExportError(
+                        f"Incoherencia estructural en el paquete .thesisforge: "
+                        f"El manifiesto declara nivel académico '{manifest.academic_level}' "
+                        f"pero project.json tiene '{project.academic_level.value}'."
+                    )
+                if manifest.phase != project.phase.value:
+                    raise ExportError(
+                        f"Incoherencia estructural en el paquete .thesisforge: "
+                        f"El manifiesto declara fase '{manifest.phase}' "
+                        f"pero project.json tiene '{project.phase.value}'."
+                    )
                 if manifest.section_count != len(project.sections):
                     raise ExportError(
                         f"Incoherencia estructural en el paquete .thesisforge: "
@@ -168,6 +192,17 @@ class ProjectBundleService:
                         f"El manifiesto declara {manifest.citation_count} citas "
                         f"pero project.json contiene {len(project.validated_citations)}."
                     )
+
+                # Validate section file content consistency with canonical project.json
+                for section in project.sections:
+                    sec_filename = f"sections/{section.chapter_number:02d}_{section.section_id}.md"
+                    if sec_filename in file_list:
+                        sec_raw = zf.read(sec_filename).decode("utf-8")
+                        if sec_raw != (section.content or ""):
+                            raise ExportError(
+                                f"Incoherencia de contenido en sección: '{sec_filename}' "
+                                f"no coincide con el contenido canónico de project.json."
+                            )
 
                 if new_project_id:
                     project.id = new_project_id

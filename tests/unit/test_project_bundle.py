@@ -227,3 +227,68 @@ async def test_import_manifest_structural_incoherence_rejected(
     with pytest.raises(ExportError) as exc_info:
         await bundle_service.import_bundle_bytes(tampered_manifest_bytes)
     assert "Incoherencia estructural" in str(exc_info.value)
+
+
+@pytest.mark.asyncio
+async def test_import_unsupported_format_version_rejected(
+    project_repo: ProjectRepository,
+    bundle_service: ProjectBundleService,
+) -> None:
+    """Importing a bundle with unsupported major format_version raises ExportError (TF-EXPORT-001)."""
+    project = ProjectStateDTO(
+        id="proj-ver-test",
+        title="Proyecto Version",
+        academic_level=AcademicLevel.PREGRADO,
+    )
+    await project_repo.create_project(project)
+    bundle_bytes = await bundle_service.export_bundle_bytes(project.id)
+
+    in_mem_in = io.BytesIO(bundle_bytes)
+    in_mem_out = io.BytesIO()
+    with zipfile.ZipFile(in_mem_in, "r") as zin, zipfile.ZipFile(in_mem_out, "w") as zout:
+        for item in zin.infolist():
+            content = zin.read(item.filename)
+            if item.filename == "manifest.json":
+                m_data = json.loads(content.decode("utf-8"))
+                m_data["format_version"] = "9.0.0"
+                content = json.dumps(m_data).encode("utf-8")
+            zout.writestr(item, content)
+
+    with pytest.raises(ExportError, match="Versión de formato no soportada"):
+        await bundle_service.import_bundle_bytes(in_mem_out.getvalue())
+
+
+@pytest.mark.asyncio
+async def test_import_tampered_section_file_rejected(
+    project_repo: ProjectRepository,
+    bundle_service: ProjectBundleService,
+) -> None:
+    """Importing a bundle where an individual section .md file diverges from project.json raises ExportError (TF-EXPORT-001)."""
+    project = ProjectStateDTO(
+        id="proj-sec-tamper",
+        title="Proyecto Seccion",
+        academic_level=AcademicLevel.MAESTRIA,
+        sections=[
+            SectionDraftDTO(
+                section_id="sec_1_1",
+                chapter_number=1,
+                order_index=1,
+                title="Capítulo Uno",
+                content="Contenido original certificado.",
+            )
+        ],
+    )
+    await project_repo.create_project(project)
+    bundle_bytes = await bundle_service.export_bundle_bytes(project.id)
+
+    in_mem_in = io.BytesIO(bundle_bytes)
+    in_mem_out = io.BytesIO()
+    with zipfile.ZipFile(in_mem_in, "r") as zin, zipfile.ZipFile(in_mem_out, "w") as zout:
+        for item in zin.infolist():
+            content = zin.read(item.filename)
+            if item.filename == "sections/01_sec_1_1.md":
+                content = b"Contenido alterado clandestinamente."
+            zout.writestr(item, content)
+
+    with pytest.raises(ExportError, match="Incoherencia de contenido en sección"):
+        await bundle_service.import_bundle_bytes(in_mem_out.getvalue())
