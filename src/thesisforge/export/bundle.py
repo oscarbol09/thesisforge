@@ -37,7 +37,7 @@ class ProjectBundleManifest(BaseModel):
 
 
 class ProjectBundleService:
-    """Service managing atomic serialization, integrity signing, and restoration of .thesisforge archives."""
+    """Service managing atomic serialization, SHA-256 integrity checksumming, and restoration of .thesisforge archives."""
 
     def __init__(self, project_repo: ProjectRepository) -> None:
         self.repo = project_repo
@@ -142,11 +142,32 @@ class ProjectBundleService:
 
                 if calculated_sha256 != manifest.project_sha256:
                     raise ExportError(
-                        "Fallo de integridad criptográfica: El checksum SHA-256 no coincide con el manifiesto."
+                        "Fallo de integridad: El checksum SHA-256 no coincide con el manifiesto "
+                        "(posible corrupción de archivo o manipulación no autorizada)."
                     )
 
                 project_dict = json.loads(project_raw_bytes.decode("utf-8"))
                 project = ProjectStateDTO.model_validate(project_dict)
+
+                # Validate structural coherence between manifest and project payload (TF-EXPORT-001)
+                if manifest.project_id != project.id:
+                    raise ExportError(
+                        f"Incoherencia estructural en el paquete .thesisforge: "
+                        f"El manifiesto declara project_id '{manifest.project_id}' "
+                        f"pero project.json tiene '{project.id}'."
+                    )
+                if manifest.section_count != len(project.sections):
+                    raise ExportError(
+                        f"Incoherencia estructural en el paquete .thesisforge: "
+                        f"El manifiesto declara {manifest.section_count} secciones "
+                        f"pero project.json contiene {len(project.sections)}."
+                    )
+                if manifest.citation_count != len(project.validated_citations):
+                    raise ExportError(
+                        f"Incoherencia estructural en el paquete .thesisforge: "
+                        f"El manifiesto declara {manifest.citation_count} citas "
+                        f"pero project.json contiene {len(project.validated_citations)}."
+                    )
 
                 if new_project_id:
                     project.id = new_project_id

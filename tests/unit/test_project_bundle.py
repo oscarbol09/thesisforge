@@ -183,4 +183,47 @@ async def test_import_tampered_payload_rejected(
     tampered_bytes = in_mem_out.getvalue()
     with pytest.raises(ExportError) as exc_info:
         await bundle_service.import_bundle_bytes(tampered_bytes)
-    assert "Fallo de integridad criptográfica" in str(exc_info.value)
+    assert "Fallo de integridad" in str(exc_info.value)
+
+
+@pytest.mark.asyncio
+async def test_import_manifest_structural_incoherence_rejected(
+    project_repo: ProjectRepository,
+    bundle_service: ProjectBundleService,
+) -> None:
+    """Importing a bundle where manifest counters do not match project.json raises ExportError (TF-EXPORT-001)."""
+
+    project = ProjectStateDTO(
+        id="proj-struct-test",
+        title="Proyecto de Integridad",
+        academic_level=AcademicLevel.MAESTRIA,
+        sections=[
+            SectionDraftDTO(
+                section_id="sec_1",
+                chapter_number=1,
+                order_index=1,
+                title="Intro",
+                content="Texto",
+            )
+        ],
+    )
+    await project_repo.create_project(project)
+    bundle_bytes = await bundle_service.export_bundle_bytes(project.id)
+
+    # Tamper with manifest section_count to not match project sections
+    in_mem_in = io.BytesIO(bundle_bytes)
+    in_mem_out = io.BytesIO()
+
+    with zipfile.ZipFile(in_mem_in, "r") as zin, zipfile.ZipFile(in_mem_out, "w") as zout:
+        for item in zin.infolist():
+            content = zin.read(item.filename)
+            if item.filename == "manifest.json":
+                manifest_data = json.loads(content.decode("utf-8"))
+                manifest_data["section_count"] = 999  # Incoherent count
+                content = json.dumps(manifest_data).encode("utf-8")
+            zout.writestr(item, content)
+
+    tampered_manifest_bytes = in_mem_out.getvalue()
+    with pytest.raises(ExportError) as exc_info:
+        await bundle_service.import_bundle_bytes(tampered_manifest_bytes)
+    assert "Incoherencia estructural" in str(exc_info.value)
