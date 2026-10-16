@@ -4,6 +4,8 @@ import asyncio
 import ipaddress
 import os
 import socket
+import time
+from collections.abc import Container
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -14,6 +16,18 @@ from thesisforge.exceptions import KeyVaultError, SSRFBlockedError
 
 logger = get_logger(__name__)
 
+
+# Standard academic literature API hosts permitted for outbound fetching (TF-SEC-008)
+DEFAULT_ALLOWED_ACADEMIC_HOSTS: frozenset[str] = frozenset(
+    {
+        "api.semanticscholar.org",
+        "export.arxiv.org",
+        "api.crossref.org",
+        "api.openalex.org",
+        "doi.org",
+        "dx.doi.org",
+    }
+)
 
 # Subnets explicitly blocked to eliminate Server-Side Request Forgery (SSRF)
 BLOCKED_SUBNETS = [
@@ -37,30 +51,38 @@ BLOCKED_SUBNETS = [
 
 
 def _check_ip_safety(ips: list[ipaddress.IPv4Address | ipaddress.IPv6Address]) -> None:
-    """Verify that none of the resolved IPs fall into blocked or private subnets."""
+    """Verify that none of the resolved IPs fall into blocked, private, loopback, or cloud metadata subnets."""
     for ip in ips:
         target_ip = (
             ip.ipv4_mapped
             if isinstance(ip, ipaddress.IPv6Address) and ip.ipv4_mapped is not None
             else ip
         )
-        if any(target_ip in subnet for subnet in BLOCKED_SUBNETS):
+        if (
+            target_ip.is_private
+            or target_ip.is_loopback
+            or target_ip.is_link_local
+            or target_ip.is_reserved
+            or target_ip.is_multicast
+            or any(target_ip in subnet for subnet in BLOCKED_SUBNETS)
+        ):
             raise SSRFBlockedError(
                 f"Acceso denegado: La dirección IP {ip} pertenece a una red privada o reservada (SSRF Guard)."
             )
 
 
-def assert_safe_academic_url(target_url: str) -> str:
+def assert_safe_academic_url(target_url: str, allowed_hosts: Container[str] | None = None) -> str:
     """Validate that an outbound academic literature URL is safe and not targeting internal networks.
 
     Args:
         target_url: The URL to validate.
+        allowed_hosts: Optional container of permitted hostnames (TF-SEC-008).
 
     Returns:
         The validated URL string.
 
     Raises:
-        SSRFBlockedError: If URL schema is invalid, unresolvable, or maps to private/internal IPs.
+        SSRFBlockedError: If URL schema is invalid, unresolvable, unallowed, or maps to private IPs.
     """
     if not isinstance(target_url, str) or not target_url.strip():
         raise SSRFBlockedError("URL vacía o no válida.")
@@ -74,6 +96,11 @@ def assert_safe_academic_url(target_url: str) -> str:
     hostname = parsed.hostname
     if not hostname:
         raise SSRFBlockedError("La URL no contiene un nombre de host válido.")
+
+    if allowed_hosts is not None and hostname.lower() not in allowed_hosts:
+        raise SSRFBlockedError(
+            f"El host '{hostname}' no está en la lista de hosts académicos permitidos (SSRF Guard)."
+        )
 
     try:
         direct_ip = ipaddress.ip_address(hostname)
@@ -92,17 +119,20 @@ def assert_safe_academic_url(target_url: str) -> str:
     return target_url.strip()
 
 
-async def assert_safe_academic_url_async(target_url: str) -> str:
+async def assert_safe_academic_url_async(
+    target_url: str, allowed_hosts: Container[str] | None = None
+) -> str:
     """Validate that an outbound URL is safe without blocking the asyncio event loop during DNS resolution.
 
     Args:
         target_url: The URL to validate.
+        allowed_hosts: Optional container of permitted hostnames (TF-SEC-008).
 
     Returns:
         The validated URL string.
 
     Raises:
-        SSRFBlockedError: If URL schema is invalid, unresolvable, or maps to private/internal IPs.
+        SSRFBlockedError: If URL schema is invalid, unresolvable, unallowed, or maps to private IPs.
     """
     if not isinstance(target_url, str) or not target_url.strip():
         raise SSRFBlockedError("URL vacía o no válida.")
@@ -116,6 +146,11 @@ async def assert_safe_academic_url_async(target_url: str) -> str:
     hostname = parsed.hostname
     if not hostname:
         raise SSRFBlockedError("La URL no contiene un nombre de host válido.")
+
+    if allowed_hosts is not None and hostname.lower() not in allowed_hosts:
+        raise SSRFBlockedError(
+            f"El host '{hostname}' no está en la lista de hosts académicos permitidos (SSRF Guard)."
+        )
 
     try:
         direct_ip = ipaddress.ip_address(hostname)
@@ -187,8 +222,15 @@ def resolve_or_create_master_key(
             fd = os.open(str(target_path), flags, 0o600)
             with os.fdopen(fd, "wb") as f:
                 f.write(new_key)
+                f.flush()
+                os.fsync(f.fileno())
         except FileExistsError:
-            # Another process created the key concurrently; read and return that key
+            # Another process created the key concurrently; retry to ensure write is flushed
+            for _ in range(10):
+                content = target_path.read_bytes().strip()
+                if content:
+                    return content
+                time.sleep(0.05)
             content = target_path.read_bytes().strip()
             if content:
                 return content

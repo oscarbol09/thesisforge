@@ -16,7 +16,10 @@ from tenacity import (
 
 from thesisforge import __version__
 from thesisforge.core.logging import get_logger
-from thesisforge.core.security import assert_safe_academic_url_async
+from thesisforge.core.security import (
+    DEFAULT_ALLOWED_ACADEMIC_HOSTS,
+    assert_safe_academic_url_async,
+)
 from thesisforge.exceptions import AcademicAPIError, SSRFBlockedError
 
 logger = get_logger(__name__)
@@ -73,6 +76,8 @@ class BaseAcademicClient(ABC):
             await self._client.aclose()
             self._client = None
 
+    DEFAULT_MAX_RESPONSE_BYTES = 15 * 1024 * 1024  # 15 MB limit (TF-SEC-007)
+
     async def request_safe(
         self,
         method: str,
@@ -81,7 +86,7 @@ class BaseAcademicClient(ABC):
         headers: dict[str, str] | None = None,
         max_redirects: int = 5,
     ) -> httpx.Response:
-        """Perform an HTTP request validating every initial URL and redirect target against SSRF (TF-SEC-003)."""
+        """Perform an HTTP request validating every initial URL and redirect target against SSRF (TF-SEC-003, TF-SEC-008)."""
         current_url = url
         current_method = method
         current_params = params
@@ -89,13 +94,33 @@ class BaseAcademicClient(ABC):
 
         async with self.get_client() as client:
             while True:
-                await assert_safe_academic_url_async(current_url)
+                await assert_safe_academic_url_async(
+                    current_url, allowed_hosts=DEFAULT_ALLOWED_ACADEMIC_HOSTS
+                )
                 response = await client.request(
                     method=current_method,
                     url=current_url,
                     params=current_params,
                     headers=headers,
                 )
+                # Check response size limit before processing (TF-SEC-007)
+                content_length = response.headers.get("content-length")
+                if (
+                    content_length
+                    and content_length.isdigit()
+                    and int(content_length) > self.DEFAULT_MAX_RESPONSE_BYTES
+                ):
+                    raise AcademicAPIError(
+                        f"La respuesta de la API académica excede el tamaño máximo permitido ({self.DEFAULT_MAX_RESPONSE_BYTES} bytes).",
+                        details={"client": self.__class__.__name__},
+                    )
+
+                if len(response.content) > self.DEFAULT_MAX_RESPONSE_BYTES:
+                    raise AcademicAPIError(
+                        f"La respuesta de la API académica excede el tamaño máximo permitido ({self.DEFAULT_MAX_RESPONSE_BYTES} bytes).",
+                        details={"client": self.__class__.__name__},
+                    )
+
                 if response.is_redirect and "location" in response.headers:
                     if redirects_remaining <= 0:
                         raise AcademicAPIError(
@@ -151,15 +176,12 @@ class BaseAcademicClient(ABC):
             status = err.response.status_code
             logger.warning(
                 f"Academic API returned HTTP {status}",
-                extra={"url": url, "status": status},
+                extra={"url": url, "status": status, "body": err.response.text[:200]},
             )
+            # Sanitize public error message: do not leak raw response bodies or internal URLs (TF-LLM-001-R1)
             raise AcademicAPIError(
                 f"Error de API académica ({self.__class__.__name__}): HTTP {status}",
-                details={
-                    "url": url,
-                    "status": str(status),
-                    "response": err.response.text[:200],
-                },
+                details={"client": self.__class__.__name__, "status": str(status)},
             ) from err
         except Exception as err:
             logger.warning(
@@ -167,8 +189,8 @@ class BaseAcademicClient(ABC):
                 extra={"url": url, "error": str(err)},
             )
             raise AcademicAPIError(
-                f"Fallo en comunicación con API académica ({self.__class__.__name__}): {err}",
-                details={"url": url, "error": str(err)},
+                f"Fallo en comunicación con API académica ({self.__class__.__name__})",
+                details={"client": self.__class__.__name__},
             ) from err
         raise AcademicAPIError(f"No se pudo completar la petición a {url}")
 

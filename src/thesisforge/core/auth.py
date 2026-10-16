@@ -27,6 +27,7 @@ to the repository layer without further model changes.
 
 import os
 import secrets
+import time
 from pathlib import Path
 
 from fastapi import Depends, HTTPException, status
@@ -79,6 +80,8 @@ def resolve_instance_token(
             fd = os.open(str(target), flags, 0o600)
             with os.fdopen(fd, "w", encoding="utf-8") as f:
                 f.write(new_token)
+                f.flush()
+                os.fsync(f.fileno())
             logger.info(
                 "Generated new instance token and persisted it to disk.",
                 extra={"token_path": str(target)},
@@ -93,10 +96,16 @@ def resolve_instance_token(
                     f"  or set THESISFORGE_INSTANCE_TOKEN in your environment.\n"
                 )
         except FileExistsError:
+            for _ in range(10):
+                stored = target.read_text(encoding="utf-8").strip()
+                if stored:
+                    return stored
+                time.sleep(0.05)
             stored = target.read_text(encoding="utf-8").strip()
             if stored:
                 return stored
             return new_token
+
     except OSError as err:
         if env == "production":
             raise ConfigurationError(

@@ -154,3 +154,27 @@ def test_resolve_or_create_master_key_atomic_collision_recovery(tmp_path: Path) 
 
     resolved = resolve_or_create_master_key(master_key=None, key_file_path=key_file)
     assert resolved == pre_key
+
+
+def test_assert_safe_academic_url_allowed_hosts_rejection(monkeypatch: pytest.MonkeyPatch):
+    """Test that URLs pointing to hosts not in allowed_hosts are rejected (TF-SEC-008)."""
+    monkeypatch.setattr(
+        "socket.getaddrinfo",
+        lambda host, port, *args, **kwargs: [(2, 1, 6, "", ("142.250.190.46", 443))],
+    )
+    url = "https://unauthorized-evil-host.com/data"
+    with pytest.raises(
+        SSRFBlockedError, match="no está en la lista de hosts académicos permitidos"
+    ):
+        assert_safe_academic_url(url, allowed_hosts={"api.crossref.org", "api.semanticscholar.org"})
+
+
+def test_assert_safe_academic_url_allowed_hosts_accepted(monkeypatch: pytest.MonkeyPatch):
+    """Test that URLs matching allowed_hosts are accepted."""
+    monkeypatch.setattr(
+        "socket.getaddrinfo",
+        lambda host, port, *args, **kwargs: [(2, 1, 6, "", ("142.250.190.46", 443))],
+    )
+    url = "https://api.crossref.org/works"
+    res = assert_safe_academic_url(url, allowed_hosts={"api.crossref.org"})
+    assert res == url

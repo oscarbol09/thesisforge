@@ -331,3 +331,49 @@ async def test_client_redirect_loop_exceeded():
         await client.request_json("GET", "/works/10.1234/loop-a")
 
     await client.close()
+
+
+@pytest.mark.asyncio
+@respx.mock
+async def test_client_sanitizes_upstream_error_details():
+    """Verify that upstream 500 error messages and bodies are not leaked into the exception (TF-LLM-001-R1)."""
+    from thesisforge.exceptions import AcademicAPIError
+
+    client = CrossRefClient()
+    respx.get("https://api.crossref.org/works/10.1234/error").respond(
+        status_code=500,
+        text="Internal Database Cluster Error: secret_token_xyz at https://db.internal.lan",
+    )
+
+    with pytest.raises(AcademicAPIError) as exc_info:
+        await client.request_json("GET", "/works/10.1234/error")
+
+    # Upstream confidential info must NOT be leaked in the public message or details
+    err_str = str(exc_info.value)
+    assert "secret_token_xyz" not in err_str
+    assert "https://db.internal.lan" not in err_str
+    assert "Internal Database Cluster Error" not in err_str
+    assert exc_info.value.details.get("response") is None
+    assert "500" in str(exc_info.value.details.get("status"))
+
+    await client.close()
+
+
+@pytest.mark.asyncio
+@respx.mock
+async def test_client_enforces_max_response_size():
+    """Verify that responses exceeding the maximum byte threshold raise an error (TF-SEC-007)."""
+    from thesisforge.exceptions import AcademicAPIError
+
+    client = CrossRefClient()
+    # Mock response with large content-length
+    respx.get("https://api.crossref.org/works/10.1234/huge").respond(
+        status_code=200,
+        headers={"Content-Length": str(20 * 1024 * 1024)},  # 20MB
+        text="Huge content...",
+    )
+
+    with pytest.raises(AcademicAPIError, match="excede el tamaño máximo permitido"):
+        await client.request_json("GET", "/works/10.1234/huge")
+
+    await client.close()
