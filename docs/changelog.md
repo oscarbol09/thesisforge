@@ -9,6 +9,19 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/
 ## [Unreleased]
 
 ### Added
+- **Control Universal de Concurrencia Optimista (`src/thesisforge/models.py`, `src/thesisforge/repository/project_repository.py`, `TF-REPO-001`):**
+  - Inclusión de `version: int = Field(default=1, ge=1)` en `ProjectStateDTO` unificado con la migración `v3_optimistic_concurrency`.
+  - Modificación de `update_project` para requerir y verificar atómicamente la versión (`expected_version=project.version`), lanzando `ProjectVersionConflictError` ante escrituras concurrentes obsoletas en todos los servicios de dominio.
+- **Precedencia Formal de Configuración Twelve-Factor (`src/thesisforge/config.py`, `TF-CONFIG-001-R1`):**
+  - Implementación de `AppSettings.settings_customise_sources` estableciendo la jerarquía canónica: `defaults < config.yaml < environment variables`.
+  - Pydantic Settings garantiza que las variables de entorno (`THESISFORGE_*`) tengan prioridad sobre overrides de `config.yaml`, y estos sobre los valores predeterminados del modelo.
+- **Validación Estructural de Integridad en Bundles (`src/thesisforge/export/bundle.py`, `TF-EXPORT-001-R1`, `TF-EXPORT-001-R2`):**
+  - Verificación de compatibilidad con versiones mayores (`format_version` compatible `1.x`).
+  - Validación cruzada estricta de correspondencia entre `manifest.json` y `project.json` para `title`, `academic_level` y `phase`.
+  - Verificación de consistencia del contenido de los archivos Markdown derivados en `sections/` contra la carga canónica de `project.json`.
+- **Pruebas de Resiliencia y Regresión de Reindexación (`tests/unit/test_rag_documents_and_routes.py`, `TF-TEST-001`, `TF-TEST-002`):**
+  - Pruebas exhaustivas para reindexación con contenido modificado (`PDF v1 -> PDF v2`) confirmando diferenciación de hashes, ausencia de fragmentos obsoletos y actualización de citas.
+  - Pruebas de simulación de fallos en parsing y almacenamiento vectorial demostrando la preservación de fragmentos en SQLite y la reconstrucción exitosa mediante `rebuild_chroma_from_sqlite()`.
 - **Rigor Epistémico & Grounding Negation-Aware (`src/thesisforge/rag/citation_guard.py`):**
   - Implementación de `_check_negation_in_proximity` con tokens prepositivos (`window=2`) para verbos y predicados (`no`, `sin`, `nunca`, `jamás`, `not`, `never`, etc.), penalizando severamente (factor `0.2x`) asimetrías de polaridad para impedir falsos positivos en afirmaciones contradichas por la literatura.
   - Incorporación de `epistemic_notice` en `EvidenceVerdictDTO` advirtiendo formalmente que la correspondencia léxica/semántica no sustituye la validación ontológica ni metodológica concluyente del estudio original.
@@ -22,41 +35,38 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/
   - **Capítulo I (Planteamiento del Problema):** Arquitectura en 8 movimientos, formulación de preguntas con 5 componentes anatómicos no dicotómicos, regla de oro de objetivos ($OG \equiv PG$), justificación en 4 dimensiones con formulación negativa y fórmula de limitaciones en 4 pasos.
   - **Capítulo IV (Resultados y Discusión):** Distinción conceptual (*Resultado $\to$ Análisis $\to$ Discusión*), secuencia cuantitativa en 3 niveles, reporte APA 7 en 4 componentes ($M/DT$, estadístico con $gl$, $p$-exacto sin cero inicial, tamaño del efecto con IC 95%), análisis cualitativo en 4 movimientos con casos discrepantes, triangulación en 3 movimientos, *Joint Display* mixto dialógico y auditoría de los 20 errores metodológicos fatales de jurado.
   - **Capítulo V (Conclusiones y Recomendaciones):** Cadena descendente (*Resultado $\to$ Conclusión $\to$ Implicación $\to$ Recomendación*), principio de correspondencia isomórfica ($N = N$), 3 tipos de conclusiones por certeza epistémica, recomendaciones en 4 componentes por destinatario explícito y sección canónica `sec_5_3` (Aportes a la ciencia y transferencia social / originalidad).
-- **Catálogo Curado de Modelos y Diagnóstico en Tiempo Real (`gui/js/model-catalog.js`, `src/thesisforge/api/routes_settings.py`):**
-  - Clasificación de modelos en *Free Tier* y *Tier Superior* para OpenRouter, Google Gemini, Anthropic, OpenAI, Groq y Ollama.
-  - Endpoint `POST /api/settings/test-connection` para probar credenciales y latencia en tiempo real.
-- **Ampliación de Reglas Detox Anti-Slop (`src/thesisforge/drafting/detox.py`):**
-  - Detección de inflación inferencial (`statistical_inflation`), errores de reporte de valor cero (`apa_statistical_zero`), sesgos frecuentistas (`frequentist_misconception`), recomendaciones vacuas (`vacuous_recommendation`) y niebla de atenuantes en conclusiones (`conclusions_evasion_fog`).
-- **Validadores Metodológicos Extendidos (`src/thesisforge/advisor/validators.py`):**
-  - Métodos `validate_conclusions_alignment` y `validate_recommendations` para auditar la coherencia capitular.
-- **Suite de Pruebas Ampliada:**
-  - 315 pruebas unitarias, integradas y de propiedades pasando al 100% con tipado estricto mypy y verificación de seguridad Bandit.
 
 ### Security & Hardening
+- **Protección y Aislamiento en Handshake y Framing de WebSockets (`src/thesisforge/api/routes_drafting.py`, `src/thesisforge/api/routes_defense.py`, `tests/integration/test_websocket_protection.py`, `TF-WS-001`, `TF-WS-002`, `TF-WS-003`, `TF-TEST-003`):**
+  - Validación de existencia de proyecto, sección o sesión previa al handshake (`websocket.accept()`), cerrando con código WS 1008 (Policy Violation) ante accesos inválidos.
+  - Negociación formal del subprotocolo WebSocket (`bearer`).
+  - Timeout de inactividad de 120s mediante `asyncio.wait_for`.
+  - Límite de carga útil de 5.000 caracteres por mensaje para prevenir agotamiento de memoria (`PAYLOAD_TOO_LARGE`).
+  - Sanitización exhaustiva de errores en tramas WebSocket, eliminando la filtración de trazas y cadenas crudas mediante códigos semánticos (`LLM_PROVIDER_ERROR`, `INTERNAL_ERROR`).
+- **Defensa contra DNS Rebinding y Filtración en Clientes Académicos (`src/thesisforge/core/security.py`, `src/thesisforge/rag/clients/base.py`, `TF-SEC-007`, `TF-SEC-008`, `TF-LLM-001-R1`):**
+  - Lista blanca obligatoria `DEFAULT_ALLOWED_ACADEMIC_HOSTS` para Semantic Scholar, CrossRef, arXiv y OpenAlex.
+  - Verificación reforzada de direcciones IP resueltas (`is_private`, `is_loopback`, `is_link_local`, `is_reserved`, `is_multicast`).
+  - Límite estricto de descarga HTTP a 15 MB con verificación de `Content-Length` y corte en flujo por chunks (`DEFAULT_MAX_RESPONSE_BYTES`).
+  - Desinfección de detalles públicos en `AcademicAPIError` protegiendo información sensible en logs privados.
+- **Endurecimiento de Despliegue en Contenedores (`docker-compose.yml`, `TF-DOCKER-001`):**
+  - Incorporación de `cap_drop: [ALL]`, sistema de archivos raíz de solo lectura (`read_only: true`), `tmpfs: [/tmp]` para archivos efímeros y cuotas de recursos `deploy.resources.limits` (2 CPUs, 2048 MB RAM).
+- **Alineación de Quality Gate en Release (`.github/workflows/release.yml`, `TF-CI-001`):**
+  - Job `verify-gate` previo al empaquetado y publicación que valida Ruff linter, formato, tipado estricto mypy, Bandit SAST y suite completa de pruebas unitarias, integradas y de propiedades.
 - **Eliminación de tokens en query strings (`src/thesisforge/core/auth.py`, `TF-SEC-001`):**
-  - Eliminación completa de la autenticación mediante `?token=` en URLs para prevenir fugas en logs de proxies, historiales de navegación y encabezados Referer; soporte exclusivo de `Authorization: Bearer <token>` y encabezado `Sec-WebSocket-Protocol`.
+  - Eliminación completa de la autenticación mediante `?token=` en URLs; soporte exclusivo de `Authorization: Bearer <token>` y encabezado `Sec-WebSocket-Protocol`.
 - **Política estricta de emisión de tokens (`src/thesisforge/core/auth.py`, `TF-SEC-002`):**
-  - Supresión de la impresión de tokens en stdout en entornos de producción y tests; fallo explícito con `ConfigurationError` si no se puede persistir el token en producción en lugar de degradación silenciosa a memoria.
+  - Supresión de la impresión de tokens en stdout en entornos de producción y tests; fallo explícito con `ConfigurationError` si no se puede persistir el token en producción.
 - **Defensa contra SSRF en cadenas de redirección (`src/thesisforge/rag/clients/base.py`, `src/thesisforge/rag/clients/arxiv.py`, `TF-SEC-003`):**
-  - Configuración de `follow_redirects=False` e implementación de `request_safe` con bucle de verificación asíncrona de cada encabezado `Location` antes de redirigir, interceptando redirecciones maliciosas a subredes privadas RFC 1918, loopback o metadatos de nube, y limitando la cadena a un máximo de 5 saltos.
-- **Validación estructural de integridad en bundles (`src/thesisforge/export/bundle.py`, `TF-SEC-004`, `TF-EXPORT-001`):**
-  - Aclaración formal de la semántica de suma de comprobación SHA-256 no autenticada para detección de corrupción e incorporación de validación exhaustiva de correspondencia de `project_id`, `section_count` y `citation_count` entre `manifest.json` y `project.json`.
+  - Bucle manual de verificación asíncrona de cada encabezado `Location` antes de redirigir, interceptando redirecciones maliciosas con un máximo de 5 saltos.
 - **Creación atómica de claves y tokens (`src/thesisforge/core/security.py`, `src/thesisforge/core/auth.py`, `TF-DATA-005`):**
-  - Uso de `os.open` con `O_CREAT | O_EXCL` y recuperación ante `FileExistsError` para prevenir condiciones de carrera en inicios concurrentes.
-- **Sanitización de mensajes de error de proveedores LLM (`src/thesisforge/llm/router.py`, `TF-LLM-001`):**
-  - Mensajes públicos estructurados y desinfectados en `LLMProviderError` para evitar la filtración de URLs internas, parámetros o credenciales upstream en respuestas HTTP.
-- **Endurecimiento de Despliegue Local (`docker-compose.yml`):**
-  - Enlace por defecto restringido a `127.0.0.1:8000:8000` y adición de `security_opt: [no-new-privileges:true]` para prevenir escalada de privilegios en el contenedor.
-- **Transparencia y Hoja de Ruta de CSP (`src/thesisforge/api/app.py`):**
-  - Documentación técnica exhaustiva de la necesidad de `'unsafe-eval'` (Alpine.js) y `'unsafe-inline'` (Tailwind CDN) con hoja de ruta hacia el empaquetado v1.0.0 sin CDNs.
+  - Uso de `os.open` con `O_CREAT | O_EXCL`, `os.fsync` y reintento ante `FileExistsError` para prevenir condiciones de carrera en inicios concurrentes.
 
 ### Fixed & Improved
-- **Idempotencia y Consistencia en Reindexación de Documentos (`src/thesisforge/rag/service.py`, `src/thesisforge/rag/parser.py`, `TF-DATA-001`, `TF-DATA-002`):**
-  - Generación de identificadores deterministas para fragmentos (`DocumentChunkDTO.id`) basados en hash SHA-256 del contenido, documento y página.
-  - Limpieza atómica de fragmentos previos en SQLite y vectores en ChromaDB antes de insertar una nueva versión, evitando la acumulación de fragmentos obsoletos o duplicados.
-- **Carga Integral de Configuración YAML (`src/thesisforge/config.py`, `TF-CONFIG-001`):**
-  - Incorporación de `language` y `theme` en `AppSettings`.
-  - Integración completa de la sección `app:` (`name`, `language`, `theme`) y de `providers.max_retries` desde `config.yaml` / `config.yaml.example`.
+- **Atomicidad y Recuperación en Reindexación RAG (`src/thesisforge/rag/service.py`, `src/thesisforge/rag/parser.py`, `TF-DATA-001-R1`, `TF-DATA-001-R2`):**
+  - Transacción SQLite atómica única (`DELETE` + `INSERT` antes de `commit`) previniendo estados huérfanos si la indexación vectorial falla.
+  - Determinismo estricto de chunks incluyendo `project_id` en el identificador (`f"{project_id}_{document_id}_p{page}_c{chunk}_{hash}"`).
+  - Habilitación de `rebuild_chroma_from_sqlite()` para recuperar documentos en estado `failed`, promoviéndolos a `indexed` tras reinsertar los vectores.
+  - Actualización atómica de citas en `project.validated_citations` al reindexar documentos existentes.
 
 ### Fixed
 - **Preservación de Estado y Progresión en Asesor Metodológico (`src/thesisforge/advisor/service.py`):**
