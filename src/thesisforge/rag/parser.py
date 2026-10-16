@@ -1,5 +1,6 @@
 """Academic PDF parsing, prompt injection sanitization, and sentence-aware chunking."""
 
+import hashlib
 import re
 from pathlib import Path
 
@@ -128,8 +129,11 @@ class SentenceAwareChunker:
                 char_start = char_cursor
                 char_end = char_cursor + len(chunk_text)
 
+                chunk_hash = hashlib.sha256(chunk_text.encode("utf-8")).hexdigest()[:8]
+                deterministic_id = f"{document_id}_p{page_number}_c{chunk_idx}_{chunk_hash}"
                 chunks.append(
                     DocumentChunkDTO(
+                        id=deterministic_id,
                         document_id=document_id,
                         project_id=project_id,
                         title=title,
@@ -167,8 +171,11 @@ class SentenceAwareChunker:
             chunk_text = " ".join(current_chunk_sentences).strip()
             char_start = char_cursor
             char_end = char_cursor + len(chunk_text)
+            chunk_hash = hashlib.sha256(chunk_text.encode("utf-8")).hexdigest()[:8]
+            deterministic_id = f"{document_id}_p{page_number}_c{chunk_idx}_{chunk_hash}"
             chunks.append(
                 DocumentChunkDTO(
+                    id=deterministic_id,
                     document_id=document_id,
                     project_id=project_id,
                     title=title,

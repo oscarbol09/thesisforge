@@ -144,3 +144,65 @@ async def test_add_and_delete_citation_lifecycle(
 
     proj_after_del = await repo.get_project("proj-doc-test-2")
     assert len(proj_after_del.validated_citations) == 0
+
+
+@pytest.mark.asyncio
+async def test_reindex_pdf_document_is_idempotent_and_cleans_old_chunks(
+    in_memory_db: DatabaseManager,
+):
+    """Verify that re-indexing the same document is idempotent and cleans existing chunks (TF-DATA-001)."""
+    repo = ProjectRepository(in_memory_db, "local")
+    rag = RAGService(
+        db_manager=in_memory_db,
+        project_repo=repo,
+        is_memory=True,
+    )
+
+    project = ProjectStateDTO(
+        id="proj-idempotent-test",
+        title="Proyecto Idempotencia",
+        academic_level=AcademicLevel.PREGRADO,
+    )
+    await repo.create_project(project)
+
+    pdf_bytes = _create_sample_pdf_bytes("Estudio de Idempotencia")
+
+    # 1. First indexing
+    chunks_1 = await rag.index_pdf_document(
+        project_id="proj-idempotent-test",
+        document_id="doc-idempotent-01",
+        pdf_bytes=pdf_bytes,
+        title="Estudio de Idempotencia v1",
+    )
+    initial_chunk_count = len(chunks_1)
+    assert initial_chunk_count >= 1
+
+    # Check chunks in SQLite
+    async with in_memory_db.get_connection() as conn:
+        cursor = await conn.execute(
+            "SELECT count(*) as cnt FROM document_chunks WHERE project_id = ? AND document_id = ?",
+            ("proj-idempotent-test", "doc-idempotent-01"),
+        )
+        row = await cursor.fetchone()
+        assert row["cnt"] == initial_chunk_count
+
+    # 2. Second indexing of the exact same document
+    chunks_2 = await rag.index_pdf_document(
+        project_id="proj-idempotent-test",
+        document_id="doc-idempotent-01",
+        pdf_bytes=pdf_bytes,
+        title="Estudio de Idempotencia v2",
+    )
+
+    # Chunk IDs should be deterministic and chunk count should not double
+    assert len(chunks_2) == initial_chunk_count
+    assert [c.id for c in chunks_1] == [c.id for c in chunks_2]
+
+    # Verify SQLite still has exactly initial_chunk_count, NOT double
+    async with in_memory_db.get_connection() as conn:
+        cursor = await conn.execute(
+            "SELECT count(*) as cnt FROM document_chunks WHERE project_id = ? AND document_id = ?",
+            ("proj-idempotent-test", "doc-idempotent-01"),
+        )
+        row = await cursor.fetchone()
+        assert row["cnt"] == initial_chunk_count

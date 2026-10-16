@@ -311,7 +311,17 @@ class RAGService:
                 "No se pudieron extraer fragmentos de texto válidos del documento PDF."
             )
 
-        # 1. Persist chunks in SQLite
+        # 1. Clean up existing chunks in SQLite and ChromaDB for idempotency (TF-DATA-001)
+        async with self.db.get_connection() as conn:
+            await conn.execute(
+                "DELETE FROM document_chunks WHERE project_id = ? AND document_id = ?",
+                (project_id, document_id),
+            )
+            await conn.commit()
+
+        await self.vector_store.delete_document(project_id, document_id)
+
+        # 2. Persist chunks in SQLite
         sql_insert = """
             INSERT OR REPLACE INTO document_chunks (
                 id, project_id, document_id, chunk_index, page_number,
