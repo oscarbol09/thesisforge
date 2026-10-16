@@ -87,3 +87,35 @@ def test_get_settings_fallback_warning(caplog: pytest.LogCaptureFixture):
         assert settings is not None
         assert "cargando configuración predeterminada desde 'config.yaml.example'" in caplog.text
     get_settings.cache_clear()
+
+
+def test_get_settings_parses_app_metadata_and_max_retries(tmp_path: Path):
+    """Test get_settings properly parses app metadata (name, language, theme) and max_retries (TF-CONFIG-001)."""
+    from thesisforge.config import get_settings
+
+    custom_yaml = tmp_path / "custom_config.yaml"
+    custom_yaml.write_text(
+        """
+app:
+  name: "CustomForge"
+  language: "en"
+  theme: "dark"
+
+providers:
+  default_provider: "groq"
+  default_model: "llama-3.3-70b-versatile"
+  timeout_seconds: 90
+  max_retries: 5
+""",
+        encoding="utf-8",
+    )
+
+    get_settings.cache_clear()
+    settings = get_settings(str(custom_yaml))
+    assert settings.app_name == "CustomForge"
+    assert settings.language == "en"
+    assert settings.theme == "dark"
+    assert settings.default_provider == "groq"
+    assert settings.timeout_seconds == 90
+    assert settings.max_retries == 5
+    get_settings.cache_clear()

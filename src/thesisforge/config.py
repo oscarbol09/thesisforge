@@ -60,6 +60,8 @@ class AppSettings(BaseSettings):
 
     # Core Application Settings
     app_name: str = "ThesisForge"
+    language: str = "es"
+    theme: str = "system"
     environment: str = "development"
     host: str = "127.0.0.1"
     port: int = 8000
@@ -130,6 +132,16 @@ def get_settings(config_yaml_path: str = "config.yaml") -> AppSettings:
             )
 
     if yaml_data:
+        # Merge App metadata settings if present (TF-CONFIG-001)
+        if "app" in yaml_data and isinstance(yaml_data["app"], dict):
+            app_dict = yaml_data["app"]
+            if "name" in app_dict:
+                base_settings.app_name = str(app_dict["name"])
+            if "language" in app_dict:
+                base_settings.language = str(app_dict["language"])
+            if "theme" in app_dict:
+                base_settings.theme = str(app_dict["theme"])
+
         # Merge RAG settings if present
         if "rag" in yaml_data and isinstance(yaml_data["rag"], dict):
             base_settings.rag = RAGSettings.model_validate(yaml_data["rag"])
@@ -143,6 +155,8 @@ def get_settings(config_yaml_path: str = "config.yaml") -> AppSettings:
                 base_settings.default_model = str(providers_dict["default_model"])
             if "timeout_seconds" in providers_dict:
                 base_settings.timeout_seconds = int(providers_dict["timeout_seconds"])
+            if "max_retries" in providers_dict:
+                base_settings.max_retries = int(providers_dict["max_retries"])
 
             for p_name, p_data in providers_dict.items():
                 if isinstance(p_data, dict):
