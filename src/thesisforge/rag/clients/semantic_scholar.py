@@ -3,6 +3,7 @@
 from typing import Any
 
 from thesisforge.core.logging import get_logger
+from thesisforge.exceptions import SSRFBlockedError
 from thesisforge.models import AcademicSearchResultDTO
 from thesisforge.rag.cache import LiteratureCache
 from thesisforge.rag.clients.base import BaseAcademicClient
@@ -72,6 +73,8 @@ class SemanticScholarClient(BaseAcademicClient):
                 params=params,
                 headers=self._get_headers(),
             )
+        except SSRFBlockedError:
+            raise
         except Exception as e:
             logger.warning(
                 "Semantic Scholar search failed.",
@@ -137,6 +140,8 @@ class SemanticScholarClient(BaseAcademicClient):
                 params={"fields": DEFAULT_PAPER_FIELDS},
                 headers=self._get_headers(),
             )
+        except SSRFBlockedError:
+            raise
         except Exception as e:
             logger.warning(
                 "Semantic Scholar paper lookup failed.",

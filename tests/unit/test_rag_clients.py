@@ -260,3 +260,74 @@ async def test_literature_cache_cleanup(in_memory_db: DatabaseManager):
     # Prune expired entries
     pruned_count = await cache.prune_expired()
     assert pruned_count >= 1
+
+
+@pytest.mark.asyncio
+@respx.mock
+async def test_client_redirect_to_private_ip_blocked():
+    """Verify that HTTP redirects to private/loopback/cloud metadata IPs are blocked by SSRF guard (TF-SEC-003)."""
+    from thesisforge.exceptions import SSRFBlockedError
+
+    client = CrossRefClient()
+    # Initial public URL returns a redirect to loopback
+    respx.get("https://api.crossref.org/works/10.1234/malicious-redirect").respond(
+        status_code=302,
+        headers={"Location": "http://127.0.0.1:8000/api/projects"},
+    )
+
+    with pytest.raises(SSRFBlockedError):
+        await client.resolve_doi("10.1234/malicious-redirect")
+
+    await client.close()
+
+
+@pytest.mark.asyncio
+@respx.mock
+async def test_client_safe_redirect_followed():
+    """Verify that safe redirects between allowed academic URLs are followed successfully."""
+    client = CrossRefClient()
+    respx.get("https://api.crossref.org/works/10.1234/safe-redirect").respond(
+        status_code=301,
+        headers={"Location": "https://api.crossref.org/works/10.1234/target"},
+    )
+    respx.get("https://api.crossref.org/works/10.1234/target").respond(
+        status_code=200,
+        json={
+            "status": "ok",
+            "message": {
+                "DOI": "10.1234/target",
+                "title": ["Redirected Target Paper"],
+                "author": [{"given": "Jane", "family": "Doe"}],
+                "created": {"date-parts": [[2023]]},
+            },
+        },
+    )
+
+    result = await client.resolve_doi("10.1234/safe-redirect")
+    assert result is not None
+    assert result.title == "Redirected Target Paper"
+
+    await client.close()
+
+
+@pytest.mark.asyncio
+@respx.mock
+async def test_client_redirect_loop_exceeded():
+    """Verify that excessive redirect loops raise an AcademicAPIError."""
+    from thesisforge.exceptions import AcademicAPIError
+
+    client = CrossRefClient()
+    # Mutual infinite redirect
+    respx.get("https://api.crossref.org/works/10.1234/loop-a").respond(
+        status_code=302,
+        headers={"Location": "https://api.crossref.org/works/10.1234/loop-b"},
+    )
+    respx.get("https://api.crossref.org/works/10.1234/loop-b").respond(
+        status_code=302,
+        headers={"Location": "https://api.crossref.org/works/10.1234/loop-a"},
+    )
+
+    with pytest.raises(AcademicAPIError, match="Límite de redirecciones excedido"):
+        await client.request_json("GET", "/works/10.1234/loop-a")
+
+    await client.close()

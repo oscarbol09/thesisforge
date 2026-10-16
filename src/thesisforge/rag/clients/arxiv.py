@@ -13,6 +13,7 @@ from tenacity import (
 
 from thesisforge.core.logging import get_logger
 from thesisforge.core.security import assert_safe_academic_url_async
+from thesisforge.exceptions import SSRFBlockedError
 from thesisforge.models import AcademicSearchResultDTO
 from thesisforge.rag.cache import LiteratureCache
 from thesisforge.rag.clients.base import BaseAcademicClient, _is_retryable_http_error
@@ -81,12 +82,17 @@ class ArxivClient(BaseAcademicClient):
 
         xml_text = ""
         try:
-            async with self.get_client() as client:
-                async for attempt in retrier:
-                    with attempt:
-                        resp = await client.get(self.base_url, params=params)
-                        resp.raise_for_status()
-                        xml_text = resp.text
+            async for attempt in retrier:
+                with attempt:
+                    resp = await self.request_safe(
+                        method="GET",
+                        url=self.base_url,
+                        params=params,
+                    )
+                    resp.raise_for_status()
+                    xml_text = resp.text
+        except SSRFBlockedError:
+            raise
         except Exception as e:
             logger.warning(
                 "ArXiv search request failed.",

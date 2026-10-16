@@ -4,6 +4,7 @@ from typing import Any
 
 from thesisforge import __version__
 from thesisforge.core.logging import get_logger
+from thesisforge.exceptions import SSRFBlockedError
 from thesisforge.models import AcademicSearchResultDTO
 from thesisforge.rag.cache import LiteratureCache
 from thesisforge.rag.clients.base import BaseAcademicClient
@@ -104,6 +105,8 @@ class OpenAlexClient(BaseAcademicClient):
                 params=params,
                 headers=self._get_headers(),
             )
+        except SSRFBlockedError:
+            raise
         except Exception as e:
             logger.warning(
                 "OpenAlex search failed.",
@@ -161,6 +164,8 @@ class OpenAlexClient(BaseAcademicClient):
                 params=params,
                 headers=self._get_headers(),
             )
+        except SSRFBlockedError:
+            raise
         except Exception as e:
             logger.warning(
                 "OpenAlex work lookup failed.",

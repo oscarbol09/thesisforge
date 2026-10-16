@@ -1,5 +1,6 @@
 """Base asynchronous academic HTTP client with SSRF protection, retries, and rate-limiting."""
 
+import urllib.parse
 from abc import ABC, abstractmethod
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
@@ -54,12 +55,12 @@ class BaseAcademicClient(ABC):
 
     @asynccontextmanager
     async def get_client(self) -> AsyncGenerator[httpx.AsyncClient, None]:
-        """Provide an active httpx.AsyncClient session."""
+        """Provide an active httpx.AsyncClient session with redirects disabled for manual validation."""
         if self._client is None or self._client.is_closed:
             self._client = httpx.AsyncClient(
                 timeout=httpx.Timeout(self.timeout),
                 headers={"User-Agent": self.user_agent, "Accept": "application/json"},
-                follow_redirects=True,
+                follow_redirects=False,
             )
         try:
             yield self._client
@@ -72,6 +73,44 @@ class BaseAcademicClient(ABC):
             await self._client.aclose()
             self._client = None
 
+    async def request_safe(
+        self,
+        method: str,
+        url: str,
+        params: dict[str, Any] | None = None,
+        headers: dict[str, str] | None = None,
+        max_redirects: int = 5,
+    ) -> httpx.Response:
+        """Perform an HTTP request validating every initial URL and redirect target against SSRF (TF-SEC-003)."""
+        current_url = url
+        current_method = method
+        current_params = params
+        redirects_remaining = max_redirects
+
+        async with self.get_client() as client:
+            while True:
+                await assert_safe_academic_url_async(current_url)
+                response = await client.request(
+                    method=current_method,
+                    url=current_url,
+                    params=current_params,
+                    headers=headers,
+                )
+                if response.is_redirect and "location" in response.headers:
+                    if redirects_remaining <= 0:
+                        raise AcademicAPIError(
+                            f"Límite de redirecciones excedido ({max_redirects}) para {url}"
+                        )
+                    redirects_remaining -= 1
+                    raw_location = response.headers["location"]
+                    next_url = urllib.parse.urljoin(current_url, raw_location)
+                    if response.status_code in (301, 302, 303):
+                        current_method = "GET"
+                        current_params = None
+                    current_url = next_url
+                    continue
+                return response
+
     async def request_json(
         self,
         method: str,
@@ -81,7 +120,6 @@ class BaseAcademicClient(ABC):
     ) -> dict[str, Any]:
         """Perform a secure, retried HTTP request and parse JSON response."""
         url = f"{self.base_url}/{endpoint.lstrip('/')}" if endpoint else self.base_url
-        await assert_safe_academic_url_async(url)
 
         req_headers = {"User-Agent": self.user_agent, "Accept": "application/json"}
         if headers:
@@ -94,43 +132,44 @@ class BaseAcademicClient(ABC):
             reraise=True,
         )
 
-        async with self.get_client() as client:
-            try:
-                async for attempt in retrier:
-                    with attempt:
-                        response = await client.request(
-                            method=method,
-                            url=url,
-                            params=params,
-                            headers=req_headers,
-                        )
-                        response.raise_for_status()
-                        return response.json()  # type: ignore[no-any-return]
-            except SSRFBlockedError:
-                raise
-            except httpx.HTTPStatusError as err:
-                status = err.response.status_code
-                logger.warning(
-                    f"Academic API returned HTTP {status}",
-                    extra={"url": url, "status": status},
-                )
-                raise AcademicAPIError(
-                    f"Error de API académica ({self.__class__.__name__}): HTTP {status}",
-                    details={
-                        "url": url,
-                        "status": str(status),
-                        "response": err.response.text[:200],
-                    },
-                ) from err
-            except Exception as err:
-                logger.warning(
-                    f"Academic API request failed: {err}",
-                    extra={"url": url, "error": str(err)},
-                )
-                raise AcademicAPIError(
-                    f"Fallo en comunicación con API académica ({self.__class__.__name__}): {err}",
-                    details={"url": url, "error": str(err)},
-                ) from err
+        try:
+            async for attempt in retrier:
+                with attempt:
+                    response = await self.request_safe(
+                        method=method,
+                        url=url,
+                        params=params,
+                        headers=req_headers,
+                    )
+                    response.raise_for_status()
+                    return response.json()  # type: ignore[no-any-return]
+        except SSRFBlockedError:
+            raise
+        except AcademicAPIError:
+            raise
+        except httpx.HTTPStatusError as err:
+            status = err.response.status_code
+            logger.warning(
+                f"Academic API returned HTTP {status}",
+                extra={"url": url, "status": status},
+            )
+            raise AcademicAPIError(
+                f"Error de API académica ({self.__class__.__name__}): HTTP {status}",
+                details={
+                    "url": url,
+                    "status": str(status),
+                    "response": err.response.text[:200],
+                },
+            ) from err
+        except Exception as err:
+            logger.warning(
+                f"Academic API request failed: {err}",
+                extra={"url": url, "error": str(err)},
+            )
+            raise AcademicAPIError(
+                f"Fallo en comunicación con API académica ({self.__class__.__name__}): {err}",
+                details={"url": url, "error": str(err)},
+            ) from err
         raise AcademicAPIError(f"No se pudo completar la petición a {url}")
 
     @abstractmethod

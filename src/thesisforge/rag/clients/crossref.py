@@ -4,6 +4,7 @@ from typing import Any
 from urllib.parse import quote
 
 from thesisforge.core.logging import get_logger
+from thesisforge.exceptions import SSRFBlockedError
 from thesisforge.models import AcademicSearchResultDTO
 from thesisforge.rag.cache import LiteratureCache
 from thesisforge.rag.clients.base import BaseAcademicClient
@@ -56,6 +57,8 @@ class CrossRefClient(BaseAcademicClient):
                 endpoint=f"/works/{encoded_doi}",
                 params={"mailto": self.mailto},
             )
+        except SSRFBlockedError:
+            raise
         except Exception as e:
             logger.warning(
                 "CrossRef DOI lookup failed.",
@@ -102,6 +105,8 @@ class CrossRefClient(BaseAcademicClient):
                 endpoint="/works",
                 params=params,
             )
+        except SSRFBlockedError:
+            raise
         except Exception as e:
             logger.warning(
                 "CrossRef search failed.",
