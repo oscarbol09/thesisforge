@@ -1,5 +1,5 @@
-"""REST API endpoints and WebSocket handlers for interactive oral thesis defense simulation."""
-
+import asyncio
+import contextlib
 from typing import Any
 
 from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect, status
@@ -106,11 +106,31 @@ async def defense_websocket_endpoint(
     jury_service: JuryService = Depends(get_jury_service),
 ) -> None:
     """Interactive bidirectional WebSocket for live oral defense simulation."""
-    await websocket.accept()
+    # Pre-accept validation: verify session exists before accepting handshake (TF-WS-001)
+    try:
+        session = await jury_service.get_defense_session(session_id)
+        if not session:
+            logger.warning("Defense WebSocket rejected: session '%s' not found.", session_id)
+            await websocket.close(code=1008)
+            return
+    except Exception as exc:
+        logger.warning(
+            "Defense WebSocket rejected pre-accept: session '%s' lookup failed: %s",
+            session_id,
+            exc,
+        )
+        await websocket.close(code=1008)
+        return
+
+    subprotocol = None
+    ws_protocol = websocket.headers.get("sec-websocket-protocol", "")
+    if "bearer" in ws_protocol.lower():
+        subprotocol = "bearer"
+
+    await websocket.accept(subprotocol=subprotocol)
     logger.info("Defense WebSocket connection established.", extra={"session_id": session_id})
 
     try:
-        session = await jury_service.get_defense_session(session_id)
         await websocket.send_json(
             {
                 "event": "session_state",
@@ -119,7 +139,18 @@ async def defense_websocket_endpoint(
         )
 
         while True:
-            data: dict[str, Any] = await websocket.receive_json()
+            try:
+                data: dict[str, Any] = await asyncio.wait_for(
+                    websocket.receive_json(), timeout=120.0
+                )
+            except TimeoutError:
+                logger.info(
+                    "Defense WebSocket closed due to inactivity timeout.",
+                    extra={"session_id": session_id},
+                )
+                await websocket.close(code=1000)
+                break
+
             event_type = data.get("event")
 
             if event_type == "reply":
@@ -130,6 +161,7 @@ async def defense_websocket_endpoint(
                     await websocket.send_json(
                         {
                             "event": "error",
+                            "error_code": "INVALID_TURN_INDEX",
                             "message": f"El índice de turno '{raw_turn}' no es un número entero válido.",
                         }
                     )
@@ -141,7 +173,18 @@ async def defense_websocket_endpoint(
                     await websocket.send_json(
                         {
                             "event": "error",
+                            "error_code": "EMPTY_ANSWER",
                             "message": "La respuesta del estudiante no puede estar vacía.",
+                        }
+                    )
+                    continue
+
+                if len(student_answer) > 5000:
+                    await websocket.send_json(
+                        {
+                            "event": "error",
+                            "error_code": "PAYLOAD_TOO_LARGE",
+                            "message": "La respuesta del estudiante excede el límite permitido (5000 caracteres).",
                         }
                     )
                     continue
@@ -182,6 +225,7 @@ async def defense_websocket_endpoint(
                 await websocket.send_json(
                     {
                         "event": "error",
+                        "error_code": "UNKNOWN_EVENT",
                         "message": f"Evento desconocido '{event_type}'.",
                     }
                 )
@@ -193,10 +237,12 @@ async def defense_websocket_endpoint(
             "Error in defense WebSocket handler.",
             extra={"session_id": session_id, "error": str(exc)},
         )
-        try:
-            await websocket.send_json({"event": "error", "message": str(exc)})
-            await websocket.close()
-        except Exception as close_exc:
-            logger.debug(
-                "Could not send error frame to WebSocket.", extra={"error": str(close_exc)}
+        with contextlib.suppress(Exception):
+            await websocket.send_json(
+                {
+                    "event": "error",
+                    "error_code": "INTERNAL_ERROR",
+                    "message": "Error interno durante la sesión de defensa oral.",
+                }
             )
+            await websocket.close()

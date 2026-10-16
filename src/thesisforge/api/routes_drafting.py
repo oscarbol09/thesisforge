@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import contextlib
 from typing import TYPE_CHECKING, Any
 
@@ -162,11 +163,54 @@ async def websocket_draft_stream(
     draft_service: DraftService = Depends(get_draft_service),
 ) -> None:
     """Real-time bidirectional WebSocket connection for live token streaming during generation."""
-    await websocket.accept()
+    # Pre-accept validation: verify project and section existence before accepting handshake (TF-WS-001)
     try:
-        data = await websocket.receive_json()
+        project = await draft_service.repo.get_project(project_id)
+        if not any(s.section_id == section_id for s in project.sections):
+            logger.warning(
+                "WebSocket rejected: section '%s' not found in project '%s'.",
+                section_id,
+                project_id,
+            )
+            await websocket.close(code=1008)
+            return
+    except Exception as exc:
+        logger.warning(
+            "WebSocket rejected pre-accept: project '%s' lookup failed: %s",
+            project_id,
+            exc,
+        )
+        await websocket.close(code=1008)
+        return
+
+    # Check for WebSocket subprotocol bearer token
+    subprotocol = None
+    ws_protocol = websocket.headers.get("sec-websocket-protocol", "")
+    if "bearer" in ws_protocol.lower():
+        subprotocol = "bearer"
+
+    await websocket.accept(subprotocol=subprotocol)
+
+    try:
+        # Wrap client reception with timeout (TF-WS-002)
+        try:
+            data = await asyncio.wait_for(websocket.receive_json(), timeout=120.0)
+        except TimeoutError:
+            logger.warning("WebSocket draft stream timed out waiting for client payload.")
+            await websocket.close(code=1000)
+            return
+
         action = data.get("action", "generate")
-        instructions = data.get("user_instructions", "")
+        instructions = str(data.get("user_instructions", ""))
+        if len(instructions) > 5000:
+            await websocket.send_json(
+                {
+                    "event": "error",
+                    "error_code": "PAYLOAD_TOO_LARGE",
+                    "message": "Las instrucciones de redacción exceden el límite permitido (5000 caracteres).",
+                }
+            )
+            return
 
         if action == "generate":
             async for event in draft_service.stream_section_draft(
@@ -188,6 +232,7 @@ async def websocket_draft_stream(
             await websocket.send_json(
                 {
                     "event": "error",
+                    "error_code": "INVALID_ACTION",
                     "message": f"Acción desconocida: {action}",
                 }
             )
@@ -195,9 +240,17 @@ async def websocket_draft_stream(
     except WebSocketDisconnect:
         logger.info("WebSocket client disconnected for section: %s", section_id)
     except Exception as exc:
-        logger.error("Error in draft websocket stream: %s", exc)
+        logger.exception("Error in draft websocket stream: %s", exc)
         with contextlib.suppress(Exception):
-            await websocket.send_json({"event": "error", "message": str(exc)})
+            error_code = "INTERNAL_ERROR"
+            msg = "Error interno durante la generación de texto."
+            if "LLMRouter no está configurado" in str(exc) or "LLM" in exc.__class__.__name__:
+                error_code = "LLM_PROVIDER_ERROR"
+                msg = "El proveedor LLM no pudo completar la solicitud."
+            elif "no encontrado" in str(exc).lower():
+                error_code = "NOT_FOUND"
+                msg = "Recurso no encontrado."
+            await websocket.send_json({"event": "error", "error_code": error_code, "message": msg})
     finally:
         with contextlib.suppress(Exception):
             await websocket.close()
