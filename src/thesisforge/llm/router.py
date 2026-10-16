@@ -182,7 +182,10 @@ class LLMRouter:
             logger.exception(
                 "LLM completion failed.", extra={"model": resolved_model, "error": str(err)}
             )
-            raise LLMProviderError(f"Error en proveedor LLM ({resolved_model}): {err}") from err
+            raise LLMProviderError(
+                f"El proveedor LLM no pudo completar la solicitud para el modelo '{resolved_model}'.",
+                details={"model": resolved_model, "provider": target_provider},
+            ) from err
 
     from typing import TypeVar
 
@@ -317,7 +320,8 @@ class LLMRouter:
 
         if response is None:
             raise LLMProviderError(
-                f"Error en streaming LLM ({resolved_model}): {last_err}"
+                f"El proveedor LLM no pudo iniciar la conexión de streaming para el modelo '{resolved_model}'.",
+                details={"model": resolved_model, "provider": target_provider},
             ) from last_err
 
         # Streaming phase — no retries after the first token.
@@ -332,5 +336,6 @@ class LLMRouter:
                 extra={"model": resolved_model, "error": str(err)},
             )
             raise LLMProviderError(
-                f"Stream interrumpido en proveedor LLM ({resolved_model}): {err}"
+                f"Stream interrumpido en proveedor LLM para el modelo '{resolved_model}'.",
+                details={"model": resolved_model, "provider": target_provider},
             ) from err

@@ -95,11 +95,18 @@ async def test_complete_json_with_conversational_preamble():
 
 @pytest.mark.asyncio
 async def test_complete_llm_error_handling():
-    """Test LLM exception is wrapped into LLMProviderError."""
+    """Test LLM exception is wrapped into sanitized LLMProviderError without leaking raw secrets or URLs (TF-LLM-001)."""
     router = LLMRouter()
 
     with patch("litellm.acompletion", new_callable=AsyncMock) as mock_acompletion:
-        mock_acompletion.side_effect = RuntimeError("Conexión rechazada por API externa")
+        mock_acompletion.side_effect = RuntimeError(
+            "Connection refused to https://api.internal.corp:8443/v1/models with auth header Bearer secret_123"
+        )
 
-        with pytest.raises(LLMProviderError):
+        with pytest.raises(LLMProviderError) as exc_info:
             await router.complete("Hola")
+
+        # The public error message must be sanitized and must NOT leak sensitive endpoints or secrets
+        assert "secret_123" not in str(exc_info.value)
+        assert "https://api.internal.corp:8443" not in str(exc_info.value)
+        assert "El proveedor LLM no pudo completar la solicitud" in str(exc_info.value)
