@@ -2,16 +2,38 @@
 
 from functools import lru_cache
 from pathlib import Path
-from typing import Any
+from typing import Any, ClassVar
 
 import yaml
 from pydantic import BaseModel, ConfigDict, Field
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import (
+    BaseSettings,
+    PydanticBaseSettingsSource,
+    SettingsConfigDict,
+)
 
 from thesisforge.core.logging import get_logger
 from thesisforge.exceptions import ConfigurationError
 
 logger = get_logger(__name__)
+
+
+class YamlDictSettingsSource(PydanticBaseSettingsSource):
+    """Custom settings source that provides values loaded from config.yaml (TF-CONFIG-001-R1)."""
+
+    def __init__(
+        self,
+        settings_cls: type[BaseSettings],
+        data: dict[str, Any] | None = None,
+    ) -> None:
+        super().__init__(settings_cls)
+        self.data = data or {}
+
+    def get_field_value(self, field: Any, field_name: str) -> tuple[Any, str, bool]:
+        return self.data.get(field_name), field_name, False
+
+    def __call__(self) -> dict[str, Any]:
+        return self.data
 
 
 class ProviderSettings(BaseModel):
@@ -57,6 +79,26 @@ class AppSettings(BaseSettings):
         env_file_encoding="utf-8",
         extra="ignore",
     )
+
+    _active_yaml_data: ClassVar[dict[str, Any]] = {}
+
+    @classmethod
+    def settings_customise_sources(
+        cls,
+        settings_cls: type[BaseSettings],
+        init_settings: PydanticBaseSettingsSource,
+        env_settings: PydanticBaseSettingsSource,
+        dotenv_settings: PydanticBaseSettingsSource,
+        file_secret_settings: PydanticBaseSettingsSource,
+    ) -> tuple[PydanticBaseSettingsSource, ...]:
+        # Precedence: defaults < config.yaml < .env < environment variables < explicit code kwargs (TF-CONFIG-001-R1)
+        return (
+            init_settings,
+            env_settings,
+            dotenv_settings,
+            YamlDictSettingsSource(settings_cls, cls._active_yaml_data),
+            file_secret_settings,
+        )
 
     # Core Application Settings
     app_name: str = "ThesisForge"
@@ -120,8 +162,10 @@ def load_yaml_config(yaml_path: Path | str) -> dict[str, Any]:
 
 @lru_cache(maxsize=1)
 def get_settings(config_yaml_path: str = "config.yaml") -> AppSettings:
-    """Obtain cached AppSettings instance merged with optional YAML overrides."""
-    base_settings = AppSettings()
+    """Obtain cached AppSettings instance merged with optional YAML overrides.
+
+    Follows strict precedence: defaults < config.yaml < environment variables (TF-CONFIG-001-R1).
+    """
     yaml_data = load_yaml_config(config_yaml_path)
     if not yaml_data:
         yaml_data = load_yaml_config("config.yaml.example")
@@ -131,35 +175,40 @@ def get_settings(config_yaml_path: str = "config.yaml") -> AppSettings:
                 config_yaml_path,
             )
 
+    yaml_kwargs: dict[str, Any] = {}
     if yaml_data:
         # Merge App metadata settings if present (TF-CONFIG-001)
         if "app" in yaml_data and isinstance(yaml_data["app"], dict):
             app_dict = yaml_data["app"]
             if "name" in app_dict:
-                base_settings.app_name = str(app_dict["name"])
+                yaml_kwargs["app_name"] = str(app_dict["name"])
             if "language" in app_dict:
-                base_settings.language = str(app_dict["language"])
+                yaml_kwargs["language"] = str(app_dict["language"])
             if "theme" in app_dict:
-                base_settings.theme = str(app_dict["theme"])
+                yaml_kwargs["theme"] = str(app_dict["theme"])
 
         # Merge RAG settings if present
         if "rag" in yaml_data and isinstance(yaml_data["rag"], dict):
-            base_settings.rag = RAGSettings.model_validate(yaml_data["rag"])
+            yaml_kwargs["rag"] = RAGSettings.model_validate(yaml_data["rag"])
 
         # Merge Providers settings if present
         if "providers" in yaml_data and isinstance(yaml_data["providers"], dict):
             providers_dict = yaml_data["providers"]
             if "default_provider" in providers_dict:
-                base_settings.default_provider = str(providers_dict["default_provider"])
+                yaml_kwargs["default_provider"] = str(providers_dict["default_provider"])
             if "default_model" in providers_dict:
-                base_settings.default_model = str(providers_dict["default_model"])
+                yaml_kwargs["default_model"] = str(providers_dict["default_model"])
             if "timeout_seconds" in providers_dict:
-                base_settings.timeout_seconds = int(providers_dict["timeout_seconds"])
+                yaml_kwargs["timeout_seconds"] = int(providers_dict["timeout_seconds"])
             if "max_retries" in providers_dict:
-                base_settings.max_retries = int(providers_dict["max_retries"])
+                yaml_kwargs["max_retries"] = int(providers_dict["max_retries"])
 
+            providers_map: dict[str, ProviderSettings] = {}
             for p_name, p_data in providers_dict.items():
                 if isinstance(p_data, dict):
-                    base_settings.providers[p_name] = ProviderSettings.model_validate(p_data)
+                    providers_map[p_name] = ProviderSettings.model_validate(p_data)
+            if providers_map:
+                yaml_kwargs["providers"] = providers_map
 
-    return base_settings
+    AppSettings._active_yaml_data = yaml_kwargs
+    return AppSettings()

@@ -119,3 +119,44 @@ providers:
     assert settings.timeout_seconds == 90
     assert settings.max_retries == 5
     get_settings.cache_clear()
+
+
+def test_config_precedence_defaults_yaml_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    """Test strict configuration precedence: defaults < config.yaml < environment variables (TF-CONFIG-001-R1)."""
+    from thesisforge.config import get_settings
+
+    yaml_file = tmp_path / "precedence_config.yaml"
+    yaml_file.write_text(
+        """
+app:
+  language: "fr"
+  theme: "dark"
+providers:
+  timeout_seconds: 45
+  max_retries: 5
+""",
+        encoding="utf-8",
+    )
+
+    # 1. Without env vars: YAML overrides defaults
+    monkeypatch.delenv("THESISFORGE_LANGUAGE", raising=False)
+    monkeypatch.delenv("THESISFORGE_THEME", raising=False)
+    monkeypatch.delenv("THESISFORGE_TIMEOUT_SECONDS", raising=False)
+    get_settings.cache_clear()
+    s_yaml = get_settings(str(yaml_file))
+    assert s_yaml.language == "fr"
+    assert s_yaml.theme == "dark"
+    assert s_yaml.timeout_seconds == 45
+    assert s_yaml.max_retries == 5
+    assert s_yaml.app_name == "ThesisForge"
+
+    # 2. With env vars: Environment variables MUST override YAML values
+    monkeypatch.setenv("THESISFORGE_LANGUAGE", "de")
+    monkeypatch.setenv("THESISFORGE_TIMEOUT_SECONDS", "120")
+    get_settings.cache_clear()
+    s_env = get_settings(str(yaml_file))
+    assert s_env.language == "de"
+    assert s_env.timeout_seconds == 120
+    assert s_env.theme == "dark"
+    assert s_env.max_retries == 5
+    get_settings.cache_clear()
