@@ -33,10 +33,30 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/
   - 315 pruebas unitarias, integradas y de propiedades pasando al 100% con tipado estricto mypy y verificación de seguridad Bandit.
 
 ### Security & Hardening
+- **Eliminación de tokens en query strings (`src/thesisforge/core/auth.py`, `TF-SEC-001`):**
+  - Eliminación completa de la autenticación mediante `?token=` en URLs para prevenir fugas en logs de proxies, historiales de navegación y encabezados Referer; soporte exclusivo de `Authorization: Bearer <token>` y encabezado `Sec-WebSocket-Protocol`.
+- **Política estricta de emisión de tokens (`src/thesisforge/core/auth.py`, `TF-SEC-002`):**
+  - Supresión de la impresión de tokens en stdout en entornos de producción y tests; fallo explícito con `ConfigurationError` si no se puede persistir el token en producción en lugar de degradación silenciosa a memoria.
+- **Defensa contra SSRF en cadenas de redirección (`src/thesisforge/rag/clients/base.py`, `src/thesisforge/rag/clients/arxiv.py`, `TF-SEC-003`):**
+  - Configuración de `follow_redirects=False` e implementación de `request_safe` con bucle de verificación asíncrona de cada encabezado `Location` antes de redirigir, interceptando redirecciones maliciosas a subredes privadas RFC 1918, loopback o metadatos de nube, y limitando la cadena a un máximo de 5 saltos.
+- **Validación estructural de integridad en bundles (`src/thesisforge/export/bundle.py`, `TF-SEC-004`, `TF-EXPORT-001`):**
+  - Aclaración formal de la semántica de suma de comprobación SHA-256 no autenticada para detección de corrupción e incorporación de validación exhaustiva de correspondencia de `project_id`, `section_count` y `citation_count` entre `manifest.json` y `project.json`.
+- **Creación atómica de claves y tokens (`src/thesisforge/core/security.py`, `src/thesisforge/core/auth.py`, `TF-DATA-005`):**
+  - Uso de `os.open` con `O_CREAT | O_EXCL` y recuperación ante `FileExistsError` para prevenir condiciones de carrera en inicios concurrentes.
+- **Sanitización de mensajes de error de proveedores LLM (`src/thesisforge/llm/router.py`, `TF-LLM-001`):**
+  - Mensajes públicos estructurados y desinfectados en `LLMProviderError` para evitar la filtración de URLs internas, parámetros o credenciales upstream en respuestas HTTP.
 - **Endurecimiento de Despliegue Local (`docker-compose.yml`):**
-  - Enlace por defecto restringido a `127.0.0.1:8000:8000` para proteger contra exposición inadvertida en interfaces de red del host en despliegues monousuario.
+  - Enlace por defecto restringido a `127.0.0.1:8000:8000` y adición de `security_opt: [no-new-privileges:true]` para prevenir escalada de privilegios en el contenedor.
 - **Transparencia y Hoja de Ruta de CSP (`src/thesisforge/api/app.py`):**
   - Documentación técnica exhaustiva de la necesidad de `'unsafe-eval'` (Alpine.js) y `'unsafe-inline'` (Tailwind CDN) con hoja de ruta hacia el empaquetado v1.0.0 sin CDNs.
+
+### Fixed & Improved
+- **Idempotencia y Consistencia en Reindexación de Documentos (`src/thesisforge/rag/service.py`, `src/thesisforge/rag/parser.py`, `TF-DATA-001`, `TF-DATA-002`):**
+  - Generación de identificadores deterministas para fragmentos (`DocumentChunkDTO.id`) basados en hash SHA-256 del contenido, documento y página.
+  - Limpieza atómica de fragmentos previos en SQLite y vectores en ChromaDB antes de insertar una nueva versión, evitando la acumulación de fragmentos obsoletos o duplicados.
+- **Carga Integral de Configuración YAML (`src/thesisforge/config.py`, `TF-CONFIG-001`):**
+  - Incorporación de `language` y `theme` en `AppSettings`.
+  - Integración completa de la sección `app:` (`name`, `language`, `theme`) y de `providers.max_retries` desde `config.yaml` / `config.yaml.example`.
 
 ### Fixed
 - **Preservación de Estado y Progresión en Asesor Metodológico (`src/thesisforge/advisor/service.py`):**

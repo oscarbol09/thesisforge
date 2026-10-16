@@ -30,6 +30,8 @@ services:
     # -------------------------------------------------------------------------
     ports:
       - "127.0.0.1:8000:8000"
+    security_opt:
+      - no-new-privileges:true
     environment:
       - THESISFORGE_HOST=0.0.0.0
       - THESISFORGE_PORT=8000

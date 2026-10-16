@@ -14,7 +14,7 @@
 
 <p align="center">
   <a href="https://opensource.org/licenses/Apache-2.0"><img src="https://img.shields.io/badge/License-Apache_2.0-blue.svg" alt="License"></a>
-  <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13-blue" alt="Python Version"></a>
+  <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/python-3.11%20%7C%203.12-blue" alt="Python Version"></a>
   <a href="https://github.com/astral-sh/ruff"><img src="https://img.shields.io/badge/code%20style-ruff-000000.svg" alt="Code style: ruff"></a>
   <a href="https://mypy.readthedocs.io/"><img src="https://img.shields.io/badge/type_checked-mypy_strict-brightgreen.svg" alt="Type Checked: mypy"></a>
   <a href="https://github.com/PyCQA/bandit"><img src="https://img.shields.io/badge/security-bandit-yellow.svg" alt="Security: Bandit"></a>
@@ -192,9 +192,11 @@ Consulta [`ARCHITECTURE.md`](ARCHITECTURE.md) y [`docs/user-guide/MANUAL_DE_USUA
 ## Principios de ingeniería y seguridad
 
 - **I/O no bloqueante:** Toda operación de red y persistencia es asíncrona (`httpx.AsyncClient`, `aiosqlite`, `aiofiles`).
-- **Defensa en profundidad contra SSRF:** Resolución de DNS y bloqueo estricto de direcciones IP en subredes privadas RFC 1918 (`127.0.0.0/8`, `10.0.0.0/8`, `192.168.0.0/16`, `169.254.0.0/16`, `::1/128`).
+- **Defensa en profundidad contra SSRF:** Resolución de DNS y bloqueo estricto de direcciones IP en subredes privadas RFC 1918 (`127.0.0.0/8`, `10.0.0.0/8`, `192.168.0.0/16`, `169.254.0.0/16`, `::1/128`), con validación obligatoria en cada salto de redirección HTTP (`follow_redirects=False`).
+- **Autenticación estricta por encabezado:** Aceptación exclusiva de tokens en encabezados `Authorization: Bearer <token>` y `Sec-WebSocket-Protocol`, prohibiendo el paso de secretos por query string (`?token=`) para evitar fugas en logs de proxies o historiales.
+- **Integridad y validación estructural de paquetes:** Manifiesto de paquetes `.thesisforge` con suma de comprobación SHA-256 para detección de corrupción y comprobación estricta de coherencia estructural entre metadatos y contenido.
 - **Cifrado local en reposo:** Las credenciales de proveedores BYOK se cifran con Fernet (AES-128-CBC + HMAC-SHA256) antes de almacenarse en la base de datos.
-- **Sanitización de logs (CWE-117):** Registro estructurado en formato JSON con neutralización de saltos de línea y enmascaramiento de tokens y claves.
+- **Sanitización de logs y errores LLM (CWE-117 / CWE-209):** Registro estructurado en formato JSON con neutralización de saltos de línea y sanitización de mensajes públicos de error para evitar fugas de URLs o tokens upstream.
 - **Defensa contra Formula Injection (CWE-1236):** Toda celda de datos que comience con caracteres ejecutables (`=`, `+`, `-`, `@`, `\t`, `\r`) es neutralizada al exportar a tablas Word/Excel.
 
 ---
