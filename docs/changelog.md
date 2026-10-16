@@ -15,7 +15,8 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/
 - **Precedencia Formal de Configuración Twelve-Factor (`src/thesisforge/config.py`, `TF-CONFIG-001-R1`):**
   - Implementación de `AppSettings.settings_customise_sources` estableciendo la jerarquía canónica: `defaults < config.yaml < environment variables`.
   - Pydantic Settings garantiza que las variables de entorno (`THESISFORGE_*`) tengan prioridad sobre overrides de `config.yaml`, y estos sobre los valores predeterminados del modelo.
-- **Validación Estructural de Integridad en Bundles (`src/thesisforge/export/bundle.py`, `TF-EXPORT-001-R1`, `TF-EXPORT-001-R2`):**
+- **Validación Estructural de Integridad y Autenticidad HMAC en Bundles (`src/thesisforge/export/bundle.py`, `tests/unit/test_project_bundle.py`, `TF-EXPORT-001-R1`, `TF-EXPORT-001-R2`):**
+  - Soporte de firma digital criptográfica HMAC-SHA256 (`signature_hmac_sha256`) en el manifiesto con verificación estricta en tiempo constante (`hmac.compare_digest`), distinguiendo formalmente integridad (SHA-256) de autenticidad.
   - Verificación de compatibilidad con versiones mayores (`format_version` compatible `1.x`).
   - Validación cruzada estricta de correspondencia entre `manifest.json` y `project.json` para `title`, `academic_level` y `phase`.
   - Verificación de consistencia del contenido de los archivos Markdown derivados en `sections/` contra la carga canónica de `project.json`.
@@ -48,6 +49,9 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/
   - Verificación reforzada de direcciones IP resueltas (`is_private`, `is_loopback`, `is_link_local`, `is_reserved`, `is_multicast`).
   - Límite estricto de descarga HTTP a 15 MB con verificación de `Content-Length` y corte en flujo por chunks (`DEFAULT_MAX_RESPONSE_BYTES`).
   - Desinfección de detalles públicos en `AcademicAPIError` protegiendo información sensible en logs privados.
+- **Manejadores Globales de Errores de Red y Clientes Académicos (`src/thesisforge/api/app.py`, `tests/integration/test_literature_api_routes.py`):**
+  - Registro de excepción explícito para `SSRFBlockedError` respondiendo con HTTP 403 Forbidden y estructura tipada de rechazo.
+  - Registro de excepción explícito para `AcademicAPIError` respondiendo con HTTP 502 Bad Gateway y supresión de trazas internas sensibles.
 - **Endurecimiento de Despliegue en Contenedores (`docker-compose.yml`, `TF-DOCKER-001`):**
   - Incorporación de `cap_drop: [ALL]`, sistema de archivos raíz de solo lectura (`read_only: true`), `tmpfs: [/tmp]` para archivos efímeros y cuotas de recursos `deploy.resources.limits` (2 CPUs, 2048 MB RAM).
 - **Alineación de Quality Gate en Release (`.github/workflows/release.yml`, `TF-CI-001`):**

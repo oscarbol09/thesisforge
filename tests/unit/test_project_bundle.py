@@ -292,3 +292,76 @@ async def test_import_tampered_section_file_rejected(
 
     with pytest.raises(ExportError, match="Incoherencia de contenido en sección"):
         await bundle_service.import_bundle_bytes(in_mem_out.getvalue())
+
+
+@pytest.mark.asyncio
+async def test_export_and_import_signed_bundle_hmac_success(
+    project_repo: ProjectRepository,
+    bundle_service: ProjectBundleService,
+) -> None:
+    """Exporting a signed bundle with HMAC and importing with matching key succeeds (TF-EXPORT-001-R1)."""
+    project = ProjectStateDTO(
+        id="proj-hmac-ok",
+        title="Tesis Firmada Criptográficamente",
+        academic_level=AcademicLevel.DOCTORADO,
+    )
+    await project_repo.create_project(project)
+
+    signing_key = "secret-signing-key-12345"
+    bundle_bytes = await bundle_service.export_bundle_bytes(project.id, signing_key=signing_key)
+
+    # Import with matching verification key
+    restored = await bundle_service.import_bundle_bytes(
+        bundle_bytes,
+        new_project_id="proj-hmac-restored",
+        verification_key=signing_key,
+    )
+    assert restored.id == "proj-hmac-restored"
+    assert restored.title == "Tesis Firmada Criptográficamente"
+
+
+@pytest.mark.asyncio
+async def test_import_signed_bundle_hmac_mismatch_rejected(
+    project_repo: ProjectRepository,
+    bundle_service: ProjectBundleService,
+) -> None:
+    """Importing an HMAC-signed bundle with an incorrect verification key fails (TF-EXPORT-001-R1)."""
+    project = ProjectStateDTO(
+        id="proj-hmac-fail",
+        title="Tesis con Firma Dispar",
+        academic_level=AcademicLevel.PREGRADO,
+    )
+    await project_repo.create_project(project)
+
+    bundle_bytes = await bundle_service.export_bundle_bytes(
+        project.id, signing_key="correct-key-abc"
+    )
+
+    with pytest.raises(ExportError, match="La firma digital HMAC-SHA256 del paquete es inválida"):
+        await bundle_service.import_bundle_bytes(
+            bundle_bytes,
+            verification_key="wrong-key-xyz",
+        )
+
+
+@pytest.mark.asyncio
+async def test_import_unsigned_bundle_when_key_required_rejected(
+    project_repo: ProjectRepository,
+    bundle_service: ProjectBundleService,
+) -> None:
+    """Importing an unsigned bundle when verification_key is provided raises ExportError (TF-EXPORT-001-R1)."""
+    project = ProjectStateDTO(
+        id="proj-unsigned",
+        title="Tesis sin Firma",
+        academic_level=AcademicLevel.PREGRADO,
+    )
+    await project_repo.create_project(project)
+
+    # Export without signing key
+    unsigned_bytes = await bundle_service.export_bundle_bytes(project.id)
+
+    with pytest.raises(ExportError, match="El paquete no incluye una firma digital HMAC-SHA256"):
+        await bundle_service.import_bundle_bytes(
+            unsigned_bytes,
+            verification_key="expected-signing-key",
+        )

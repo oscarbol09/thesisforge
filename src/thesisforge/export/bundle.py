@@ -1,6 +1,7 @@
 """Local-First Project Portability: .thesisforge bundle export and import manager."""
 
 import hashlib
+import hmac
 import io
 import json
 import zipfile
@@ -34,6 +35,7 @@ class ProjectBundleManifest(BaseModel):
     project_sha256: str
     section_count: int = 0
     citation_count: int = 0
+    signature_hmac_sha256: str | None = None
 
 
 class ProjectBundleService:
@@ -42,7 +44,11 @@ class ProjectBundleService:
     def __init__(self, project_repo: ProjectRepository) -> None:
         self.repo = project_repo
 
-    async def export_bundle_bytes(self, project_id: str) -> bytes:
+    async def export_bundle_bytes(
+        self,
+        project_id: str,
+        signing_key: bytes | str | None = None,
+    ) -> bytes:
         """Export project into an in-memory .thesisforge ZIP archive."""
         project = await self.repo.get_project(project_id)
         if not project:
@@ -50,6 +56,11 @@ class ProjectBundleService:
 
         project_json_str = project.model_dump_json(indent=2)
         project_sha256 = hashlib.sha256(project_json_str.encode("utf-8")).hexdigest()
+
+        sig: str | None = None
+        if signing_key:
+            raw_key = signing_key.encode("utf-8") if isinstance(signing_key, str) else signing_key
+            sig = hmac.new(raw_key, project_json_str.encode("utf-8"), hashlib.sha256).hexdigest()
 
         manifest = ProjectBundleManifest(
             project_id=project.id,
@@ -59,6 +70,7 @@ class ProjectBundleService:
             project_sha256=project_sha256,
             section_count=len(project.sections),
             citation_count=len(project.validated_citations),
+            signature_hmac_sha256=sig,
         )
 
         buffer = io.BytesIO()
@@ -80,13 +92,18 @@ class ProjectBundleService:
 
         logger.info(
             "Exported .thesisforge project bundle.",
-            extra={"project_id": project_id, "size_bytes": buffer.tell()},
+            extra={"project_id": project_id, "size_bytes": buffer.tell(), "signed": bool(sig)},
         )
         return buffer.getvalue()
 
-    async def export_bundle_file(self, project_id: str, output_path: str | Path) -> Path:
+    async def export_bundle_file(
+        self,
+        project_id: str,
+        output_path: str | Path,
+        signing_key: bytes | str | None = None,
+    ) -> Path:
         """Export project bundle directly to a local disk file."""
-        bundle_bytes = await self.export_bundle_bytes(project_id)
+        bundle_bytes = await self.export_bundle_bytes(project_id, signing_key=signing_key)
         target = Path(output_path)
         if target.is_dir():
             target = target / f"{project_id}.thesisforge"
@@ -98,6 +115,7 @@ class ProjectBundleService:
         self,
         bundle_bytes: bytes,
         new_project_id: str | None = None,
+        verification_key: bytes | str | None = None,
     ) -> ProjectStateDTO:
         """Validate integrity and restore a ProjectStateDTO from a .thesisforge archive."""
         if not bundle_bytes:
@@ -151,6 +169,29 @@ class ProjectBundleService:
                         "Fallo de integridad: El checksum SHA-256 no coincide con el manifiesto "
                         "(posible corrupción de archivo o manipulación no autorizada)."
                     )
+
+                # Cryptographic HMAC-SHA256 Authenticity Verification (TF-EXPORT-001-R1)
+                if verification_key is not None:
+                    if not manifest.signature_hmac_sha256:
+                        raise ExportError(
+                            "Fallo de autenticidad: El paquete no incluye una firma digital HMAC-SHA256 "
+                            "pero se requirió validación criptográfica."
+                        )
+                    raw_vkey = (
+                        verification_key.encode("utf-8")
+                        if isinstance(verification_key, str)
+                        else verification_key
+                    )
+                    expected_signature = hmac.new(
+                        raw_vkey,
+                        project_raw_bytes,
+                        hashlib.sha256,
+                    ).hexdigest()
+                    if not hmac.compare_digest(expected_signature, manifest.signature_hmac_sha256):
+                        raise ExportError(
+                            "Fallo de autenticidad: La firma digital HMAC-SHA256 del paquete es inválida "
+                            "(clave de verificación incorrecta o contenido manipulado)."
+                        )
 
                 project_dict = json.loads(project_raw_bytes.decode("utf-8"))
                 project = ProjectStateDTO.model_validate(project_dict)
@@ -231,9 +272,14 @@ class ProjectBundleService:
         self,
         file_path: str | Path,
         new_project_id: str | None = None,
+        verification_key: bytes | str | None = None,
     ) -> ProjectStateDTO:
         """Import a project bundle from a local file system path."""
         path = Path(file_path)
         if not path.is_file():
             raise ExportError(f"El archivo '{file_path}' no existe.")
-        return await self.import_bundle_bytes(path.read_bytes(), new_project_id=new_project_id)
+        return await self.import_bundle_bytes(
+            path.read_bytes(),
+            new_project_id=new_project_id,
+            verification_key=verification_key,
+        )

@@ -137,3 +137,60 @@ async def test_api_index_pdf_and_query_context(in_memory_db: DatabaseManager, va
         query_json = query_resp.json()
         assert len(query_json) >= 1
         assert "lenguaje natural" in query_json[0]["text"]
+
+
+@pytest.mark.asyncio
+async def test_api_academic_api_error_returns_502(
+    in_memory_db: DatabaseManager, vault: LocalKeyVault
+) -> None:
+    """AcademicAPIError in an academic client endpoint returns 502 with structured error response."""
+    from unittest.mock import AsyncMock, patch
+
+    from thesisforge.exceptions import AcademicAPIError
+
+    app = create_app()
+    app.dependency_overrides[get_db_manager] = lambda: in_memory_db
+    app.dependency_overrides[get_key_vault] = lambda: vault
+
+    transport = ASGITransport(app=app)
+    with patch(
+        "thesisforge.rag.service.RAGService.search_literature",
+        new_callable=AsyncMock,
+        side_effect=AcademicAPIError(
+            "Servicio upstream no disponible", details={"source": "crossref"}
+        ),
+    ):
+        async with AsyncClient(transport=transport, base_url="http://test") as client:
+            resp = await client.get("/api/literature/search?q=Transformers")
+            assert resp.status_code == 502
+            body = resp.json()
+            assert body["error"] == "ACADEMIC_API_ERROR"
+            assert "upstream no disponible" in body["message"]
+            assert body["details"] == {"source": "crossref"}
+
+
+@pytest.mark.asyncio
+async def test_api_ssrf_blocked_error_returns_403(
+    in_memory_db: DatabaseManager, vault: LocalKeyVault
+) -> None:
+    """SSRFBlockedError returns 403 Forbidden with structured error response."""
+    from unittest.mock import AsyncMock, patch
+
+    from thesisforge.exceptions import SSRFBlockedError
+
+    app = create_app()
+    app.dependency_overrides[get_db_manager] = lambda: in_memory_db
+    app.dependency_overrides[get_key_vault] = lambda: vault
+
+    transport = ASGITransport(app=app)
+    with patch(
+        "thesisforge.rag.service.RAGService.search_literature",
+        new_callable=AsyncMock,
+        side_effect=SSRFBlockedError("Host no autorizado para peticiones académicas"),
+    ):
+        async with AsyncClient(transport=transport, base_url="http://test") as client:
+            resp = await client.get("/api/literature/search?q=Transformers")
+            assert resp.status_code == 403
+            body = resp.json()
+            assert body["error"] == "SSRF_BLOCKED"
+            assert "Host no autorizado" in body["message"]

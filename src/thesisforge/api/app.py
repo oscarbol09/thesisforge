@@ -24,6 +24,7 @@ from thesisforge.api.routes_settings import router as settings_router
 from thesisforge.config import get_settings
 from thesisforge.core.logging import get_logger
 from thesisforge.exceptions import (
+    AcademicAPIError,
     DefenseSessionError,
     DefenseTurnNotFoundError,
     DocumentProcessingError,
@@ -36,6 +37,7 @@ from thesisforge.exceptions import (
     ProjectVersionConflictError,
     SectionNotFoundError,
     SecurityError,
+    SSRFBlockedError,
     ThesisForgeError,
     ValidationError,
 )
@@ -242,6 +244,28 @@ def create_app() -> FastAPI:
         return JSONResponse(
             status_code=status.HTTP_403_FORBIDDEN,
             content={"error": "SECURITY_VIOLATION", "message": exc.message, "details": exc.details},
+        )
+
+    @app.exception_handler(SSRFBlockedError)
+    async def ssrf_blocked_handler(request: Request, exc: SSRFBlockedError) -> JSONResponse:
+        return JSONResponse(
+            status_code=status.HTTP_403_FORBIDDEN,
+            content={
+                "error": "SSRF_BLOCKED",
+                "message": exc.message,
+                "details": exc.details,
+            },
+        )
+
+    @app.exception_handler(AcademicAPIError)
+    async def academic_api_error_handler(request: Request, exc: AcademicAPIError) -> JSONResponse:
+        return JSONResponse(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            content={
+                "error": "ACADEMIC_API_ERROR",
+                "message": exc.message,
+                "details": exc.details,
+            },
         )
 
     @app.exception_handler(LLMProviderError)
