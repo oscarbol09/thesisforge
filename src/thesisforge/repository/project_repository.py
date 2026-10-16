@@ -55,7 +55,7 @@ class ProjectRepository:
 
     async def get_project(self, project_id: str) -> ProjectStateDTO:
         """Retrieve a project by ID with tenant scoping or raise ProjectNotFoundError."""
-        query = "SELECT state_json FROM projects WHERE id = ? AND owner_id = ?"
+        query = "SELECT state_json, version FROM projects WHERE id = ? AND owner_id = ?"
         params: tuple[Any, ...] = (project_id, self.owner_id)
 
         async with self.db.get_connection() as conn:
@@ -65,7 +65,9 @@ class ProjectRepository:
                 raise ProjectNotFoundError(f"Proyecto con ID '{project_id}' no encontrado.")
 
             state_json = str(row["state_json"])
-            return ProjectStateDTO.model_validate_json(state_json)
+            project = ProjectStateDTO.model_validate_json(state_json)
+            project.version = int(row["version"])
+            return project
 
     async def get_project_with_version(self, project_id: str) -> tuple[ProjectStateDTO, int]:
         """Retrieve a project and its current optimistic-lock version.
@@ -85,44 +87,20 @@ class ProjectRepository:
 
             state_json = str(row["state_json"])
             version = int(row["version"])
-            return ProjectStateDTO.model_validate_json(state_json), version
+            project = ProjectStateDTO.model_validate_json(state_json)
+            project.version = version
+            return project, version
 
-    async def update_project(self, project: ProjectStateDTO) -> ProjectStateDTO:
-        """Update an existing project state (blind write — use update_project_versioned
-        when concurrent access from the GUI or WebSocket is possible).
+    async def update_project(
+        self, project: ProjectStateDTO, expected_version: int | None = None
+    ) -> ProjectStateDTO:
+        """Update an existing project state with optimistic concurrency protection (TF-REPO-001).
+
+        Uses expected_version if provided, or project.version as the expected version.
+        Raises ProjectVersionConflictError (HTTP 409) if the database version has changed.
         """
-        project.updated_at = utc_now()
-        project.owner_id = self.owner_id
-        updated_str = format_iso_utc(project.updated_at)
-        state_json = project.model_dump_json()
-
-        query = """
-            UPDATE projects
-            SET title = ?, academic_level = ?, phase = ?, state_json = ?, owner_id = ?,
-                version = version + 1, updated_at = ?
-            WHERE id = ? AND owner_id = ?
-        """
-        params: tuple[Any, ...] = (
-            project.title or "Proyecto sin título",
-            project.academic_level.value,
-            project.phase.value,
-            state_json,
-            self.owner_id,
-            updated_str,
-            project.id,
-            self.owner_id,
-        )
-
-        async with self.db.get_connection() as conn:
-            cursor = await conn.execute(query, params)
-            await conn.commit()
-            if cursor.rowcount == 0:
-                raise ProjectNotFoundError(
-                    f"No se pudo actualizar. Proyecto '{project.id}' no existe o pertenece a otro usuario."
-                )
-
-        logger.info("Project updated successfully.", extra={"project_id": project.id})
-        return project
+        ver = expected_version if expected_version is not None else project.version
+        return await self.update_project_versioned(project, expected_version=ver)
 
     async def update_project_versioned(
         self,
@@ -136,13 +114,15 @@ class ProjectRepository:
         """
         project.updated_at = utc_now()
         project.owner_id = self.owner_id
+        next_version = expected_version + 1
+        project.version = next_version
         updated_str = format_iso_utc(project.updated_at)
         state_json = project.model_dump_json()
 
         query = """
             UPDATE projects
             SET title = ?, academic_level = ?, phase = ?, state_json = ?, owner_id = ?,
-                version = version + 1, updated_at = ?
+                version = ?, updated_at = ?
             WHERE id = ? AND version = ? AND owner_id = ?
         """
         params: tuple[Any, ...] = (
@@ -151,6 +131,7 @@ class ProjectRepository:
             project.phase.value,
             state_json,
             self.owner_id,
+            next_version,
             updated_str,
             project.id,
             expected_version,

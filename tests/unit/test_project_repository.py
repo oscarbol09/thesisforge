@@ -101,6 +101,34 @@ async def test_project_owner_isolation(in_memory_db: DatabaseManager):
 
 
 @pytest.mark.asyncio
+async def test_project_optimistic_concurrency_conflict(
+    in_memory_db: DatabaseManager, sample_project: ProjectStateDTO
+):
+    """Verify that concurrent writes detect version conflicts (TF-REPO-001)."""
+    from thesisforge.exceptions import ProjectVersionConflictError
+
+    repo = ProjectRepository(in_memory_db, "local")
+    await repo.create_project(sample_project)
+
+    # User A reads
+    user_a_proj = await repo.get_project(sample_project.id)
+    # User B reads
+    user_b_proj = await repo.get_project(sample_project.id)
+
+    # User A updates successfully
+    user_a_proj.title = "A's change"
+    await repo.update_project(user_a_proj)
+
+    # User B tries to update with stale version
+    user_b_proj.title = "B's change"
+    with pytest.raises(ProjectVersionConflictError) as exc_info:
+        await repo.update_project(user_b_proj)
+
+    assert exc_info.value.expected_version == 1
+    assert exc_info.value.actual_version == 2
+
+
+@pytest.mark.asyncio
 async def test_keystore_repository(in_memory_db: DatabaseManager, vault: LocalKeyVault):
     """Test storing, reading, listing, and deleting encrypted API keys."""
     repo = SecureKeyStoreRepository(in_memory_db, vault)

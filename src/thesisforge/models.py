@@ -376,8 +376,10 @@ class ProjectStateDTO(BaseModel):
     # owner_id scopes the project to an owner. In local-first single-user mode this
     # is always "local". Reserved for future multi-tenant / OAuth2 upgrade.
     owner_id: str = Field(default="local", max_length=128)
+    version: int = Field(default=1, ge=1)
     created_at: datetime = Field(default_factory=utc_now)
     updated_at: datetime = Field(default_factory=utc_now)
+
     phase: ProjectPhase = ProjectPhase.SETUP
     academic_level: AcademicLevel = AcademicLevel.PREGRADO
 
