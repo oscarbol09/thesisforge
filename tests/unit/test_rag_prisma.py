@@ -100,7 +100,10 @@ def test_prisma_exploratory_markdown_flowchart_header_and_notice() -> None:
     report.record_eligibility(5, 0, 5, 0, included_ids=["id1", "id2"])
 
     diagram = report.to_markdown_flowchart()
-    assert "# Diagrama de Flujo de Literatura (Inspirado en PRISMA 2020 - Síntesis Exploratoria)" in diagram
+    assert (
+        "# Diagrama de Flujo de Literatura (Inspirado en PRISMA 2020 - Síntesis Exploratoria)"
+        in diagram
+    )
     assert report.protocol_notice in diagram
     assert "citas_indexadas_proyecto: 5" in diagram
 

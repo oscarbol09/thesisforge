@@ -54,7 +54,6 @@ DEFAULT_RUBRIC_NOTICE: str = (
 )
 
 
-
 def normalize_juror_role(raw_role: str | JurorRole) -> JurorRole:
     """Normalize raw juror role strings (with or without accents/variations) into canonical JurorRole."""
     if isinstance(raw_role, JurorRole):

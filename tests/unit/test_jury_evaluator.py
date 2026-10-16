@@ -226,7 +226,9 @@ def test_normalize_juror_role() -> None:
 
 
 @pytest.mark.asyncio
-async def test_rule_based_audit_transparency_and_rubric(sample_complete_project: ProjectStateDTO) -> None:
+async def test_rule_based_audit_transparency_and_rubric(
+    sample_complete_project: ProjectStateDTO,
+) -> None:
     """Verify that rule-based fallback marks all evaluations as fallback synthetic personas and includes rubric."""
     engine = MultiAgentJuryEngine(llm_router=None)
     report = await engine.evaluate_project(sample_complete_project)
@@ -247,7 +249,9 @@ async def test_rule_based_audit_transparency_and_rubric(sample_complete_project:
 
 
 @pytest.mark.asyncio
-async def test_llm_audit_omitted_juror_marked_as_fallback(sample_complete_project: ProjectStateDTO) -> None:
+async def test_llm_audit_omitted_juror_marked_as_fallback(
+    sample_complete_project: ProjectStateDTO,
+) -> None:
     """Verify that when the LLM omits a juror, the default-injected juror has is_fallback=True and proper feedback."""
     mock_router = FakeLLMRouter()
     # Provide response with only 3 jurors, omitting Abogado del Diablo
@@ -321,4 +325,3 @@ async def test_llm_audit_omitted_juror_marked_as_fallback(sample_complete_projec
         "critical": 0.15,
     }
     assert report.rubric_notice
-

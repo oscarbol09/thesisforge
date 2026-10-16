@@ -515,7 +515,9 @@ async def test_citation_guard_negation_asymmetry_penalizes_overlap() -> None:
         project_id="p_en",
         text="The gradient optimization algorithm never converges without careful learning rate scheduling.",
     )
-    claim_en_neg = "The gradient optimization algorithm never converges without learning rate scheduling."
+    claim_en_neg = (
+        "The gradient optimization algorithm never converges without learning rate scheduling."
+    )
     score_sym_neg = guard._compute_lexical_grounding(claim_en_neg, chunk_en_neg.text)
     assert score_sym_neg >= 0.40
 
