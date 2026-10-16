@@ -130,7 +130,9 @@ class SentenceAwareChunker:
                 char_end = char_cursor + len(chunk_text)
 
                 chunk_hash = hashlib.sha256(chunk_text.encode("utf-8")).hexdigest()[:8]
-                deterministic_id = f"{document_id}_p{page_number}_c{chunk_idx}_{chunk_hash}"
+                deterministic_id = (
+                    f"{project_id}_{document_id}_p{page_number}_c{chunk_idx}_{chunk_hash}"
+                )
                 chunks.append(
                     DocumentChunkDTO(
                         id=deterministic_id,
@@ -172,7 +174,9 @@ class SentenceAwareChunker:
             char_start = char_cursor
             char_end = char_cursor + len(chunk_text)
             chunk_hash = hashlib.sha256(chunk_text.encode("utf-8")).hexdigest()[:8]
-            deterministic_id = f"{document_id}_p{page_number}_c{chunk_idx}_{chunk_hash}"
+            deterministic_id = (
+                f"{project_id}_{document_id}_p{page_number}_c{chunk_idx}_{chunk_hash}"
+            )
             chunks.append(
                 DocumentChunkDTO(
                     id=deterministic_id,

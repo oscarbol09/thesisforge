@@ -175,7 +175,7 @@ class RAGService:
                 INNER JOIN document_index_status dis
                     ON dc.document_id = dis.document_id
                     AND dc.project_id = dis.project_id
-                WHERE dc.project_id = ? AND dis.status = 'indexed'
+                WHERE dc.project_id = ? AND dis.status IN ('indexed', 'failed')
                 ORDER BY dc.document_id, dc.chunk_index
                 """,
                 (project_id,),
@@ -184,7 +184,7 @@ class RAGService:
 
         if not rows:
             logger.info(
-                "No indexed documents found in SQLite for Chroma rebuild.",
+                "No indexed or recoverable documents found in SQLite for Chroma rebuild.",
                 extra={"project_id": project_id},
             )
             return 0
@@ -211,6 +211,17 @@ class RAGService:
             )
 
         indexed_count = await self.vector_store.add_chunks(project_id=project_id, chunks=chunks)
+
+        # Mark all recovered documents as 'indexed'
+        doc_ids = {c.document_id for c in chunks}
+        for doc_id in doc_ids:
+            await self._upsert_index_status(
+                project_id=project_id,
+                document_id=doc_id,
+                status="indexed",
+                chunk_count=sum(1 for c in chunks if c.document_id == doc_id),
+            )
+
         logger.info(
             "ChromaDB rebuilt from SQLite.",
             extra={"project_id": project_id, "chunk_count": indexed_count},
@@ -311,17 +322,7 @@ class RAGService:
                 "No se pudieron extraer fragmentos de texto válidos del documento PDF."
             )
 
-        # 1. Clean up existing chunks in SQLite and ChromaDB for idempotency (TF-DATA-001)
-        async with self.db.get_connection() as conn:
-            await conn.execute(
-                "DELETE FROM document_chunks WHERE project_id = ? AND document_id = ?",
-                (project_id, document_id),
-            )
-            await conn.commit()
-
-        await self.vector_store.delete_document(project_id, document_id)
-
-        # 2. Persist chunks in SQLite
+        # 1. Clean and persist chunks in SQLite in an atomic transaction (TF-DATA-001-R1)
         sql_insert = """
             INSERT OR REPLACE INTO document_chunks (
                 id, project_id, document_id, chunk_index, page_number,
@@ -330,6 +331,10 @@ class RAGService:
         """
         try:
             async with self.db.get_connection() as conn:
+                await conn.execute(
+                    "DELETE FROM document_chunks WHERE project_id = ? AND document_id = ?",
+                    (project_id, document_id),
+                )
                 for chunk in chunks:
                     meta = {
                         "title": chunk.title,
@@ -370,7 +375,8 @@ class RAGService:
                 f"Error almacenando fragmentos en SQLite para '{document_id}': {err}"
             ) from err
 
-        # 2. Add to ChromaDB vector store
+        # 2. Update ChromaDB vector store: purge old document vectors and index new ones
+        await self.vector_store.delete_document(project_id, document_id)
         try:
             await self.vector_store.add_chunks(project_id=project_id, chunks=chunks)
         except Exception as err:
@@ -384,13 +390,18 @@ class RAGService:
                 title=title,
                 doi=doi,
                 category=cat_str,
-                error_msg=f"ChromaDB indexing failed (SQLite chunks intact): {err}",
+                error_msg=f"ChromaDB index failed: {err}",
+            )
+            logger.error(
+                "ChromaDB indexing failed after SQLite persist.",
+                extra={"project_id": project_id, "document_id": document_id, "error": str(err)},
             )
             raise DocumentProcessingError(
-                f"Error indexando fragmentos en ChromaDB para '{document_id}': {err}"
+                f"Error indexando vectores en ChromaDB para '{document_id}': {err}"
             ) from err
 
         # Both SQLite and ChromaDB succeeded → mark INDEXED
+
         await self._upsert_index_status(
             project_id=project_id,
             document_id=document_id,
@@ -429,14 +440,21 @@ class RAGService:
         )
         pdf_cit.apa_formatted = APA7Formatter.format_reference_entry(pdf_cit)
 
-        # Append to validated citations if not already present
-        existing_keys = {
-            (c.doi.lower() if c.doi else (c.title.lower() if c.title else c.id))
-            for c in project.validated_citations
-        }
-        cand_key = doi.lower() if doi else (cit_title.lower() if cit_title else document_id)
-        if cand_key not in existing_keys:
-            project.validated_citations.append(pdf_cit)
+        # Update or append citation for document_id in project state
+        replaced = False
+        for idx, existing_cit in enumerate(project.validated_citations):
+            if existing_cit.id == document_id:
+                project.validated_citations[idx] = pdf_cit
+                replaced = True
+                break
+        if not replaced:
+            existing_keys = {
+                (c.doi.lower() if c.doi else (c.title.lower() if c.title else c.id))
+                for c in project.validated_citations
+            }
+            cand_key = doi.lower() if doi else (cit_title.lower() if cit_title else document_id)
+            if cand_key not in existing_keys:
+                project.validated_citations.append(pdf_cit)
 
         await self.repo.update_project(project)
         logger.info(
