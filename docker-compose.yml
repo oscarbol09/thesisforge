@@ -32,6 +32,19 @@ services:
       - "127.0.0.1:8000:8000"
     security_opt:
       - no-new-privileges:true
+    cap_drop:
+      - ALL
+    read_only: true
+    tmpfs:
+      - /tmp:mode=1777,size=64M
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 2048M
+        reservations:
+          cpus: "0.5"
+          memory: 512M
     environment:
       - THESISFORGE_HOST=0.0.0.0
       - THESISFORGE_PORT=8000

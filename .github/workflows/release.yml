@@ -10,8 +10,45 @@ permissions:
   packages: write
 
 jobs:
+  verify-gate:
+    name: Release Quality Gate (Lint, Types, Security & Full Test Suite)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4.2.2
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5.3.0
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+
+      - name: Install dependencies (locked)
+        run: uv sync --locked --extra dev
+
+      - name: Ruff Linter & Format Check
+        run: |
+          uv run ruff check src/ tests/
+          uv run ruff format --check src/ tests/
+
+      - name: Strict Type Checking
+        run: uv run mypy --strict src/
+
+      - name: Bandit Security SAST
+        run: uv run bandit -r src/ -ll
+
+      - name: Full Test Suite
+        run: uv run pytest tests/ -v
+
   build-and-publish:
     name: Build Wheel and Desktop Binaries (${{ matrix.os }})
+    needs: [verify-gate]
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
