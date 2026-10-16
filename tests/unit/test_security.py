@@ -1,9 +1,14 @@
 from pathlib import Path
 
 import pytest
+from cryptography.fernet import Fernet
 
 from thesisforge.core.logging import sanitize_log_message
-from thesisforge.core.security import LocalKeyVault, assert_safe_academic_url
+from thesisforge.core.security import (
+    LocalKeyVault,
+    assert_safe_academic_url,
+    resolve_or_create_master_key,
+)
 from thesisforge.exceptions import KeyVaultError, SSRFBlockedError
 
 
@@ -138,3 +143,14 @@ def test_resolve_or_create_master_key_raises_on_unreadable_file(
 
     with pytest.raises(KeyVaultError, match="No fue posible leer la clave maestra existente"):
         resolve_or_create_master_key(master_key=None, key_file_path=key_file)
+
+
+def test_resolve_or_create_master_key_atomic_collision_recovery(tmp_path: Path) -> None:
+    """When a file is created concurrently (FileExistsError on atomic open), the existing key is loaded."""
+    key_file = tmp_path / "colliding_master.key"
+    # Pre-populate key to simulate concurrent write
+    pre_key = Fernet.generate_key()
+    key_file.write_bytes(pre_key)
+
+    resolved = resolve_or_create_master_key(master_key=None, key_file_path=key_file)
+    assert resolved == pre_key

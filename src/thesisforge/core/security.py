@@ -182,10 +182,17 @@ def resolve_or_create_master_key(
     new_key = Fernet.generate_key()
     try:
         target_path.parent.mkdir(parents=True, exist_ok=True)
-        target_path.write_bytes(new_key)
-        # Attempt secure permission on POSIX systems
-        if os.name != "nt":
-            target_path.chmod(0o600)
+        flags = os.O_CREAT | os.O_EXCL | os.O_WRONLY
+        try:
+            fd = os.open(str(target_path), flags, 0o600)
+            with os.fdopen(fd, "wb") as f:
+                f.write(new_key)
+        except FileExistsError:
+            # Another process created the key concurrently; read and return that key
+            content = target_path.read_bytes().strip()
+            if content:
+                return content
+            return new_key
     except OSError as err:
         # Hard failure: a silent in-memory fallback would cause all encrypted secrets
         # to become permanently unrecoverable after a process restart.

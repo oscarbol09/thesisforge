@@ -34,6 +34,7 @@ from starlette.requests import HTTPConnection
 
 from thesisforge.config import AppSettings, get_settings
 from thesisforge.core.logging import get_logger
+from thesisforge.exceptions import ConfigurationError
 
 logger = get_logger(__name__)
 
@@ -44,12 +45,15 @@ PUBLIC_PATHS: frozenset[str] = frozenset({"/health", "/api/version"})
 LOCAL_OWNER_ID = "local"
 
 
-def resolve_instance_token(token_file: Path | None = None) -> str:
+def resolve_instance_token(
+    token_file: Path | None = None,
+    environment: str | None = None,
+) -> str:
     """Return the instance token, generating and persisting it on first call.
 
     Resolution order:
     1. ``THESISFORGE_INSTANCE_TOKEN`` environment variable (highest priority).
-    2. Token file at ``~/.thesisforge/instance.token`` (generated if absent).
+    2. Token file at ``~/.thesisforge/instance.token`` (generated atomically if absent).
     """
     env_token = os.environ.get("THESISFORGE_INSTANCE_TOKEN", "").strip()
     if env_token:
@@ -63,23 +67,43 @@ def resolve_instance_token(token_file: Path | None = None) -> str:
             return stored
 
     new_token = secrets.token_urlsafe(32)
+    env = (
+        environment
+        or os.environ.get("THESISFORGE_ENVIRONMENT", os.environ.get("ENVIRONMENT", "development"))
+    ).lower()
+
     try:
         target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_text(new_token, encoding="utf-8")
-        if os.name != "nt":
-            target.chmod(0o600)
-        logger.info(
-            "Generated new instance token and persisted it to disk.",
-            extra={"token_path": str(target)},
-        )
-        print(  # noqa: T201
-            f"\n[ThesisForge] Instance token generated.\n"
-            f"  Token : {new_token}\n"
-            f"  Saved : {target}\n"
-            f"  Add 'Authorization: Bearer <token>' to all API requests,\n"
-            f"  or set THESISFORGE_INSTANCE_TOKEN in your environment.\n"
-        )
+        flags = os.O_CREAT | os.O_EXCL | os.O_WRONLY
+        try:
+            fd = os.open(str(target), flags, 0o600)
+            with os.fdopen(fd, "w", encoding="utf-8") as f:
+                f.write(new_token)
+            logger.info(
+                "Generated new instance token and persisted it to disk.",
+                extra={"token_path": str(target)},
+            )
+            # Only print token in development/interactive mode, never in production or test (TF-SEC-002)
+            if env == "development":
+                print(  # noqa: T201
+                    f"\n[ThesisForge] Instance token generated.\n"
+                    f"  Token : {new_token}\n"
+                    f"  Saved : {target}\n"
+                    f"  Add 'Authorization: Bearer <token>' to all API requests,\n"
+                    f"  or set THESISFORGE_INSTANCE_TOKEN in your environment.\n"
+                )
+        except FileExistsError:
+            stored = target.read_text(encoding="utf-8").strip()
+            if stored:
+                return stored
+            return new_token
     except OSError as err:
+        if env == "production":
+            raise ConfigurationError(
+                f"No fue posible persistir el token de instancia en '{target}'. "
+                "En entorno de producción, configure THESISFORGE_INSTANCE_TOKEN en las variables de entorno. "
+                f"Causa: {err}"
+            ) from err
         logger.warning(
             "Could not persist instance token to disk; token is session-only.",
             extra={"error": str(err)},
@@ -115,6 +139,9 @@ async def get_current_owner(
     """FastAPI dependency that validates the instance token and returns the owner ID.
 
     Works seamlessly with both standard HTTP requests and WebSocket connections.
+    Accepts tokens strictly via ``Authorization: Bearer <token>`` or
+    ``Sec-WebSocket-Protocol: bearer, <token>``. Query parameter tokens are
+    explicitly rejected to prevent URL/log leakage (TF-SEC-001).
 
     Returns:
         ``"local"`` -- the only owner in single-user mode.
@@ -132,8 +159,13 @@ async def get_current_owner(
     token: str | None = None
     if auth_header.lower().startswith("bearer "):
         token = auth_header[7:].strip()
-    elif "token" in connection.query_params:
-        token = connection.query_params.get("token")
+    else:
+        # Check Sec-WebSocket-Protocol header for WebSocket connections
+        ws_protocol = connection.headers.get("sec-websocket-protocol", "").strip()
+        if ws_protocol:
+            parts = [p.strip() for p in ws_protocol.split(",")]
+            if len(parts) == 2 and parts[0].lower() == "bearer":
+                token = parts[1]
 
     expected_token = get_instance_token()
 
@@ -145,7 +177,7 @@ async def get_current_owner(
                 "message": (
                     "Se requiere autenticacion. Incluya 'Authorization: Bearer <token>' "
                     "en la peticion. El token se muestra en la consola del servidor al "
-                    "arrancar por primera vez, o puede definirse con "
+                    "arrancar por primera vez en desarrollo, o puede definirse con "
                     "THESISFORGE_INSTANCE_TOKEN."
                 ),
             },

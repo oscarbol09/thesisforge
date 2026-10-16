@@ -166,10 +166,10 @@ async def test_valid_credentials_in_production_returns_owner(
 
 
 @pytest.mark.asyncio
-async def test_valid_token_in_query_params_returns_owner(
+async def test_token_in_query_params_is_rejected_in_production(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """In production, token passed via query param (e.g. for WebSockets) returns LOCAL_OWNER_ID."""
+    """In production, tokens in query parameters are rejected (TF-SEC-001)."""
     monkeypatch.setenv("THESISFORGE_INSTANCE_TOKEN", "mock-ws-token-test")
     monkeypatch.setattr(auth_mod, "_instance_token", "mock-ws-token-test")
 
@@ -179,5 +179,57 @@ async def test_valid_token_in_query_params_returns_owner(
     mock_conn.query_params = {"token": "mock-ws-token-test"}
     settings = AppSettings(environment="production")
 
+    with pytest.raises(HTTPException) as exc_info:
+        await get_current_owner(connection=mock_conn, settings=settings)
+
+    assert exc_info.value.status_code == 401
+    assert exc_info.value.detail["error"] == "MISSING_TOKEN"
+
+
+@pytest.mark.asyncio
+async def test_token_in_websocket_protocol_header_accepted(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """In production, tokens passed in Sec-WebSocket-Protocol header are accepted."""
+    monkeypatch.setenv("THESISFORGE_INSTANCE_TOKEN", "mock-ws-token-test")
+    monkeypatch.setattr(auth_mod, "_instance_token", "mock-ws-token-test")
+
+    mock_conn = MagicMock()
+    mock_conn.url.path = "/api/drafting/ws/proj-123/sec-1"
+    mock_conn.headers = {"sec-websocket-protocol": "bearer, mock-ws-token-test"}
+    mock_conn.query_params = {}
+    settings = AppSettings(environment="production")
+
     owner = await get_current_owner(connection=mock_conn, settings=settings)
     assert owner == LOCAL_OWNER_ID
+
+
+def test_production_token_resolution_does_not_print_to_stdout(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """In production, newly generated token is never printed to stdout (TF-SEC-002)."""
+    monkeypatch.delenv("THESISFORGE_INSTANCE_TOKEN", raising=False)
+    monkeypatch.setenv("THESISFORGE_ENVIRONMENT", "production")
+    token_file = tmp_path / "prod.token"
+
+    token = resolve_instance_token(token_file=token_file, environment="production")
+    assert len(token) > 20
+    captured = capsys.readouterr()
+    assert token not in captured.out
+    assert "[ThesisForge] Instance token generated" not in captured.out
+
+
+def test_production_token_resolution_raises_when_cannot_persist(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """In production, failure to persist token raises ConfigurationError instead of silent fallback."""
+    from thesisforge.exceptions import ConfigurationError
+
+    monkeypatch.delenv("THESISFORGE_INSTANCE_TOKEN", raising=False)
+    # Target an invalid path that cannot be created or written
+    invalid_target = tmp_path / "non_existent_dir" / "file.txt"
+    # Make parent a non-directory file to trigger OSError on mkdir
+    invalid_target.parent.touch()
+
+    with pytest.raises(ConfigurationError):
+        resolve_instance_token(token_file=invalid_target / "token", environment="production")
