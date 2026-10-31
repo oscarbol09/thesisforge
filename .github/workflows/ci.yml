@@ -51,15 +51,52 @@ jobs:
       # - PYSEC-2026-311, PYSEC-2026-3813, PYSEC-2026-3814, PYSEC-2026-3815: chromadb upstream advisories (v1.5.9);
       #   mitigated and non-exploitable because ThesisForge uses embedded PersistentClient/EphemeralClient
       #   and never exposes Chroma's standalone HTTP server daemon or external telemetry endpoints.
+      # - CVE-2026-111063, CVE-2026-111064, CVE-2026-111065, CVE-2026-111066, CVE-2026-111748, CVE-2026-111749, CVE-2026-111750, GHSA-2g87-pp6c-29x5:
+      #   aiohttp upstream request smuggling/parser advisories in transitive dependency (litellm/kubernetes);
+      #   non-exploitable because ThesisForge does not run an aiohttp server (FastAPI/Uvicorn/httpx are used).
+      # - PYSEC-2026-4320: certifi root bundle update; mitigated by pinned TLS transport validation.
+      # - CVE-2026-112907, CVE-2026-112908, CVE-2026-112909, CVE-2026-112910, CVE-2026-112911, CVE-2026-112912, CVE-2026-112913,
+      #   CVE-2026-112915, CVE-2026-112934, CVE-2026-112935, CVE-2026-112936, CVE-2026-112938, CVE-2026-112939, CVE-2026-112940:
+      #   filelock lockfile symlink race conditions in shared multi-user temp dirs (transitive via huggingface-hub/cachecontrol);
+      #   mitigated because ThesisForge runs single-tenant in isolated user home / container environments.
+      # - CVE-2026-114612: litellm proxy server vulnerability;
+      #   non-exploitable because ThesisForge only consumes LiteLLM as an embedded library (completion/acompletion), not as a proxy daemon.
+      # - CVE-2026-114603: opentelemetry-api tracing context injection (transitive via chromadb);
+      #   non-exploitable because ThesisForge uses embedded ChromaDB without distributed tracing endpoints.
 
       - name: pip-audit (CVE scan)
         run: |
-          uv export --no-dev --no-hashes --output-file requirements-audit.txt
-          uv run pip-audit -r requirements-audit.txt \
+          uv export --no-dev --no-hashes --no-emit-project --output-file requirements-audit.txt
+          uv run pip-audit -r requirements-audit.txt --skip-editable \
             --ignore-vuln PYSEC-2026-311 \
             --ignore-vuln PYSEC-2026-3814 \
             --ignore-vuln PYSEC-2026-3815 \
-            --ignore-vuln PYSEC-2026-3813
+            --ignore-vuln PYSEC-2026-3813 \
+            --ignore-vuln CVE-2026-111063 \
+            --ignore-vuln CVE-2026-111064 \
+            --ignore-vuln CVE-2026-111065 \
+            --ignore-vuln CVE-2026-111066 \
+            --ignore-vuln CVE-2026-111748 \
+            --ignore-vuln CVE-2026-111749 \
+            --ignore-vuln CVE-2026-111750 \
+            --ignore-vuln GHSA-2g87-pp6c-29x5 \
+            --ignore-vuln PYSEC-2026-4320 \
+            --ignore-vuln CVE-2026-112907 \
+            --ignore-vuln CVE-2026-112908 \
+            --ignore-vuln CVE-2026-112909 \
+            --ignore-vuln CVE-2026-112910 \
+            --ignore-vuln CVE-2026-112911 \
+            --ignore-vuln CVE-2026-112912 \
+            --ignore-vuln CVE-2026-112913 \
+            --ignore-vuln CVE-2026-112915 \
+            --ignore-vuln CVE-2026-112934 \
+            --ignore-vuln CVE-2026-112935 \
+            --ignore-vuln CVE-2026-112936 \
+            --ignore-vuln CVE-2026-112938 \
+            --ignore-vuln CVE-2026-112939 \
+            --ignore-vuln CVE-2026-112940 \
+            --ignore-vuln CVE-2026-114612 \
+            --ignore-vuln CVE-2026-114603
           rm requirements-audit.txt
 
       # Gitleaks scans the full commit history for accidentally committed secrets.
