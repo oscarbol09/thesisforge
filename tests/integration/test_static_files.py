@@ -39,6 +39,31 @@ async def test_serve_spa_static_assets() -> None:
 
 
 @pytest.mark.asyncio
+async def test_serve_favicon_endpoint() -> None:
+    """Verify that GET /favicon.ico serves the favicon if present."""
+    app = create_app()
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://testserver") as client:
+        response = await client.get("/favicon.ico")
+        assert response.status_code == 200
+        assert (
+            "image" in response.headers.get("content-type", "").lower()
+            or response.headers.get("content-type") == "application/octet-stream"
+        )
+
+
+@pytest.mark.asyncio
+async def test_serve_static_assets_directory() -> None:
+    """Verify that mounted /assets/ directory serves repository static brand assets."""
+    app = create_app()
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://testserver") as client:
+        response = await client.get("/assets/logo.png")
+        assert response.status_code == 200
+        assert "image/png" in response.headers.get("content-type", "")
+
+
+@pytest.mark.asyncio
 async def test_api_routes_precedence_over_static_files() -> None:
     """Verify that API routes take priority over the mounted root static files."""
     app = create_app()
