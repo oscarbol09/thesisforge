@@ -33,6 +33,7 @@ COPY --from=builder /usr/local/bin/uvicorn /usr/local/bin/uvicorn
 
 COPY config.yaml.example ./config.yaml
 COPY gui ./gui
+COPY assets ./assets
 
 RUN mkdir -p /app/data /home/thesisforge/.thesisforge \
     && chown -R thesisforge:thesisforge /app /home/thesisforge
