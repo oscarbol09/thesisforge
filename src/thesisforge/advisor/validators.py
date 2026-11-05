@@ -122,9 +122,9 @@ class MethodologyValidator:
             issues.append("La pregunta de investigación no puede estar vacía.")
             return issues
 
-        if not (cleaned.startswith("¿") or cleaned.endswith("?")):
+        if not (cleaned.startswith("¿") and cleaned.endswith("?")):
             issues.append(
-                "La pregunta de investigación debe estar formulada con signos de interrogación formales (¿...?)."
+                "La pregunta de investigación debe estar formulada con signos de interrogación formales al inicio y al final (¿...?)."
             )
 
         lower_q = cleaned.lower()

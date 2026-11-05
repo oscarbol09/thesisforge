@@ -29,6 +29,34 @@ def test_validate_research_question_valid():
     assert len(issues) == 0
 
 
+def test_validate_research_question_missing_opening_mark():
+    """Test a closing question mark does not compensate for a missing opening mark."""
+    question = (
+        "En qué medida el uso de RAG mejora la exactitud de las citas "
+        "bibliográficas en tesis de pregrado?"
+    )
+    issues = MethodologyValidator.validate_research_question(question)
+    assert len(issues) == 1
+    assert "signos de interrogación" in issues[0]
+
+
+def test_validate_research_question_missing_closing_mark():
+    """Test an opening question mark does not compensate for a missing closing mark."""
+    question = (
+        "¿En qué medida el uso de RAG mejora la exactitud de las citas "
+        "bibliográficas en tesis de pregrado"
+    )
+    issues = MethodologyValidator.validate_research_question(question)
+    assert len(issues) == 1
+    assert "signos de interrogación" in issues[0]
+
+
+def test_validate_research_question_surrounding_whitespace():
+    """Test surrounding whitespace is stripped before checking paired marks."""
+    question = "  ¿Cómo influye el uso de RAG en la precisión de las citas? \n"
+    assert MethodologyValidator.validate_research_question(question) == []
+
+
 def test_validate_research_question_missing_marks_or_starter():
     """Test research question missing question marks or interrogative pronoun."""
     bad_q = "El impacto del RAG en las citas"
