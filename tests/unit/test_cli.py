@@ -302,3 +302,66 @@ def test_cli_import_bundle_command(
         captured = capsys.readouterr()
         assert "Proyecto importado exitosamente" in captured.out
         assert "proj-restored-cli" in captured.out
+
+
+def test_cli_jury_audit_injects_llm_router(cli_db_url: str):
+    """JuryService must receive an LLMRouter instance in the jury-audit subcommand (issue #60)."""
+    from unittest.mock import AsyncMock, MagicMock
+
+    from thesisforge.llm.router import LLMRouter
+
+    with (
+        patch.dict("os.environ", {"THESISFORGE_DATABASE_URL": cli_db_url}),
+        patch("thesisforge.jury.service.JuryService") as mock_service_cls,
+    ):
+        instance = mock_service_cls.return_value
+        report = MagicMock()
+        report.overall_score = 88.5
+        report.summary_dictamen = "Dictamen de prueba"
+        report.juror_evaluations = []
+        report.issues = []
+        report.mandatory_fixes = []
+        instance.audit_project = AsyncMock(return_value=report)
+
+        with patch("sys.argv", ["thesisforge", "jury-audit", "proj-audit-cli"]):
+            main()
+
+        kwargs = mock_service_cls.call_args.kwargs
+        assert "llm_router" in kwargs
+        assert isinstance(kwargs["llm_router"], LLMRouter)
+
+
+def test_cli_defense_start_injects_llm_router(cli_db_url: str):
+    """JuryService must receive an LLMRouter instance in the defense-start subcommand (issue #60)."""
+    from unittest.mock import AsyncMock, MagicMock
+
+    from thesisforge.llm.router import LLMRouter
+
+    with (
+        patch.dict("os.environ", {"THESISFORGE_DATABASE_URL": cli_db_url}),
+        patch("thesisforge.jury.service.JuryService") as mock_service_cls,
+        patch(
+            "thesisforge.repository.project_repository.ProjectRepository.get_project",
+            new_callable=AsyncMock,
+        ) as mock_get_project,
+    ):
+        instance = mock_service_cls.return_value
+        session = MagicMock()
+        session.id = "sess-1"
+        session.total_turns = 3
+        session.current_turn_index = 3  # skip the interactive turn loop
+        instance.start_defense_session = AsyncMock(return_value=session)
+        project = MagicMock()
+        project.title = "Tesis de prueba"
+        project.academic_level.value = "doctorado"
+        mock_get_project.return_value = project
+
+        try:
+            with patch("sys.argv", ["thesisforge", "defense-start", "proj-defense-cli"]):
+                main()
+        except Exception:
+            pass  # Rich formatting of stub attributes is irrelevant to this assertion
+
+        kwargs = mock_service_cls.call_args.kwargs
+        assert "llm_router" in kwargs
+        assert isinstance(kwargs["llm_router"], LLMRouter)
