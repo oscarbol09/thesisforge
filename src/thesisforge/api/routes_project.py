@@ -1,9 +1,10 @@
 """REST API endpoints for Project CRUD."""
 
-from fastapi import APIRouter, Depends, Header, status
+from fastapi import APIRouter, Depends, Header, HTTPException, status
 
 from thesisforge.api.deps import get_project_repository, get_rag_service
 from thesisforge.core.auth import get_current_owner
+from thesisforge.exceptions import ProjectNotFoundError
 from thesisforge.models import (
     ProjectCreateDTO,
     ProjectPhase,
@@ -100,7 +101,18 @@ async def delete_project(
     owner_id: str = Depends(get_current_owner),
 ) -> None:
     """Delete a project by ID and clean up its SQLite records and ChromaDB vector collection."""
-    await repo.delete_project(
-        project_id,
-    )
+    try:
+        deleted = await repo.delete_project(
+            project_id,
+        )
+    except ProjectNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Project with id '{project_id}' not found",
+        ) from exc
+    if deleted is False:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Project with id '{project_id}' not found",
+        )
     await rag_service.vector_store.delete_project_collection(project_id)
