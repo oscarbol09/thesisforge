@@ -1,5 +1,7 @@
 """Unit tests for the 7 AI Failure Modes Academic Audit Gate."""
 
+import pytest
+
 from thesisforge.jury.ai_failure_gate import AIFailureGateAuditor, AIFailureMode
 from thesisforge.models import (
     AcademicLevel,
@@ -98,3 +100,89 @@ def test_ai_failure_gate_detects_bug_as_insight_and_hedging() -> None:
     assert AIFailureMode.EPISTEMIC_FRAME_LOCK in detected_modes
     assert AIFailureMode.SAMPLE_OVERGENERALIZATION in detected_modes
     assert AIFailureMode.LITERATURE_FABRICATION in detected_modes
+
+
+@pytest.mark.parametrize(
+    ("registered_authors", "in_text_citation"),
+    [
+        (["Ashish Vaswani"], "(Vaswani et al., 2017)"),
+        (["Vaswani, A."], "(Vaswani, 2017)"),
+        (["Ashish Vaswani", "Vaswani, A."], "(Vaswani et al., 2017)"),
+        (["Gabriel García-Márquez"], "(García-Márquez, 1982)"),
+        (["Juan De la Cruz"], "(De la Cruz, 2021)"),
+        (["Juan Pérez", "Ana López"], "(Pérez & López, 2023)"),
+        (["Juan Pérez", "Ana López"], "(Pérez y López, 2023)"),
+        (
+            ["Ashish Vaswani", "Juan Pérez", "Ana López"],
+            "(Vaswani et al., 2017; Pérez & López, 2023)",
+        ),
+    ],
+)
+def test_literature_fabrication_accepts_registered_author_citation_forms(
+    registered_authors: list[str], in_text_citation: str
+) -> None:
+    project = ProjectStateDTO(
+        id="citation_match_proj",
+        validated_citations=[CitationDTO(authors=[author]) for author in registered_authors],
+        sections=[
+            SectionDraftDTO(
+                section_id="intro",
+                title="Introducción",
+                content=f"La literatura lo respalda {in_text_citation}.",
+            )
+        ],
+    )
+
+    findings = AIFailureGateAuditor._audit_literature_fabrication(project)
+
+    assert findings == []
+
+
+@pytest.mark.parametrize(
+    "in_text_citation",
+    [
+        "(Smith, 2025)",
+        "(Smith-Jones, 2025)",
+        "(De la Cruz, 2025)",
+        "(Smith & Jones, 2025)",
+        "(Smith y Jones, 2025)",
+    ],
+)
+def test_literature_fabrication_detects_unregistered_compound_and_two_author_citations(
+    in_text_citation: str,
+) -> None:
+    project = ProjectStateDTO(
+        id="unregistered_citation_proj",
+        validated_citations=[CitationDTO(authors=["Ashish Vaswani"])],
+        sections=[
+            SectionDraftDTO(
+                section_id="intro",
+                title="Introducción",
+                content=f"Como indicaron {in_text_citation}.",
+            )
+        ],
+    )
+
+    findings = AIFailureGateAuditor._audit_literature_fabrication(project)
+
+    assert len(findings) == 1
+    assert findings[0].mode == AIFailureMode.LITERATURE_FABRICATION
+
+
+def test_literature_fabrication_does_not_drop_particle_from_compound_surname() -> None:
+    project = ProjectStateDTO(
+        id="particle_surname_proj",
+        validated_citations=[CitationDTO(authors=["Juan De la Cruz"])],
+        sections=[
+            SectionDraftDTO(
+                section_id="intro",
+                title="Introducción",
+                content="Como indicó (Cruz, 2025).",
+            )
+        ],
+    )
+
+    findings = AIFailureGateAuditor._audit_literature_fabrication(project)
+
+    assert len(findings) == 1
+    assert findings[0].mode == AIFailureMode.LITERATURE_FABRICATION
