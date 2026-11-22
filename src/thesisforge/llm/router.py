@@ -144,13 +144,16 @@ class LLMRouter:
         provider: str | None = None,
         temperature: float = 0.3,
         json_mode: bool = False,
+        *,
+        api_key: str | None = None,
         **kwargs: Any,
     ) -> str:
-        """Execute a text completion request."""
+        """Execute a text completion, optionally with a request-scoped API key."""
         target_provider = provider or self.settings.default_provider
         raw_model = model or self.settings.default_model
         resolved_model = self._normalize_model_name(raw_model, target_provider)
-        api_key = await self.resolve_api_key(target_provider)
+        if api_key is None:
+            api_key = await self.resolve_api_key(target_provider)
 
         messages: list[dict[str, str]] = []
         if system_prompt:

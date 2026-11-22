@@ -147,10 +147,6 @@ async def test_llm_connection(
             message=f"No se encontró clave de API configurada para el proveedor '{normalized_provider}'.",
         )
 
-    # Temporarily store or pass key if testing unsaved key
-    if payload.api_key and payload.api_key.strip():
-        await keystore.store_key(normalized_provider, payload.api_key.strip())
-
     t0 = time.monotonic()
     try:
         response_text = await router_instance.complete(
@@ -158,6 +154,7 @@ async def test_llm_connection(
             system_prompt="Eres un asistente conciso de prueba de conexión.",
             model=clean_model,
             provider=normalized_provider,
+            api_key=key,
             max_tokens=15,
             temperature=0.0,
         )
