@@ -16,16 +16,11 @@ from thesisforge.models import (
     LiteratureCategory,
 )
 from thesisforge.rag.apa_formatter import APA7Formatter
-from thesisforge.rag.cache import LiteratureCache
 from thesisforge.rag.citation_guard import CitationGuard
 from thesisforge.rag.clients.aggregator import AcademicSearchAggregator
-from thesisforge.rag.clients.arxiv import ArxivClient
-from thesisforge.rag.clients.crossref import CrossRefClient
-from thesisforge.rag.clients.openalex import OpenAlexClient
-from thesisforge.rag.clients.semantic_scholar import SemanticScholarClient
 from thesisforge.rag.parser import PDFDocumentParser
 from thesisforge.rag.prisma import PRISMAFlowReport
-from thesisforge.rag.vectorstore import ChromaVectorStore
+from thesisforge.rag.resources import RAGServiceResources
 from thesisforge.repository.database import DatabaseManager
 from thesisforge.repository.project_repository import ProjectRepository
 
@@ -45,17 +40,25 @@ class RAGService:
         candidate_threshold: float = 0.25,
         support_threshold: float = 0.40,
         embedding_provider: str | None = None,
+        resources: RAGServiceResources | None = None,
     ) -> None:
         self.db = db_manager
         self.repo = project_repo
         self.llm = llm_router
-        self.cache = LiteratureCache(db_manager)
-
-        # Clients
-        self.semantic_scholar = SemanticScholarClient(cache=self.cache)
-        self.arxiv = ArxivClient(cache=self.cache)
-        self.crossref = CrossRefClient(cache=self.cache)
-        self.openalex = OpenAlexClient(cache=self.cache)
+        self._owns_resources = resources is None
+        if resources is None:
+            resources = RAGServiceResources(
+                db_manager=db_manager,
+                persist_directory=persist_dir,
+                is_memory=is_memory,
+                embedding_provider=embedding_provider,
+            )
+        self.resources = resources
+        self.cache = resources.cache
+        self.semantic_scholar = resources.semantic_scholar
+        self.arxiv = resources.arxiv
+        self.crossref = resources.crossref
+        self.openalex = resources.openalex
         self.aggregator = AcademicSearchAggregator(
             semantic_scholar=self.semantic_scholar,
             arxiv=self.arxiv,
@@ -64,12 +67,7 @@ class RAGService:
         )
 
         # Vector Store & Parser
-        self.vector_store = ChromaVectorStore(
-            persist_directory=persist_dir,
-            llm_router=self.llm,
-            is_memory=is_memory,
-            embedding_provider=embedding_provider,
-        )
+        self.vector_store = resources.vector_store
         self.parser = PDFDocumentParser()
         self.citation_guard = CitationGuard(
             crossref_client=self.crossref,
@@ -77,6 +75,11 @@ class RAGService:
             candidate_threshold=candidate_threshold,
             support_threshold=support_threshold,
         )
+
+    async def close(self) -> None:
+        """Close resources when this service created and owns them."""
+        if self._owns_resources:
+            await self.resources.close()
 
     # ------------------------------------------------------------------
     # Internal helpers: document_index_status lifecycle

@@ -7,6 +7,7 @@ import pytest
 import respx
 from httpx import ASGITransport, AsyncClient
 
+import thesisforge.api.app as app_module
 from thesisforge.api.app import create_app
 from thesisforge.api.deps import get_db_manager, get_key_vault
 from thesisforge.core.security import LocalKeyVault
@@ -91,8 +92,13 @@ async def test_api_search_and_verify_doi(in_memory_db: DatabaseManager, vault: L
 
 
 @pytest.mark.asyncio
-async def test_api_index_pdf_and_query_context(in_memory_db: DatabaseManager, vault: LocalKeyVault):
+async def test_api_index_pdf_and_query_context(
+    in_memory_db: DatabaseManager,
+    vault: LocalKeyVault,
+    monkeypatch: pytest.MonkeyPatch,
+):
     """Test /api/literature/index-pdf and /api/literature/query-context endpoints."""
+    monkeypatch.setattr(app_module, "get_db_manager", lambda: in_memory_db)
     app = create_app()
     app.dependency_overrides[get_db_manager] = lambda: in_memory_db
     app.dependency_overrides[get_key_vault] = lambda: vault
@@ -117,7 +123,10 @@ async def test_api_index_pdf_and_query_context(in_memory_db: DatabaseManager, va
     doc.close()
 
     transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://test") as client:
+    async with (
+        app.router.lifespan_context(app),
+        AsyncClient(transport=transport, base_url="http://test") as client,
+    ):
         # Upload & Index PDF
         files = {"file": ("paper.pdf", io.BytesIO(pdf_bytes), "application/pdf")}
         data = {"project_id": "proj-api-rag-01", "title": "Paper RAG"}
