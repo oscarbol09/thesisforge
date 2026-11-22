@@ -315,6 +315,12 @@ class ChromaVectorStore:
                 settings=ChromaSettings(anonymized_telemetry=False),
             )
 
+    def close(self) -> None:
+        """Close the Chroma client when the installed version exposes its lifecycle API."""
+        close_client = getattr(self._client, "close", None)
+        if callable(close_client):
+            close_client()
+
     def _get_collection_name(self, project_id: str) -> str:
         """Sanitize project_id into a valid Chroma collection identifier (3-63 chars alphanumeric)."""
         clean_id = re.sub(r"[^a-zA-Z0-9_]", "_", project_id).strip("_").lower()

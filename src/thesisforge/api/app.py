@@ -42,6 +42,7 @@ from thesisforge.exceptions import (
     ValidationError,
 )
 from thesisforge.rag.cache import LiteratureCache
+from thesisforge.rag.resources import RAGServiceResources
 
 logger = get_logger(__name__)
 
@@ -108,27 +109,43 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Initialize database and resources on startup, release on shutdown."""
     db_manager = get_db_manager()
-    await db_manager.initialize()
-
-    # Automatically purge expired literature cache entries on startup
+    resources: RAGServiceResources | None = None
     try:
-        cache = LiteratureCache(db_manager)
-        pruned_count = await cache.prune_expired()
-        if pruned_count > 0:
-            logger.info(
-                "Pruned expired literature cache entries on startup.",
-                extra={"pruned_count": pruned_count},
-            )
-    except Exception as exc:
-        logger.warning(
-            "Could not prune literature cache during startup.",
-            extra={"error": str(exc)},
-        )
+        await db_manager.initialize()
 
-    logger.info("Application startup complete. Database initialized.")
-    yield
-    await db_manager.close()
-    logger.info("Application shutdown complete.")
+        # Automatically purge expired literature cache entries on startup
+        try:
+            cache = LiteratureCache(db_manager)
+            pruned_count = await cache.prune_expired()
+            if pruned_count > 0:
+                logger.info(
+                    "Pruned expired literature cache entries on startup.",
+                    extra={"pruned_count": pruned_count},
+                )
+        except Exception as exc:
+            logger.warning(
+                "Could not prune literature cache during startup.",
+                extra={"error": str(exc)},
+            )
+
+        settings = get_settings()
+        resources = RAGServiceResources(
+            db_manager=db_manager,
+            persist_directory=settings.rag.chroma_dir,
+            is_memory=settings.environment == "test",
+            embedding_provider=settings.rag.embedding_provider,
+        )
+        app.state.rag_resources = resources
+        logger.info("Application startup complete. Database initialized.")
+        yield
+    finally:
+        app.state.rag_resources = None
+        try:
+            if resources is not None:
+                await resources.close()
+        finally:
+            await db_manager.close()
+        logger.info("Application shutdown complete.")
 
 
 def create_app() -> FastAPI:
