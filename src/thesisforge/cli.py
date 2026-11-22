@@ -1,8 +1,11 @@
 """CLI entry point for ThesisForge with Rich terminal UI, spinners, and formatted tables."""
 
+from __future__ import annotations
+
 import argparse
 import asyncio
 import sys
+from typing import TYPE_CHECKING
 
 import uvicorn
 from rich import box
@@ -27,11 +30,14 @@ from thesisforge.rag.clients.semantic_scholar import SemanticScholarClient
 from thesisforge.repository.database import DatabaseManager
 from thesisforge.repository.project_repository import ProjectRepository
 
+if TYPE_CHECKING:
+    from thesisforge.llm.router import LLMRouter
+
 console = Console()
 err_console = Console(stderr=True)
 
 
-def _build_cli_llm_router(db: DatabaseManager) -> object | None:
+def _build_cli_llm_router(db: DatabaseManager) -> LLMRouter | None:
     """Build an :class:`LLMRouter` wired to the local BYOK keystore for CLI commands.
 
     Mirrors the FastAPI dependency wiring (``api.deps.get_llm_router``). Returns
