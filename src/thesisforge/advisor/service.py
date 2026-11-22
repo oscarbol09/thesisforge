@@ -530,6 +530,12 @@ class AdvisorService:
                 "Faltan datos previos metodológicos (título y problema/pregunta) para asistir en la redacción."
             )
 
+        academic_level = (
+            project.academic_level.value
+            if hasattr(project.academic_level, "value")
+            else str(project.academic_level)
+        )
+        system_prompt = ADVISOR_SYSTEM_PROMPT.format(academic_level=academic_level)
         sanitized_instructions = self.quarantine_input(user_instructions)
         target_section_id: str | None = None
         result: dict[str, Any]
@@ -537,18 +543,14 @@ class AdvisorService:
         if component == "justification":
             prompt = JUSTIFICATION_ASSIST_PROMPT.format(
                 title=project.title or "Sin definir",
-                academic_level=project.academic_level.value
-                if hasattr(project.academic_level, "value")
-                else str(project.academic_level),
+                academic_level=academic_level,
                 area_of_study=project.area_of_study or "Sin definir",
                 topic=project.topic or "Sin definir",
                 research_problem=project.research_problem or "Sin definir",
                 research_question=project.research_question or "Sin definir",
                 user_instructions=sanitized_instructions,
             )
-            result = await self.llm.complete_json(
-                prompt=prompt, system_prompt=ADVISOR_SYSTEM_PROMPT
-            )
+            result = await self.llm.complete_json(prompt=prompt, system_prompt=system_prompt)
             target_section_id = "sec_1_4"
 
             if auto_apply:
@@ -562,14 +564,10 @@ class AdvisorService:
                 approach=project.methodology.approach.value
                 if project.methodology and project.methodology.approach
                 else "General",
-                academic_level=project.academic_level.value
-                if hasattr(project.academic_level, "value")
-                else str(project.academic_level),
+                academic_level=academic_level,
                 user_input=sanitized_instructions,
             )
-            result = await self.llm.complete_json(
-                prompt=prompt, system_prompt=ADVISOR_SYSTEM_PROMPT
-            )
+            result = await self.llm.complete_json(prompt=prompt, system_prompt=system_prompt)
             target_section_id = "sec_1_3"
 
             if auto_apply:
@@ -587,9 +585,7 @@ class AdvisorService:
         elif component == "scope_limitations":
             prompt = SCOPE_LIMITATIONS_ASSIST_PROMPT.format(
                 title=project.title or "Sin definir",
-                academic_level=project.academic_level.value
-                if hasattr(project.academic_level, "value")
-                else str(project.academic_level),
+                academic_level=academic_level,
                 research_problem=project.research_problem or "Sin definir",
                 general_objective=project.general_objective or "Sin definir",
                 approach=project.methodology.approach.value
@@ -597,10 +593,11 @@ class AdvisorService:
                 else "General",
                 user_instructions=sanitized_instructions,
             )
-            result = await self.llm.complete_json(
-                prompt=prompt, system_prompt=ADVISOR_SYSTEM_PROMPT
-            )
+            result = await self.llm.complete_json(prompt=prompt, system_prompt=system_prompt)
             target_section_id = "sec_1_5"
+
+            if auto_apply:
+                project.scope_limitations = result.get("draft_text", "")
 
         else:
             raise MethodologyValidationError(
