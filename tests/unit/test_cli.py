@@ -5,9 +5,11 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
+import respx
+from httpx import Response
 
-from thesisforge.cli import main
-from thesisforge.config import get_settings
+from thesisforge.cli import _run_search_cli, main
+from thesisforge.config import AppSettings, get_settings
 from thesisforge.models import (
     AcademicSearchResultDTO,
     ProjectStateDTO,
@@ -77,6 +79,27 @@ def test_cli_search_papers_command(capsys: pytest.CaptureFixture[str]):
         assert "Quantum" in captured.out
         assert "Algorithms" in captured.out
         assert "DOI:" in captured.out
+
+
+def test_cli_search_uses_semantic_scholar_settings_key(monkeypatch: pytest.MonkeyPatch) -> None:
+    settings = AppSettings(SEMANTIC_SCHOLAR_API_KEY="cli-test-key")
+    monkeypatch.setattr("thesisforge.cli.get_settings", lambda: settings)
+
+    with respx.mock:
+        semantic_route = respx.get("https://api.semanticscholar.org/graph/v1/paper/search").mock(
+            return_value=Response(200, json={"total": 0, "data": []})
+        )
+        asyncio.run(
+            _run_search_cli(
+                query="Key injection",
+                limit=5,
+                format_apa=False,
+                sources=["semantic_scholar"],
+            )
+        )
+
+    request = semantic_route.calls[0].request
+    assert request.headers["x-api-key"] == "cli-test-key"
 
 
 def test_cli_search_papers_apa_format(capsys: pytest.CaptureFixture[str]):

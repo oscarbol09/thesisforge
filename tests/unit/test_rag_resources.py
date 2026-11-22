@@ -10,8 +10,10 @@ from starlette.requests import Request
 import thesisforge.api.app as app_module
 import thesisforge.api.deps as deps_module
 import thesisforge.rag.resources as resources_module
+import thesisforge.rag.service as service_module
 from thesisforge.api.deps import (
     get_db_manager,
+    get_keystore_repository,
     get_llm_router,
     get_project_repository,
     get_rag_service,
@@ -91,6 +93,61 @@ async def test_rag_routes_reuse_app_resources_across_requests(
 
 
 @pytest.mark.asyncio
+async def test_keyed_rag_services_keep_semantic_scholar_clients_request_scoped(
+    in_memory_db: DatabaseManager,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class FakeSemanticScholarClient:
+        def __init__(self, *, api_key: str | None, cache: object) -> None:
+            self.api_key = api_key
+            self.cache = cache
+            self.close_calls = 0
+
+        async def close(self) -> None:
+            self.close_calls += 1
+
+    clients: list[FakeSemanticScholarClient] = []
+
+    def create_client(*, api_key: str | None, cache: object) -> FakeSemanticScholarClient:
+        client = FakeSemanticScholarClient(api_key=api_key, cache=cache)
+        clients.append(client)
+        return client
+
+    monkeypatch.setattr(service_module, "SemanticScholarClient", create_client)
+    settings = get_settings()
+    resources = RAGServiceResources(
+        db_manager=in_memory_db,
+        persist_directory=settings.rag.chroma_dir,
+        is_memory=True,
+        embedding_provider=settings.rag.embedding_provider,
+    )
+    project_repo = ProjectRepository(in_memory_db, "owner")
+    try:
+        first = RAGService(
+            db_manager=in_memory_db,
+            project_repo=project_repo,
+            resources=resources,
+            semantic_scholar_api_key="first-request-key",
+        )
+        second = RAGService(
+            db_manager=in_memory_db,
+            project_repo=project_repo,
+            resources=resources,
+            semantic_scholar_api_key="second-request-key",
+        )
+
+        assert first.semantic_scholar is not second.semantic_scholar
+        assert first.semantic_scholar.api_key == "first-request-key"
+        assert second.semantic_scholar.api_key == "second-request-key"
+        assert resources.semantic_scholar.api_key is None
+
+        await asyncio.gather(first.close(), second.close())
+        assert [client.close_calls for client in clients] == [1, 1]
+    finally:
+        await resources.close()
+
+
+@pytest.mark.asyncio
 async def test_request_resources_close_when_handler_fails(
     in_memory_db: DatabaseManager, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -114,6 +171,27 @@ async def test_request_resources_close_when_handler_fails(
         async def close(self) -> None:
             self.close_calls += 1
 
+    class FakeSemanticScholarClient:
+        def __init__(self, *, api_key: str | None, cache: object) -> None:
+            self.api_key = api_key
+            self.cache = cache
+            self.close_calls = 0
+
+        async def close(self) -> None:
+            self.close_calls += 1
+
+    clients: list[FakeSemanticScholarClient] = []
+
+    def create_client(*, api_key: str | None, cache: object) -> FakeSemanticScholarClient:
+        client = FakeSemanticScholarClient(api_key=api_key, cache=cache)
+        clients.append(client)
+        return client
+
+    class FakeKeyStore:
+        async def get_key(self, provider: str) -> str | None:
+            assert provider == "semantic_scholar"
+            return "request-key"
+
     created_resources: list[FakeResources] = []
 
     def create_resources(
@@ -127,6 +205,7 @@ async def test_request_resources_close_when_handler_fails(
         return resources
 
     monkeypatch.setattr(deps_module, "RAGServiceResources", create_resources)
+    monkeypatch.setattr(service_module, "SemanticScholarClient", create_client)
     app = FastAPI()
     settings = get_settings()
     app.dependency_overrides[get_db_manager] = lambda: in_memory_db
@@ -135,6 +214,7 @@ async def test_request_resources_close_when_handler_fails(
         in_memory_db, "owner"
     )
     app.dependency_overrides[get_settings] = lambda: settings
+    app.dependency_overrides[get_keystore_repository] = lambda: FakeKeyStore()
 
     @app.get("/failure")
     async def fail_request(service: RAGService = Depends(get_rag_service)) -> None:
@@ -150,6 +230,9 @@ async def test_request_resources_close_when_handler_fails(
 
     assert len(created_resources) == 1
     assert created_resources[0].close_calls == 1
+    assert len(clients) == 1
+    assert clients[0].api_key == "request-key"
+    assert clients[0].close_calls == 1
 
 
 @pytest.mark.asyncio

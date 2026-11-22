@@ -75,11 +75,16 @@ async def get_rag_service(
     project_repo: ProjectRepository = Depends(get_project_repository),
     llm_router: LLMRouter = Depends(get_llm_router),
     settings: AppSettings = Depends(get_settings),
+    keystore: SecureKeyStoreRepository = Depends(get_keystore_repository),
 ) -> AsyncGenerator[RAGService, None]:
     """Provide a request-scoped service over app-scoped RAG resources."""
     persist_directory = settings.rag.chroma_dir
     is_memory = settings.environment == "test"
     embedding_provider = settings.rag.embedding_provider
+    semantic_scholar_api_key = (
+        (await keystore.get_key("semantic_scholar")) or settings.semantic_scholar_api_key or None
+    )
+
     resources: RAGServiceResources | None = getattr(connection.app.state, "rag_resources", None)
     if resources is not None and not resources.matches(
         db, persist_directory, is_memory, embedding_provider
@@ -96,7 +101,7 @@ async def get_rag_service(
         )
 
     try:
-        yield RAGService(
+        service = RAGService(
             db_manager=db,
             project_repo=project_repo,
             llm_router=llm_router,
@@ -106,7 +111,12 @@ async def get_rag_service(
             support_threshold=settings.rag.evidence_support_threshold,
             embedding_provider=embedding_provider,
             resources=resources,
+            semantic_scholar_api_key=semantic_scholar_api_key,
         )
+        try:
+            yield service
+        finally:
+            await service.close()
     finally:
         if owns_resources:
             await resources.close()

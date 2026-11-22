@@ -18,6 +18,7 @@ from thesisforge.models import (
 from thesisforge.rag.apa_formatter import APA7Formatter
 from thesisforge.rag.citation_guard import CitationGuard
 from thesisforge.rag.clients.aggregator import AcademicSearchAggregator
+from thesisforge.rag.clients.semantic_scholar import SemanticScholarClient
 from thesisforge.rag.parser import PDFDocumentParser
 from thesisforge.rag.prisma import PRISMAFlowReport
 from thesisforge.rag.resources import RAGServiceResources
@@ -41,6 +42,7 @@ class RAGService:
         support_threshold: float = 0.40,
         embedding_provider: str | None = None,
         resources: RAGServiceResources | None = None,
+        semantic_scholar_api_key: str | None = None,
     ) -> None:
         self.db = db_manager
         self.repo = project_repo
@@ -55,7 +57,14 @@ class RAGService:
             )
         self.resources = resources
         self.cache = resources.cache
-        self.semantic_scholar = resources.semantic_scholar
+        self._owns_semantic_scholar = semantic_scholar_api_key is not None
+        if self._owns_semantic_scholar:
+            self.semantic_scholar = SemanticScholarClient(
+                api_key=semantic_scholar_api_key,
+                cache=resources.cache,
+            )
+        else:
+            self.semantic_scholar = resources.semantic_scholar
         self.arxiv = resources.arxiv
         self.crossref = resources.crossref
         self.openalex = resources.openalex
@@ -77,9 +86,13 @@ class RAGService:
         )
 
     async def close(self) -> None:
-        """Close resources when this service created and owns them."""
-        if self._owns_resources:
-            await self.resources.close()
+        """Close request-scoped clients and any resources owned by this service."""
+        try:
+            if self._owns_semantic_scholar:
+                await self.semantic_scholar.close()
+        finally:
+            if self._owns_resources:
+                await self.resources.close()
 
     # ------------------------------------------------------------------
     # Internal helpers: document_index_status lifecycle
