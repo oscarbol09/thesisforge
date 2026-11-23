@@ -17,6 +17,7 @@ from docx.shared import Inches, Pt, RGBColor
 from thesisforge.drafting.sanitizer import sanitize_cell_value
 from thesisforge.exceptions import ExportError
 from thesisforge.models import CitationDTO, ExportOptionsDTO, ProjectStateDTO
+from thesisforge.rag.apa_formatter import APA7Formatter
 
 if TYPE_CHECKING:
     from docx.document import Document as DocxDocument
@@ -305,6 +306,63 @@ class APA7DocxCompiler:
                 idx += 1
                 continue
 
+            fence_match = re.match(r"^(`{3,}|~{3,})", stripped)
+            if fence_match:
+                fence = fence_match.group(1)
+                closing_fence = re.compile(rf"^\s*{re.escape(fence[0])}{{{len(fence)},}}\s*$")
+                code_lines: list[str] = []
+                idx += 1
+                while idx < n and not closing_fence.match(lines[idx]):
+                    code_lines.append(lines[idx])
+                    idx += 1
+                if idx < n:
+                    idx += 1
+                self._render_code_block(doc, code_lines, options)
+                continue
+
+            if stripped.startswith("$$"):
+                equation_start = stripped[2:].strip()
+                closing_index = equation_start.find("$$")
+                equation_lines: list[str] = []
+                trailing_text = ""
+                equation_closed = False
+
+                if closing_index >= 0:
+                    equation_closed = True
+                    trailing_text = equation_start[closing_index + 2 :].strip()
+                    equation_lines.append(equation_start[:closing_index].strip())
+                    idx += 1
+                else:
+                    closing_line = next(
+                        (
+                            line_index
+                            for line_index in range(idx + 1, n)
+                            if "$$" in lines[line_index]
+                        ),
+                        None,
+                    )
+                    if closing_line is None:
+                        equation_lines = []
+                    else:
+                        if equation_start:
+                            equation_lines.append(equation_start)
+                        equation_lines.extend(
+                            content_line.strip() for content_line in lines[idx + 1 : closing_line]
+                        )
+                        closing_content, trailing_text = lines[closing_line].split("$$", 1)
+                        if closing_content.strip():
+                            equation_lines.append(closing_content.strip())
+                        trailing_text = trailing_text.strip()
+                        idx = closing_line + 1
+                        equation_closed = True
+
+                if equation_closed:
+                    equation_text = "\n".join(equation_lines).strip()
+                    self._render_equation_block(doc, equation_text, options)
+                    if trailing_text:
+                        self._render_paragraph(doc, trailing_text, options)
+                    continue
+
             if stripped.startswith("#"):
                 match = re.match(r"^(#{1,5})\s+(.+)$", stripped)
                 if match:
@@ -343,7 +401,13 @@ class APA7DocxCompiler:
             num_match = re.match(r"^(\d+)\.\s+(.+)$", stripped)
             if num_match:
                 list_text = num_match.group(2)
-                self._render_list_item(doc, list_text, is_ordered=True, options=options)
+                self._render_list_item(
+                    doc,
+                    list_text,
+                    is_ordered=True,
+                    options=options,
+                    list_number=num_match.group(1),
+                )
                 idx += 1
                 continue
 
@@ -354,11 +418,53 @@ class APA7DocxCompiler:
                 and lines[idx].strip()
                 and not lines[idx].strip().startswith(("#", "|", ">", "-", "*"))
                 and not re.match(r"^\d+\.\s+", lines[idx].strip())
+                and not re.match(r"^(`{3,}|~{3,})", lines[idx].strip())
+                and not lines[idx].strip().startswith("$$")
             ):
                 para_lines.append(lines[idx].strip())
                 idx += 1
 
             self._render_paragraph(doc, " ".join(para_lines), options)
+
+    def _render_code_block(
+        self,
+        doc: DocxDocument,
+        lines: list[str],
+        options: ExportOptionsDTO,
+    ) -> None:
+        """Render fenced Markdown code as a separate monospaced block."""
+        p = doc.add_paragraph()
+        p.alignment = WD_ALIGN_PARAGRAPH.LEFT
+        p.paragraph_format.left_indent = Inches(0.5)
+        p.paragraph_format.first_line_indent = Inches(0)
+        p.paragraph_format.line_spacing = options.line_spacing
+        p.paragraph_format.space_before = Pt(0)
+        p.paragraph_format.space_after = Pt(0)
+
+        run = p.add_run("\n".join(lines))
+        run.font.name = "Consolas"
+        run.font.size = Pt(options.font_size_pt - 1)
+        run.font.color.rgb = RGBColor(0, 0, 0)
+
+    def _render_equation_block(
+        self,
+        doc: DocxDocument,
+        text: str,
+        options: ExportOptionsDTO,
+    ) -> None:
+        """Render a delimited display equation in its own centered paragraph."""
+        p = doc.add_paragraph()
+        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        p.paragraph_format.left_indent = Inches(0)
+        p.paragraph_format.first_line_indent = Inches(0)
+        p.paragraph_format.line_spacing = options.line_spacing
+        p.paragraph_format.space_before = Pt(0)
+        p.paragraph_format.space_after = Pt(0)
+
+        run = p.add_run(text)
+        run.font.name = "Cambria Math"
+        run.font.size = Pt(options.font_size_pt)
+        run.font.color.rgb = RGBColor(0, 0, 0)
 
     def _add_heading(
         self,
@@ -446,6 +552,7 @@ class APA7DocxCompiler:
         text: str,
         is_ordered: bool,
         options: ExportOptionsDTO,
+        list_number: str | None = None,
     ) -> None:
         """Render an indented list item with bullet or number."""
         p = doc.add_paragraph()
@@ -455,8 +562,11 @@ class APA7DocxCompiler:
         p.paragraph_format.space_before = Pt(0)
         p.paragraph_format.space_after = Pt(0)
 
-        bullet_prefix = "•  " if not is_ordered else "1.  "
-        p.add_run(bullet_prefix)
+        bullet_prefix = "•  " if not is_ordered else f"{list_number or '1'}.  "
+        prefix_run = p.add_run(bullet_prefix)
+        prefix_run.font.name = options.font_name
+        prefix_run.font.size = Pt(options.font_size_pt)
+        prefix_run.font.color.rgb = RGBColor(0, 0, 0)
         self._add_inline_formatted_runs(p, text, options)
 
     def _render_table(
@@ -575,12 +685,7 @@ class APA7DocxCompiler:
                 seen_meta.add(meta_key)
                 unique_citations.append(c)
 
-        def sort_key(c: CitationDTO) -> str:
-            if c.authors:
-                return c.authors[0].lower()
-            return (c.title or "").lower()
-
-        sorted_citations = sorted(unique_citations, key=sort_key)
+        sorted_citations = APA7Formatter.sort_references(unique_citations)
 
         for citation in sorted_citations:
             p = doc.add_paragraph()
@@ -594,56 +699,8 @@ class APA7DocxCompiler:
             if citation.apa_formatted and citation.apa_formatted.strip():
                 self._add_inline_formatted_runs(p, citation.apa_formatted, options)
             else:
-                self._render_synthesized_apa_reference(p, citation, options)
-
-    def _render_synthesized_apa_reference(
-        self,
-        p: Paragraph,
-        citation: CitationDTO,
-        options: ExportOptionsDTO,
-    ) -> None:
-        """Synthesize APA 7 reference format if pre-formatted string is absent."""
-        if citation.authors:
-            if len(citation.authors) == 1:
-                auth_str = f"{citation.authors[0]} "
-            elif len(citation.authors) == 2:
-                auth_str = f"{citation.authors[0]} & {citation.authors[1]} "
-            else:
-                auth_str = f"{citation.authors[0]} et al. "
-        else:
-            auth_str = "Autor Desconocido. "
-
-        r_auth = p.add_run(auth_str)
-        r_auth.font.name = options.font_name
-        r_auth.font.size = Pt(options.font_size_pt)
-
-        r_year = p.add_run(f"({citation.year}). ")
-        r_year.font.name = options.font_name
-        r_year.font.size = Pt(options.font_size_pt)
-
-        r_title = p.add_run(f"{citation.title}. ")
-        r_title.font.name = options.font_name
-        r_title.font.size = Pt(options.font_size_pt)
-
-        if citation.journal:
-            r_jour = p.add_run(f"{citation.journal}. ")
-            r_jour.italic = True
-            r_jour.font.name = options.font_name
-            r_jour.font.size = Pt(options.font_size_pt)
-
-        if citation.doi:
-            doi_url = (
-                citation.doi
-                if citation.doi.startswith("http")
-                else f"https://doi.org/{citation.doi}"
-            )
-            r_doi = p.add_run(doi_url)
-            r_doi.font.name = options.font_name
-            r_doi.font.size = Pt(options.font_size_pt)
-        elif citation.url:
-            r_url = p.add_run(citation.url)
-            r_url.font.name = options.font_name
-            r_url.font.size = Pt(options.font_size_pt)
+                formatted_reference = APA7Formatter.format_reference_entry(citation)
+                self._add_inline_formatted_runs(p, formatted_reference, options)
 
     def _add_inline_formatted_runs(
         self,
@@ -653,7 +710,9 @@ class APA7DocxCompiler:
     ) -> None:
         """Parse markdown inline tokens (bold, italic, code) into styled runs."""
         pattern = re.compile(
-            r"(\*\*\*[^*]+\*\*\*|\*\*[^*]+\*\*|\*[^*]+\*|___[^_]+___|__[^_]+__|_[^_]+_|`[^`]+`)"
+            r"(\*\*\*[^*]+\*\*\*|\*\*[^*]+\*\*|\*[^*]+\*|"
+            r"(?<!\w)___[^_\n]+?___(?!\w)|(?<!\w)__[^_\n]+?__(?!\w)|"
+            r"(?<!\w)_[^_\n]+?_(?!\w)|`[^`]+`)"
         )
         tokens = pattern.split(text)
 

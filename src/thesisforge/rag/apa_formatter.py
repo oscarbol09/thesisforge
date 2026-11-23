@@ -39,6 +39,18 @@ class APA7Formatter:
     """Formatter adhering strictly to American Psychological Association (APA) 7th Edition rules."""
 
     @classmethod
+    def sort_references(cls, citations: list[CitationDTO]) -> list[CitationDTO]:
+        """Sort references by the first author's family name, then title when absent."""
+
+        def sort_key(citation: CitationDTO) -> str:
+            if citation.authors:
+                family_name, _ = _parse_author_name(citation.authors[0])
+                return family_name.casefold()
+            return (citation.title or "").casefold()
+
+        return sorted(citations, key=sort_key)
+
+    @classmethod
     def format_parenthetical(cls, citation: CitationDTO, page: int | str | None = None) -> str:
         """Format parenthetical in-text citation: (Author, Year) or (Author et al., Year, p. 12)."""
         authors = citation.authors
