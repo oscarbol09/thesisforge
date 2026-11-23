@@ -3,6 +3,7 @@
 import io
 
 from docx import Document
+from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.shared import Inches
 
 from thesisforge.export.docx_compiler import APA7DocxCompiler
@@ -302,3 +303,108 @@ def test_docx_compiler_references_deduplication():
     assert len(ref_paragraphs) == 2
     assert "García, M. (2023)" in ref_paragraphs[0]
     assert "Smith, J. (2024)" in ref_paragraphs[1]
+
+
+def _compile_section_content(
+    content: str,
+    citations: list[CitationDTO] | None = None,
+    options: ExportOptionsDTO | None = None,
+):
+    project = ProjectStateDTO(
+        id="proj-docx-regression",
+        title="DOCX Regression",
+        academic_level=AcademicLevel.PREGRADO,
+        phase=ProjectPhase.DRAFTING,
+        sections=[
+            SectionDraftDTO(
+                section_id="sec-docx-regression",
+                chapter_number=1,
+                order_index=1,
+                title="Regression Cases",
+                content=content,
+                status=SectionStatus.APPROVED,
+            )
+        ],
+        validated_citations=citations or [],
+    )
+    return APA7DocxCompiler().compile(project, options)
+
+
+def test_docx_compiler_preserves_ordered_numbers_and_prefix_font():
+    options = ExportOptionsDTO(font_name="Arial", font_size_pt=13)
+    doc = _compile_section_content(
+        "1. First item\n2. Second item\n3. Third item",
+        options=options,
+    )
+
+    items = [p for p in doc.paragraphs if p.text.endswith("item")]
+    assert [p.text for p in items] == [
+        "1.  First item",
+        "2.  Second item",
+        "3.  Third item",
+    ]
+    assert all(p.runs[0].font.name == "Arial" for p in items)
+    assert all(p.runs[0].font.size.pt == 13 for p in items)
+
+
+def test_docx_compiler_preserves_underscores_outside_markdown_emphasis():
+    doc = _compile_section_content(
+        "Use mi_variable_test and https://example.org/path_name?source_id=1, "
+        "but keep _important_ emphasized."
+    )
+    paragraph = next(p for p in doc.paragraphs if "mi_variable_test" in p.text)
+
+    assert "mi_variable_test" in paragraph.text
+    assert "https://example.org/path_name?source_id=1" in paragraph.text
+    assert not any(run.italic and run.text in {"variable", "name?source"} for run in paragraph.runs)
+    assert any(run.text == "important" and run.italic for run in paragraph.runs)
+
+
+def test_docx_compiler_renders_fenced_code_as_a_monospaced_block():
+    doc = _compile_section_content(
+        "Before code.\n```python\ndef example(value):\n    return value + 1\n```\nAfter code."
+    )
+    code = next((p for p in doc.paragraphs if "def example" in p.text), None)
+
+    assert code is not None
+    assert any(p.text == "Before code." for p in doc.paragraphs)
+    assert code.text == "def example(value):\n    return value + 1"
+    assert code.paragraph_format.left_indent == Inches(0.5)
+    assert all(run.font.name == "Consolas" for run in code.runs)
+    assert any(p.text == "After code." for p in doc.paragraphs)
+
+
+def test_docx_compiler_renders_block_equations_centered_without_delimiters():
+    doc = _compile_section_content("Before equation.\n$$\nE = mc^2\nF = ma\n$$\nAfter equation.")
+    equation = next((p for p in doc.paragraphs if "E = mc^2" in p.text), None)
+
+    assert equation is not None
+    assert any(p.text == "Before equation." for p in doc.paragraphs)
+    assert equation.text == "E = mc^2\nF = ma"
+    assert equation.alignment == WD_ALIGN_PARAGRAPH.CENTER
+    assert any(p.text == "After equation." for p in doc.paragraphs)
+
+
+def test_docx_compiler_sorts_and_formats_fallback_references_by_surname():
+    citations = [
+        CitationDTO(
+            authors=["Ashish Zúñiga"],
+            year=2024,
+            title="A Study of Z",
+            journal="Journal Z",
+        ),
+        CitationDTO(
+            authors=["Zara Vaswani"],
+            year=2017,
+            title="Attention Is All You Need",
+            journal="Journal V",
+        ),
+    ]
+    options = ExportOptionsDTO(include_references=True)
+    doc = _compile_section_content("Body text.", citations, options)
+    references = [p for p in doc.paragraphs if " (2017)." in p.text or " (2024)." in p.text]
+
+    assert len(references) == 2
+    assert references[0].text.startswith("Vaswani, Z. (2017). Attention Is All You Need.")
+    assert references[1].text.startswith("Zúñiga, A. (2024). A Study of Z.")
+    assert any(run.text == "Journal V" and run.italic for run in references[0].runs)
