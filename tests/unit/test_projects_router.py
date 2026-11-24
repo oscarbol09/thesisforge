@@ -34,15 +34,11 @@ class FakeVectorStore:
         self.deleted_collections.append(project_id)
 
 
-def make_client(
-    repo: FakeProjectRepository, vector_store: FakeVectorStore
-) -> httpx.AsyncClient:
+def make_client(repo: FakeProjectRepository, vector_store: FakeVectorStore) -> httpx.AsyncClient:
     app = FastAPI()
     app.include_router(router)
     app.dependency_overrides[get_project_repository] = lambda: repo
-    app.dependency_overrides[get_rag_service] = lambda: SimpleNamespace(
-        vector_store=vector_store
-    )
+    app.dependency_overrides[get_rag_service] = lambda: SimpleNamespace(vector_store=vector_store)
     app.dependency_overrides[get_current_owner] = lambda: LOCAL_OWNER_ID
     return httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test")
 
