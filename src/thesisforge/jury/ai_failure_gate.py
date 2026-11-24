@@ -8,12 +8,102 @@ sample overgeneralization, epistemic frame-lock, survivorship bias, and proxy fa
 from __future__ import annotations
 
 import re
+import unicodedata
 from enum import StrEnum
 
 from pydantic import BaseModel, ConfigDict, Field
 
 from thesisforge.core.time import utc_now
 from thesisforge.models import AuditSeverity, ProjectStateDTO, ResearchApproach
+
+_AUTHOR_PARTICLES = frozenset(
+    {
+        "al",
+        "ap",
+        "ben",
+        "bin",
+        "da",
+        "das",
+        "de",
+        "del",
+        "della",
+        "der",
+        "di",
+        "do",
+        "dos",
+        "du",
+        "la",
+        "las",
+        "le",
+        "los",
+        "van",
+        "von",
+    }
+)
+_PARENTHETICAL_CONTENT_PATTERN = re.compile(r"\(([^()]*)\)")
+_AUTHOR_YEAR_PATTERN = re.compile(r"(?P<authors>.+),\s*\d{4}[a-z]?\s*$", re.IGNORECASE)
+
+
+def _normalize_author_name(author: str) -> str:
+    """Normalize an author name for matching across citation formats."""
+    decomposed = unicodedata.normalize("NFKD", author.casefold())
+    without_marks = "".join(
+        character for character in decomposed if not unicodedata.category(character).startswith("M")
+    )
+    return "".join(character for character in without_marks if character.isalnum())
+
+
+def _author_surname_candidates(author: str) -> set[str]:
+    """Return normalized surname forms for full-name and surname-first author records."""
+    surname = author.split(",", maxsplit=1)[0].strip()
+    if not surname:
+        return set()
+
+    if "," in author:
+        normalized = _normalize_author_name(surname)
+        return {normalized} if normalized else set()
+
+    words = surname.split()
+    particle_start = len(words) - 1
+    while (
+        particle_start > 0 and words[particle_start - 1].casefold().rstrip(".") in _AUTHOR_PARTICLES
+    ):
+        particle_start -= 1
+
+    if particle_start < len(words) - 1:
+        normalized = _normalize_author_name(" ".join(words[particle_start:]))
+        return {normalized} if normalized else set()
+
+    suffix_starts = {len(words) - 1}
+    if len(words) > 1:
+        suffix_starts.add(len(words) - 2)
+
+    return {
+        normalized
+        for start in suffix_starts
+        if (normalized := _normalize_author_name(" ".join(words[start:])))
+    }
+
+
+def _extract_parenthetical_authors(content: str) -> list[str]:
+    """Extract author names from APA parenthetical citations in section text."""
+    authors: list[str] = []
+    for parenthetical in _PARENTHETICAL_CONTENT_PATTERN.finditer(content):
+        for citation in parenthetical.group(1).split(";"):
+            match = _AUTHOR_YEAR_PATTERN.fullmatch(citation.strip())
+            if match is None:
+                continue
+
+            author_text = re.sub(
+                r"\s+et\s+al\.?$", "", match.group("authors").strip(), flags=re.IGNORECASE
+            )
+            if not re.match(r"^[A-ZÁÉÍÓÚÜÑ]", author_text):
+                continue
+
+            citation_authors = re.split(r"\s+(?:&|y)\s+", author_text, flags=re.IGNORECASE)
+            if all(re.match(r"^[A-ZÁÉÍÓÚÜÑ]", author) for author in citation_authors):
+                authors.extend(author.strip() for author in citation_authors)
+    return authors
 
 
 class AIFailureMode(StrEnum):
@@ -172,17 +262,22 @@ class AIFailureGateAuditor:
         """Check for ungrounded citations in sections not present in validated literature registry."""
         findings: list[FailureFinding] = []
         known_authors = {
-            author.lower() for cit in project.validated_citations for author in cit.authors
+            surname
+            for citation in project.validated_citations
+            for author in citation.authors
+            for surname in _author_surname_candidates(author)
         }
         all_content = " ".join(s.content for s in project.sections if s.content)
-
-        # Look for explicit (Author, Year) in text
-        in_text_authors = re.findall(
-            r"\(([A-ZÁÉÍÓÚÑ][a-záéíóúñ]+)(?:\s+et\s+al\.)?,\s*\d{4}\)", all_content
-        )
-        unmatched_authors = [
-            a for a in in_text_authors if known_authors and a.lower() not in known_authors
-        ]
+        in_text_authors = _extract_parenthetical_authors(all_content)
+        unmatched_authors: list[str] = []
+        for author in in_text_authors:
+            author_surnames = _author_surname_candidates(author)
+            if (
+                known_authors
+                and author_surnames.isdisjoint(known_authors)
+                and author not in unmatched_authors
+            ):
+                unmatched_authors.append(author)
         if in_text_authors and not project.validated_citations:
             findings.append(
                 FailureFinding(

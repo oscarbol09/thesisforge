@@ -5,14 +5,66 @@ import io
 import fitz
 import pytest
 import respx
-from httpx import ASGITransport, AsyncClient
+from httpx import ASGITransport, AsyncClient, Response
 
+import thesisforge.api.app as app_module
 from thesisforge.api.app import create_app
-from thesisforge.api.deps import get_db_manager, get_key_vault
+from thesisforge.api.deps import get_db_manager, get_key_vault, get_keystore_repository
+from thesisforge.config import AppSettings, get_settings
 from thesisforge.core.security import LocalKeyVault
 from thesisforge.models import AcademicLevel, ProjectPhase, ProjectStateDTO
 from thesisforge.repository.database import DatabaseManager
+from thesisforge.repository.keystore_repository import SecureKeyStoreRepository
 from thesisforge.repository.project_repository import ProjectRepository
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("vault_key", "settings_key", "expected_key"),
+    [
+        ("vault-test-key", "settings-test-key", "vault-test-key"),
+        (None, "settings-test-key", "settings-test-key"),
+        (None, None, None),
+    ],
+)
+@respx.mock
+async def test_api_search_uses_semantic_scholar_key_precedence(
+    in_memory_db: DatabaseManager,
+    vault: LocalKeyVault,
+    vault_key: str | None,
+    settings_key: str | None,
+    expected_key: str | None,
+) -> None:
+    keystore = SecureKeyStoreRepository(in_memory_db, vault)
+    if vault_key:
+        await keystore.store_key("semantic_scholar", vault_key)
+
+    app = create_app()
+    app.dependency_overrides[get_db_manager] = lambda: in_memory_db
+    app.dependency_overrides[get_key_vault] = lambda: vault
+    app.dependency_overrides[get_keystore_repository] = lambda: keystore
+    app.dependency_overrides[get_settings] = lambda: AppSettings(
+        environment="test",
+        SEMANTIC_SCHOLAR_API_KEY=settings_key,
+    )
+
+    semantic_route = respx.get("https://api.semanticscholar.org/graph/v1/paper/search").mock(
+        return_value=Response(200, json={"total": 0, "data": []})
+    )
+
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.get(
+            "/api/literature/search?q=Key%20injection&source=semantic_scholar"
+        )
+
+    assert response.status_code == 200
+    assert response.json() == []
+    request = semantic_route.calls[0].request
+    if expected_key:
+        assert request.headers["x-api-key"] == expected_key
+    else:
+        assert "x-api-key" not in request.headers
 
 
 @pytest.mark.asyncio
@@ -91,8 +143,13 @@ async def test_api_search_and_verify_doi(in_memory_db: DatabaseManager, vault: L
 
 
 @pytest.mark.asyncio
-async def test_api_index_pdf_and_query_context(in_memory_db: DatabaseManager, vault: LocalKeyVault):
+async def test_api_index_pdf_and_query_context(
+    in_memory_db: DatabaseManager,
+    vault: LocalKeyVault,
+    monkeypatch: pytest.MonkeyPatch,
+):
     """Test /api/literature/index-pdf and /api/literature/query-context endpoints."""
+    monkeypatch.setattr(app_module, "get_db_manager", lambda: in_memory_db)
     app = create_app()
     app.dependency_overrides[get_db_manager] = lambda: in_memory_db
     app.dependency_overrides[get_key_vault] = lambda: vault
@@ -117,7 +174,10 @@ async def test_api_index_pdf_and_query_context(in_memory_db: DatabaseManager, va
     doc.close()
 
     transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://test") as client:
+    async with (
+        app.router.lifespan_context(app),
+        AsyncClient(transport=transport, base_url="http://test") as client,
+    ):
         # Upload & Index PDF
         files = {"file": ("paper.pdf", io.BytesIO(pdf_bytes), "application/pdf")}
         data = {"project_id": "proj-api-rag-01", "title": "Paper RAG"}

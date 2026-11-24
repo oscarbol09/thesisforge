@@ -1,8 +1,10 @@
 """Dependency injection providers for FastAPI endpoints."""
 
+from collections.abc import AsyncGenerator
 from functools import lru_cache
 
 from fastapi import Depends
+from starlette.requests import HTTPConnection
 
 from thesisforge.advisor.service import AdvisorService
 from thesisforge.config import AppSettings, get_settings
@@ -13,6 +15,7 @@ from thesisforge.export.bundle import ProjectBundleService
 from thesisforge.export.service import ExportService
 from thesisforge.jury.service import JuryService
 from thesisforge.llm.router import LLMRouter
+from thesisforge.rag.resources import RAGServiceResources
 from thesisforge.rag.service import RAGService
 from thesisforge.repository.database import DatabaseManager
 from thesisforge.repository.jury_repository import JuryRepository
@@ -66,23 +69,57 @@ def get_advisor_service(
     return AdvisorService(project_repo=project_repo, llm_router=llm_router)
 
 
-def get_rag_service(
+async def get_rag_service(
+    connection: HTTPConnection,
     db: DatabaseManager = Depends(get_db_manager),
     project_repo: ProjectRepository = Depends(get_project_repository),
     llm_router: LLMRouter = Depends(get_llm_router),
     settings: AppSettings = Depends(get_settings),
-) -> RAGService:
-    """RAG and literature service dependency."""
-    return RAGService(
-        db_manager=db,
-        project_repo=project_repo,
-        llm_router=llm_router,
-        persist_dir=settings.rag.chroma_dir,
-        is_memory=settings.environment == "test",
-        candidate_threshold=settings.rag.evidence_candidate_threshold,
-        support_threshold=settings.rag.evidence_support_threshold,
-        embedding_provider=settings.rag.embedding_provider,
+    keystore: SecureKeyStoreRepository = Depends(get_keystore_repository),
+) -> AsyncGenerator[RAGService, None]:
+    """Provide a request-scoped service over app-scoped RAG resources."""
+    persist_directory = settings.rag.chroma_dir
+    is_memory = settings.environment == "test"
+    embedding_provider = settings.rag.embedding_provider
+    semantic_scholar_api_key = (
+        (await keystore.get_key("semantic_scholar")) or settings.semantic_scholar_api_key or None
     )
+
+    resources: RAGServiceResources | None = getattr(connection.app.state, "rag_resources", None)
+    if resources is not None and not resources.matches(
+        db, persist_directory, is_memory, embedding_provider
+    ):
+        resources = None
+
+    owns_resources = resources is None
+    if resources is None:
+        resources = RAGServiceResources(
+            db_manager=db,
+            persist_directory=persist_directory,
+            is_memory=is_memory,
+            embedding_provider=embedding_provider,
+        )
+
+    try:
+        service = RAGService(
+            db_manager=db,
+            project_repo=project_repo,
+            llm_router=llm_router,
+            persist_dir=persist_directory,
+            is_memory=is_memory,
+            candidate_threshold=settings.rag.evidence_candidate_threshold,
+            support_threshold=settings.rag.evidence_support_threshold,
+            embedding_provider=embedding_provider,
+            resources=resources,
+            semantic_scholar_api_key=semantic_scholar_api_key,
+        )
+        try:
+            yield service
+        finally:
+            await service.close()
+    finally:
+        if owns_resources:
+            await resources.close()
 
 
 def get_draft_service(

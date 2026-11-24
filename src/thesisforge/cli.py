@@ -1,8 +1,11 @@
 """CLI entry point for ThesisForge with Rich terminal UI, spinners, and formatted tables."""
 
+from __future__ import annotations
+
 import argparse
 import asyncio
 import sys
+from typing import TYPE_CHECKING
 
 import uvicorn
 from rich import box
@@ -27,8 +30,31 @@ from thesisforge.rag.clients.semantic_scholar import SemanticScholarClient
 from thesisforge.repository.database import DatabaseManager
 from thesisforge.repository.project_repository import ProjectRepository
 
+if TYPE_CHECKING:
+    from thesisforge.llm.router import LLMRouter
+
 console = Console()
 err_console = Console(stderr=True)
+
+
+def _build_cli_llm_router(db: DatabaseManager) -> LLMRouter | None:
+    """Build an :class:`LLMRouter` wired to the local BYOK keystore for CLI commands.
+
+    Mirrors the FastAPI dependency wiring (``api.deps.get_llm_router``). Returns
+    ``None`` when the keystore or router cannot be initialised so callers keep the
+    deterministic/heuristic fallback behaviour.
+    """
+    try:
+        from thesisforge.core.security import LocalKeyVault
+        from thesisforge.llm.router import LLMRouter
+        from thesisforge.repository.keystore_repository import SecureKeyStoreRepository
+
+        settings = get_settings()
+        vault = LocalKeyVault(settings.master_key)
+        keystore = SecureKeyStoreRepository(db, vault)
+        return LLMRouter(settings=settings, keystore_repo=keystore)
+    except Exception:
+        return None
 
 
 async def _run_search_cli(
@@ -38,7 +64,8 @@ async def _run_search_cli(
     sources: list[str] | None = None,
 ) -> None:
     """Execute asynchronous paper search from CLI with Rich status spinner and tabular output."""
-    ss = SemanticScholarClient()
+    settings = get_settings()
+    ss = SemanticScholarClient(api_key=settings.semantic_scholar_api_key)
     arxiv = ArxivClient()
     cr = CrossRefClient()
     oa = OpenAlexClient()
@@ -354,7 +381,12 @@ async def _run_jury_audit_cli(project_id: str) -> None:
 
         repo = ProjectRepository(db, "local")
         jury_repo = JuryRepository(db, "local")
-        jury_service = JuryService(db_manager=db, project_repo=repo, jury_repo=jury_repo)
+        jury_service = JuryService(
+            db_manager=db,
+            project_repo=repo,
+            jury_repo=jury_repo,
+            llm_router=_build_cli_llm_router(db),
+        )
 
         with console.status(
             f"[bold cyan]Ejecutando auditoría del Tribunal Académico para el proyecto '{project_id}'...[/bold cyan]",
@@ -455,7 +487,12 @@ async def _run_defense_start_cli(project_id: str) -> None:
 
         repo = ProjectRepository(db, "local")
         jury_repo = JuryRepository(db, "local")
-        jury_service = JuryService(db_manager=db, project_repo=repo, jury_repo=jury_repo)
+        jury_service = JuryService(
+            db_manager=db,
+            project_repo=repo,
+            jury_repo=jury_repo,
+            llm_router=_build_cli_llm_router(db),
+        )
 
         session = await jury_service.start_defense_session(project_id)
         project = await repo.get_project(project_id)
