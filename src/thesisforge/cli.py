@@ -64,7 +64,8 @@ async def _run_search_cli(
     sources: list[str] | None = None,
 ) -> None:
     """Execute asynchronous paper search from CLI with Rich status spinner and tabular output."""
-    ss = SemanticScholarClient()
+    settings = get_settings()
+    ss = SemanticScholarClient(api_key=settings.semantic_scholar_api_key)
     arxiv = ArxivClient()
     cr = CrossRefClient()
     oa = OpenAlexClient()
