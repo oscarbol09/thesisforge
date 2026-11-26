@@ -8,9 +8,12 @@ from __future__ import annotations
 
 import math
 import re
-from typing import NamedTuple
+from typing import TYPE_CHECKING, NamedTuple
 
 from pydantic import BaseModel, ConfigDict, Field
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
 
 # High-frequency synthetic AI markers and boilerplate formulas (Spanish & English)
 AI_SLOP_RULES: list[tuple[str, str, str]] = [
@@ -78,9 +81,30 @@ L3_LOCATOR_PATTERN = re.compile(
     re.IGNORECASE,
 )
 
-# Standard in-text citation pattern (e.g., (González, 2023) or (Smith et al., 2024))
+# Capitalized surnames may contain diacritics, hyphens, and lowercase particles.
+_AUTHOR_LETTER = r"(?:[^\W\d_]|[\u0300-\u036f])"
+_SURNAME_WORD = rf"[A-ZÀ-ÖØ-Þ]{_AUTHOR_LETTER}*(?:-[^\W\d_]{_AUTHOR_LETTER}*)*"
+_NAME_PARTICLES = r"(?:(?:de|del|la|las|los)\s+)*"
+_SURNAME = rf"{_NAME_PARTICLES}{_SURNAME_WORD}(?:\s+{_NAME_PARTICLES}{_SURNAME_WORD})*"
 STANDARD_CITATION_PATTERN = re.compile(
-    r"\((?:[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+(?:\s+et\s+al\.)?,\s*\d{4})\)",
+    rf"\({_SURNAME}"
+    rf"(?:\s+et\s+al\.|(?:(?:\s*&\s*|\s+y\s+){_SURNAME})+)?"
+    r",\s*\d{4}\)",
+)
+
+# Consume whitespace after abbreviations before it can be matched as a sentence separator.
+_SENTENCE_BOUNDARY = re.compile(
+    r"\b(?:et[ \t]+al|e\.g|i\.e|pp?|págs?|párr|par|sec|vol|núm|art|cap|dra?|vs|cfr)\.\s+"
+    r"|(?<=[.!?])(?P<separator>\s+)",
+    re.IGNORECASE,
+)
+
+# Retain blank lines, ATX headings and list prefixes as separators between prose blocks.
+_MARKDOWN_BOUNDARY = re.compile(
+    r"((?:\A|(?<=\n)|(?<=\r)(?!\n))[ \t]*(?:"
+    r"#{1,6}(?:[ \t][^\r\n]*)?(?=[\r\n]|\Z)"
+    r"|(?:[-+*]|\d+[.)])[ \t]+"
+    r"|\r\n?|\n))"
 )
 
 
@@ -125,12 +149,19 @@ class DraftQualityAuditResult(BaseModel):
     recommendations: list[str] = Field(default_factory=list)
 
 
+def _sentence_parts(text: str) -> Iterator[tuple[str, str]]:
+    """Yield sentence text with its original separator."""
+    start = 0
+    for boundary in _SENTENCE_BOUNDARY.finditer(text):
+        if boundary.lastgroup == "separator":
+            yield text[start : boundary.start()], boundary[0]
+            start = boundary.end()
+    yield text[start:], ""
+
+
 def split_into_sentences(text: str) -> list[str]:
     """Split text into sentences while respecting common academic abbreviations."""
-    # Protect common abbreviations like et al., e.g., i.e., pág., etc.
-    cleaned = re.sub(r"\b(et al|e\.g|i\.e|pág|págs|vol|núm|art|cap)\.", r"\1<DOT>", text)
-    sentences = re.split(r"(?<=[.!?])\s+", cleaned)
-    return [s.replace("<DOT>", ".").strip() for s in sentences if len(s.strip()) > 3]
+    return [stripped for sentence, _ in _sentence_parts(text) if (stripped := sentence.strip())]
 
 
 def compute_sentence_rhythm(sentences: list[str]) -> SentenceRhythmStats:
@@ -263,33 +294,24 @@ def audit_scholarly_draft(text: str) -> DraftQualityAuditResult:
 
 
 def detoxify_text(raw_text: str) -> str:
-    """Perform deterministic sanitization and removal of common AI meta-discursive filler."""
+    """Remove common boilerplate phrases while preserving Markdown structure."""
     if not raw_text:
         return ""
 
-    text = raw_text
+    filler = re.compile(
+        r"\b(?:[Cc]abe destacar que|[Ee]s importante (?:resaltar|señalar|mencionar) que"
+        r"|[Vv]ale la pena mencionar que|[Ee]s imperativo subrayar que"
+        r"|[Ee]n resumen,|[Ee]n conclusión,|[Aa] modo de conclusión,)"
+        r"(?:[^\S\r\n]+(?=\S)|(?=[^\S\r\n]*[\r\n]))"
+    )
 
-    # Replace boilerplate preambles and meta-commentary phrases
-    replacements = [
-        (r"\b[Cc]abe destacar que\s+", ""),
-        (r"\b[Ee]s importante (?:resaltar|señalar|mencionar) que\s+", ""),
-        (r"\b[Vv]ale la pena mencionar que\s+", ""),
-        (r"\b[Ee]s imperativo subrayar que\s+", ""),
-        (r"\b[Ee]n resumen,\s+", ""),
-        (r"\b[Ee]n conclusión,\s+", ""),
-        (r"\b[Aa] modo de conclusión,\s+", ""),
-    ]
+    def clean_prose(prose: str) -> str:
+        return "".join(
+            re.sub(r"^(\s*)(\w)", lambda match: match[1] + match[2].upper(), sentence) + separator
+            for sentence, separator in _sentence_parts(filler.sub("", prose))
+        )
 
-    for pattern, repl in replacements:
-        text = re.sub(pattern, repl, text)
-
-    # Capitalize first letter of sentences if stripped phrase was at beginning
-    sentences = split_into_sentences(text)
-    capitalized = []
-    for s in sentences:
-        if s and s[0].islower():
-            s = s[0].upper() + s[1:]
-        capitalized.append(s)
-
-    cleaned = " ".join(capitalized)
-    return cleaned.strip()
+    parts = _MARKDOWN_BOUNDARY.split(raw_text)
+    for i in range(0, len(parts), 2):
+        parts[i] = clean_prose(parts[i])
+    return "".join(parts)
