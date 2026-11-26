@@ -57,6 +57,7 @@ function defenseComponent() {
         const updated = await Alpine.store('app').api(`/api/defense/sessions/${this.activeSession.id}/reply`, {
           method: 'POST',
           body: JSON.stringify({
+            turn_index: this.activeSession.current_turn_index,
             student_answer: this.studentAnswer.trim()
           })
         });
