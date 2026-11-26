@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import sys
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 import uvicorn
@@ -842,12 +843,11 @@ def main() -> None:
                 debug=args.debug,
             )
         elif args.command == "run" or args.command is None:
-            host = args.host or settings.host
-            port = args.port or settings.port
-            reload = (
-                bool(args.reload)
-                if (hasattr(args, "reload") and args.reload)
-                else (settings.environment == "development")
+            host = getattr(args, "host", None) or settings.host
+            port = getattr(args, "port", None) or settings.port
+            reload = getattr(args, "reload", False) or (
+                settings.environment == "development"
+                and Path("src/thesisforge/cli.py").resolve() == Path(__file__).resolve()
             )
 
             console.print(
