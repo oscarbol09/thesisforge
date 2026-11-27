@@ -190,6 +190,8 @@ async def add_citation_to_project(
         journal=citation.journal,
         abstract=citation.abstract,
         source=citation.source,
+        url=citation.url,
+        category=citation.category,
     )
 
 

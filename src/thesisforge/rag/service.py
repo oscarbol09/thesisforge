@@ -3,6 +3,7 @@
 import asyncio
 import json
 from collections.abc import Sequence
+from urllib.parse import urlsplit
 
 from thesisforge.core.logging import get_logger
 from thesisforge.core.time import format_iso_utc, utc_now
@@ -26,6 +27,44 @@ from thesisforge.repository.database import DatabaseManager
 from thesisforge.repository.project_repository import ProjectRepository
 
 logger = get_logger(__name__)
+
+
+def _citation_text(value: str | None) -> str:
+    return " ".join((value or "").casefold().split())
+
+
+def _publication_locator(url: str | None) -> tuple[str, str] | None:
+    try:
+        parts = urlsplit(url or "")
+        host = parts.hostname
+    except ValueError:
+        return None
+    path = parts.path.rstrip("/")
+    if host and parts.scheme in {"http", "https"} and path:
+        return host.removeprefix("www."), path
+    return None
+
+
+def _same_citation_without_doi(left: CitationDTO, right: CitationDTO) -> bool:
+    title = _citation_text(left.title)
+    author = _citation_text(left.authors[0]) if left.authors else ""
+    if not title or not author or not right.authors:
+        return False
+    if (title, author, left.year) != (
+        _citation_text(right.title),
+        _citation_text(right.authors[0]),
+        right.year,
+    ):
+        return False
+
+    left_journal, right_journal = _citation_text(left.journal), _citation_text(right.journal)
+    if left_journal and right_journal and left_journal != right_journal:
+        return False
+
+    left_url, right_url = _publication_locator(left.url), _publication_locator(right.url)
+    # Different paths on the same site may identify separate works. Across sites,
+    # the links may simply point to copies of the same publication.
+    return not (left_url and right_url and left_url[0] == right_url[0] and left_url != right_url)
 
 
 class RAGService:
@@ -440,9 +479,7 @@ class RAGService:
         cit_authors = authors or (
             first_chunk.authors if first_chunk and first_chunk.authors else ["Documento Indexado"]
         )
-        cit_year = year or (
-            first_chunk.year if first_chunk and first_chunk.year else utc_now().year
-        )
+        cit_year = year if year is not None else (first_chunk.year if first_chunk else None)
 
         pdf_cit = CitationDTO(
             id=document_id,
@@ -542,11 +579,18 @@ class RAGService:
         journal: str | None = None,
         abstract: str | None = None,
         source: str = "manual",
+        url: str | None = None,
+        category: LiteratureCategory = LiteratureCategory.GENERAL,
     ) -> CitationDTO:
         """Validate and append an academic citation to the project state."""
         project = await self.repo.get_project(project_id)
 
-        # Check DOI if provided
+        if doi:
+            for existing in project.validated_citations:
+                if existing.doi and existing.doi.casefold() == doi.casefold():
+                    return existing
+
+        # Resolve metadata only for a new DOI.
         if doi:
             is_valid_doi = await self.citation_guard.verify_doi(doi)
             if is_valid_doi:
@@ -561,18 +605,22 @@ class RAGService:
             doi=doi,
             title=title or None,
             authors=authors or [],
-            year=year or None,
+            year=year,
             journal=journal,
             abstract=abstract,
             source=source,
+            url=url,
+            category=category,
         )
         cit.apa_formatted = APA7Formatter.format_reference_entry(cit)
 
-        # Avoid duplicates in project validated citations
-        existing_dois = {c.doi.lower() for c in project.validated_citations if c.doi}
-        if not (doi and doi.lower() in existing_dois):
-            project.validated_citations.append(cit)
-            await self.repo.update_project(project)
+        if not doi:
+            for existing in project.validated_citations:
+                if not existing.doi and _same_citation_without_doi(existing, cit):
+                    return existing
+
+        project.validated_citations.append(cit)
+        await self.repo.update_project(project)
 
         return cit
 

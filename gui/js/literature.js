@@ -181,7 +181,7 @@ function literatureComponent() {
           doi: paper.doi || null,
           title: paper.title,
           authors: paper.authors || [],
-          year: paper.year || new Date().getFullYear(),
+          year: paper.year ?? null,
           journal: paper.venue || null,
           abstract: paper.abstract || null,
           url: paper.url || null,
@@ -204,10 +204,44 @@ function literatureComponent() {
     isCitationLinked(paper) {
       const project = Alpine.store('app').activeProject;
       if (!project || !project.validated_citations) return false;
-      return project.validated_citations.some(c => 
-        (paper.doi && c.doi && c.doi.toLowerCase() === paper.doi.toLowerCase()) ||
-        (c.title && paper.title && c.title.trim().toLowerCase() === paper.title.trim().toLowerCase())
-      );
+      // Only normalize ASCII. Compare non-ASCII text verbatim and leave other matches to POST.
+      const ascii = value => /^[\x09-\x0d\x20-\x7e]*$/.test(value ?? '');
+      const doi = paper.doi?.trim().toLowerCase();
+      if (paper.doi) {
+        return ascii(paper.doi) && !!doi && project.validated_citations.some(c =>
+          ascii(c.doi) && c.doi?.trim().toLowerCase() === doi
+        );
+      }
+
+      const normalize = (value = '') => ascii(value) ? (value || '').trim().toLowerCase().replace(/\s+/g, ' ') : value;
+      const meaningful = value => ascii(value) ? !!value : /[\p{L}\p{N}]/u.test(value);
+      const title = normalize(paper.title);
+      const author = normalize(paper.authors?.[0]);
+      if (!meaningful(title) || !meaningful(author) || !ascii(paper.venue)) return false;
+      const journal = normalize(paper.venue);
+
+      // Compare raw paths as the server does. WHATWG URL parsing can rewrite them.
+      const locator = value => {
+        if (!value) return null;
+        const parts = /^(?:https?):\/\/([a-z0-9.-]+)(?::[0-9]+)?(\/[^?#]*)?(?:\?[^#]*)?(?:#.*)?$/i.exec(value);
+        if (!parts || /[^\x21-\x7e]|\\/.test(value)) return undefined;
+        return {host: parts[1].toLowerCase().replace(/^www\./, ''), path: (parts[2] || '').replace(/\/+$/, '')};
+      };
+      const paperLink = locator(paper.url);
+      if (paperLink === undefined) return false;
+
+      return project.validated_citations.some(c => {
+        if (c.doi || normalize(c.title) !== title || normalize(c.authors?.[0]) !== author ||
+            (c.year ?? null) !== (paper.year ?? null)) return false;
+
+        if (!ascii(c.journal)) return false;
+        const savedJournal = normalize(c.journal);
+        if (journal && savedJournal && journal !== savedJournal) return false;
+
+        const savedLink = locator(c.url);
+        return savedLink !== undefined && !(paperLink?.path && savedLink?.path &&
+          paperLink.host === savedLink.host && paperLink.path !== savedLink.path);
+      });
     },
 
     async uploadPdfFile(event) {
