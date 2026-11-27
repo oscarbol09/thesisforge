@@ -192,7 +192,7 @@ class DocumentChunkDTO(BaseModel):
     title: str = Field(default="", max_length=500)
     doi: str | None = Field(default=None, max_length=100)
     authors: list[str] = Field(default_factory=list)
-    year: int | None = Field(default=None, ge=1800, le=2100)
+    year: int | None = Field(default=None, ge=1, le=2100)
     page_number: int = Field(default=1, ge=1)
     chunk_index: int = Field(default=0, ge=0)
     section_name: str = Field(default="body", max_length=200)

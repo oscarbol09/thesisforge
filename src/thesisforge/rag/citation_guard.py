@@ -147,7 +147,7 @@ class CitationGuard:
                     doi=chunk.doi,
                     title=chunk.title or f"Documento {chunk.document_id}",
                     authors=chunk.authors,
-                    year=chunk.year or 2024,
+                    year=chunk.year,
                     abstract=chunk.text[:500],
                     chunk_id=chunk.id,
                     section_name=chunk.section_name,
