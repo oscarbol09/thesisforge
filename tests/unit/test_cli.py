@@ -40,8 +40,9 @@ def test_cli_version(capsys: pytest.CaptureFixture[str]):
     assert "ThesisForge v" in captured.out
 
 
-def test_cli_run_command():
+def test_cli_run_command(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
     """Test CLI run invocation calls uvicorn.run with configured params."""
+    monkeypatch.chdir(tmp_path)
     with (
         patch(
             "sys.argv", ["thesisforge", "run", "--host", "0.0.0.0", "--port", "9000", "--reload"]
@@ -55,6 +56,28 @@ def test_cli_run_command():
             port=9000,
             reload=True,
         )
+
+
+@pytest.mark.parametrize("run_args", [[], ["run"]])
+@pytest.mark.parametrize("local_checkout", [False, True])
+def test_cli_starts_with_configured_defaults(
+    run_args: list[str], local_checkout: bool, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.chdir(Path(__file__).resolve().parents[2] if local_checkout else tmp_path)
+    settings = AppSettings(host="127.0.0.2", port=9001, environment="development")
+    with (
+        patch("sys.argv", ["thesisforge", *run_args]),
+        patch("thesisforge.cli.get_settings", return_value=settings),
+        patch("uvicorn.run") as mock_run,
+    ):
+        main()
+
+    mock_run.assert_called_once_with(
+        "thesisforge.api.app:app",
+        host="127.0.0.2",
+        port=9001,
+        reload=local_checkout,
+    )
 
 
 def test_cli_search_papers_command(capsys: pytest.CaptureFixture[str]):
