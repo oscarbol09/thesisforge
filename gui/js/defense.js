@@ -9,7 +9,6 @@ function defenseComponent() {
     studentAnswer: '',
     isStarting: false,
     isSubmittingTurn: false,
-    totalTurns: 4,
 
     async init() {
       await this.loadActiveSession();
@@ -36,8 +35,9 @@ function defenseComponent() {
 
       this.isStarting = true;
       try {
-        const session = await Alpine.store('app').api(`/api/defense/projects/${project.id}/start?turns=${this.totalTurns}`, {
-          method: 'POST'
+        const session = await Alpine.store('app').api(`/api/defense/projects/${project.id}/start`, {
+          method: 'POST',
+          body: JSON.stringify({ force_new: Boolean(this.activeSession) })
         });
         this.activeSession = session;
         this.studentAnswer = '';
@@ -57,6 +57,7 @@ function defenseComponent() {
         const updated = await Alpine.store('app').api(`/api/defense/sessions/${this.activeSession.id}/reply`, {
           method: 'POST',
           body: JSON.stringify({
+            turn_index: this.activeSession.current_turn_index,
             student_answer: this.studentAnswer.trim()
           })
         });
