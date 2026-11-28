@@ -4,6 +4,7 @@ import fitz  # PyMuPDF
 import pytest
 import respx
 
+from thesisforge.exceptions import DocumentProcessingError
 from thesisforge.models import (
     AcademicLevel,
     ProjectPhase,
@@ -87,6 +88,48 @@ async def test_index_pdf_creates_citation_and_records_document_status(
     # Document status should be deleted
     remaining_statuses = await rag.get_document_index_statuses("proj-doc-test-1")
     assert len(remaining_statuses) == 0
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("has_image", "message"),
+    [
+        (True, "Aplica OCR"),
+        (False, "No se pudieron extraer fragmentos"),
+    ],
+)
+async def test_index_pdf_without_text_reports_why(
+    in_memory_db: DatabaseManager, has_image: bool, message: str
+):
+    repo = ProjectRepository(in_memory_db, "local")
+    rag = RAGService(db_manager=in_memory_db, project_repo=repo, is_memory=True)
+    project = ProjectStateDTO(
+        id="proj-no-text",
+        title="Proyecto de Prueba RAG",
+        academic_level=AcademicLevel.PREGRADO,
+        phase=ProjectPhase.ORIENTATION,
+        area_of_study="Ciencias de la Computación",
+        topic="RAG y Memoria Semántica",
+    )
+    await repo.create_project(project)
+
+    with fitz.open() as pdf:
+        page = pdf.new_page()
+        if has_image:
+            image = fitz.Pixmap(fitz.csGRAY, fitz.IRect(0, 0, 2, 2), False)
+            image.clear_with(127)
+            page.insert_image(page.rect, pixmap=image)
+        pdf_bytes = pdf.tobytes()
+
+    with pytest.raises(DocumentProcessingError, match=message):
+        await rag.index_pdf_document(
+            project_id=project.id, document_id="doc-no-text", pdf_bytes=pdf_bytes
+        )
+
+    statuses = await rag.get_document_index_statuses(project.id)
+    assert len(statuses) == 1
+    assert statuses[0]["status"] == "failed"
+    assert ("Aplica OCR" in statuses[0]["error_msg"]) is has_image
 
 
 @pytest.mark.asyncio
