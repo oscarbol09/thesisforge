@@ -247,6 +247,8 @@ class PDFDocumentParser:
         all_chunks: list[DocumentChunkDTO] = []
         current_section = "Introduction"
         global_chunk_idx = 0
+        has_text = False
+        has_images = False
         cat_enum = LiteratureCategory(category) if isinstance(category, str) else category
 
         try:
@@ -254,8 +256,11 @@ class PDFDocumentParser:
                 page = doc[page_num]
                 page_text = page.get_text("text", sort=True)  # type: ignore[no-untyped-call]
                 if not page_text or not page_text.strip():
+                    if not has_text and not has_images:
+                        has_images = bool(page.get_image_info())
                     continue
 
+                has_text = True
                 current_section = self._detect_section(page_text, current_section)
                 page_chunks = self.chunker.chunk_text(
                     text=page_text,
@@ -277,6 +282,12 @@ class PDFDocumentParser:
 
         finally:
             doc.close()  # type: ignore[no-untyped-call]
+
+        if has_images and not has_text:
+            raise DocumentProcessingError(
+                "El PDF parece escaneado y no tiene una capa de texto. "
+                "Aplica OCR con una herramienta como OCRmyPDF o Adobe Acrobat antes de indexarlo."
+            )
 
         logger.info(
             "PDF parsed successfully into sentence-aware chunks.",
