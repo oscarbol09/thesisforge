@@ -6,6 +6,30 @@ const vm = require('node:vm');
 
 const componentSource = readFileSync(resolve(__dirname, '../../gui/js/defense.js'), 'utf8');
 
+test('startDefense requests a new session only when one is already active', async () => {
+  const calls = [];
+  const app = {
+    activeProject: { id: 'project-1' },
+    async api(path, options) {
+      calls.push({ path, method: options.method, body: options.body && JSON.parse(options.body) });
+      return { id: `defense-${calls.length}` };
+    },
+    toast() {},
+  };
+  const component = vm.runInNewContext(`${componentSource}\ndefenseComponent()`, {
+    Alpine: { store: () => app },
+  });
+
+  await component.startDefense();
+  await component.startDefense();
+
+  assert.deepEqual(calls, [
+    { path: '/api/defense/projects/project-1/start', method: 'POST', body: { force_new: false } },
+    { path: '/api/defense/projects/project-1/start', method: 'POST', body: { force_new: true } },
+  ]);
+  assert.equal(component.activeSession.id, 'defense-2');
+});
+
 test('submitAnswer sends the active turn index and advances to the returned turn', async () => {
   const calls = [];
   const app = {
